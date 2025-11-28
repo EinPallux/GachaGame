@@ -275,6 +275,57 @@ body {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
+.hero-card.in-team {
+    border: 3px solid var(--soft-gold);
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+}
+
+.hero-card.in-team:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.5);
+}
+
+.in-team-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: linear-gradient(135deg, var(--soft-gold), #f59e0b);
+    color: white;
+    padding: 0.35rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.5);
+    z-index: 10;
+    animation: team-badge-glow 2s infinite;
+}
+
+@keyframes team-badge-glow {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(255, 215, 0, 0.5);
+    }
+    50% {
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.7);
+    }
+}
+
+.team-badge-icon {
+    font-size: 0.9rem;
+    animation: star-pulse 1.5s infinite;
+}
+
+@keyframes star-pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
+
 .hero-card-image {
     width: 100%;
     aspect-ratio: 3/4;

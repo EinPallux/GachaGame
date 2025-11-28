@@ -65,6 +65,7 @@ function renderRoster(gameState) {
     // Get filter values
     const rarityFilter = document.getElementById('roster-filter-rarity')?.value || 'all';
     const elementFilter = document.getElementById('roster-filter-element')?.value || 'all';
+    const sortFilter = document.getElementById('roster-sort')?.value || 'rarity';
     
     // Filter heroes
     let heroes = [...gameState.roster];
@@ -77,13 +78,30 @@ function renderRoster(gameState) {
         heroes = heroes.filter(h => h.element === elementFilter);
     }
     
-    // Sort by rarity then level
+    // Sort heroes
     const rarityOrder = { 'UR': 5, 'SSR': 4, 'SR': 3, 'R': 2, 'N': 1 };
     heroes.sort((a, b) => {
-        if (rarityOrder[b.rarity] !== rarityOrder[a.rarity]) {
+        if (sortFilter === 'team') {
+            // Team members first
+            const aInTeam = gameState.team.includes(a.id);
+            const bInTeam = gameState.team.includes(b.id);
+            if (aInTeam && !bInTeam) return -1;
+            if (!aInTeam && bInTeam) return 1;
+            // Then by team slot order
+            if (aInTeam && bInTeam) {
+                return gameState.team.indexOf(a.id) - gameState.team.indexOf(b.id);
+            }
+            // Then by rarity
             return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        } else if (sortFilter === 'level') {
+            return b.level - a.level;
+        } else {
+            // Default: rarity then level
+            if (rarityOrder[b.rarity] !== rarityOrder[a.rarity]) {
+                return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+            }
+            return b.level - a.level;
         }
-        return b.level - a.level;
     });
     
     // Render cards
@@ -108,6 +126,12 @@ function createHeroCard(hero, gameState) {
     const card = document.createElement('div');
     card.className = `hero-card rarity-${hero.rarity}`;
     
+    // Check if hero is in team
+    const isInTeam = gameState.team.includes(hero.id);
+    if (isInTeam) {
+        card.classList.add('in-team');
+    }
+    
     // Image
     const img = document.createElement('img');
     img.className = 'hero-card-image';
@@ -121,6 +145,15 @@ function createHeroCard(hero, gameState) {
     };
     
     card.appendChild(img);
+    
+    // In Team Badge
+    if (isInTeam) {
+        const teamBadge = document.createElement('div');
+        teamBadge.className = 'in-team-badge';
+        const teamSlot = gameState.team.indexOf(hero.id) + 1;
+        teamBadge.innerHTML = `<span class="team-badge-icon">⭐</span><span>Team Slot ${teamSlot}</span>`;
+        card.appendChild(teamBadge);
+    }
     
     // Level badge
     const levelBadge = document.createElement('div');
@@ -654,6 +687,7 @@ function updateExpeditionUI(gameState) {
 function setupFilterListeners(gameState) {
     const rarityFilter = document.getElementById('roster-filter-rarity');
     const elementFilter = document.getElementById('roster-filter-element');
+    const sortFilter = document.getElementById('roster-sort');
     
     if (rarityFilter) {
         rarityFilter.onchange = () => renderRoster(gameState);
@@ -661,6 +695,10 @@ function setupFilterListeners(gameState) {
     
     if (elementFilter) {
         elementFilter.onchange = () => renderRoster(gameState);
+    }
+    
+    if (sortFilter) {
+        sortFilter.onchange = () => renderRoster(gameState);
     }
 }
 
