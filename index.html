@@ -106,22 +106,62 @@
                     
                     <!-- Battle Arena -->
                     <div class="lg:col-span-2">
-                        <div class="glass-panel p-6">
-                            <h2 class="section-title mb-6">Battle Arena</h2>
+                        <div class="battle-arena-container">
+                            <!-- Wave Header -->
+                            <div class="battle-wave-header">
+                                <div class="wave-title">
+                                    <span class="wave-icon">⚔️</span>
+                                    <span>Wave <span id="battle-wave-number">0</span></span>
+                                </div>
+                                <div class="battle-status" id="battle-status">Prepare for Battle</div>
+                            </div>
                             
-                            <!-- Heroes -->
-                            <div class="mb-8">
-                                <h3 class="text-sm font-semibold text-slate-600 mb-3">Your Heroes</h3>
-                                <div id="battle-heroes" class="grid grid-cols-5 gap-2"></div>
+                            <!-- Main Battle Field -->
+                            <div class="battle-field">
+                                <!-- Heroes Section -->
+                                <div class="battle-section hero-section">
+                                    <div class="section-label">
+                                        <span class="label-icon">🛡️</span>
+                                        <span>Your Heroes</span>
+                                    </div>
+                                    <div id="battle-heroes" class="battle-units-grid"></div>
+                                </div>
+                                
+                                <!-- VS Divider -->
+                                <div class="battle-divider">
+                                    <div class="vs-circle">
+                                        <span class="vs-text">VS</span>
+                                        <div class="vs-glow"></div>
+                                    </div>
+                                    <div class="divider-line"></div>
+                                </div>
+                                
+                                <!-- Enemies Section -->
+                                <div class="battle-section enemy-section">
+                                    <div class="section-label enemy-label">
+                                        <span class="label-icon">💀</span>
+                                        <span>Enemies</span>
+                                    </div>
+                                    <div id="battle-enemies" class="battle-units-grid"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Ultimate Abilities Panel -->
+                            <div class="ultimate-panel">
+                                <div class="ultimate-panel-header">
+                                    <span class="text-lg">✨</span>
+                                    <span class="font-bold">Ultimate Abilities</span>
+                                </div>
+                                <div id="ultimate-abilities-grid" class="ultimate-abilities-grid"></div>
                             </div>
                             
                             <!-- Battle Log -->
-                            <div id="battle-log" class="battle-log mb-6"></div>
-                            
-                            <!-- Enemies -->
-                            <div>
-                                <h3 class="text-sm font-semibold text-slate-600 mb-3">Enemies</h3>
-                                <div id="battle-enemies" class="grid grid-cols-5 gap-2"></div>
+                            <div class="battle-log-container">
+                                <div class="battle-log-header">
+                                    <span class="text-lg">📜</span>
+                                    <span class="font-semibold">Combat Log</span>
+                                </div>
+                                <div id="battle-log" class="battle-log"></div>
                             </div>
                         </div>
                     </div>

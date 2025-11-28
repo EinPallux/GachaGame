@@ -85,6 +85,13 @@ function startBattle(gameState) {
     
     currentBattleState.addLog(`⚔️ Wave ${gameState.currentWave} Started!`, 'normal');
     
+    // Update battle status display
+    const battleStatus = document.getElementById('battle-status');
+    if (battleStatus) {
+        battleStatus.textContent = 'Battle In Progress';
+        battleStatus.style.color = '#ef4444';
+    }
+    
     updateBattleUI(gameState, currentBattleState);
     
     // Start battle loop
@@ -459,8 +466,24 @@ function updateBattleUI(gameState, battleState) {
     
     // Update wave display
     const waveDisplay = document.getElementById('wave-display');
+    const battleWaveNumber = document.getElementById('battle-wave-number');
     if (waveDisplay) {
         waveDisplay.textContent = gameState.currentWave;
+    }
+    if (battleWaveNumber) {
+        battleWaveNumber.textContent = gameState.currentWave;
+    }
+    
+    // Update battle status
+    const battleStatus = document.getElementById('battle-status');
+    if (battleStatus) {
+        if (battleState.isActive) {
+            battleStatus.textContent = 'Battle In Progress';
+            battleStatus.style.color = '#ef4444';
+        } else {
+            battleStatus.textContent = 'Victory!';
+            battleStatus.style.color = '#10b981';
+        }
     }
     
     // Update heroes display
@@ -485,13 +508,16 @@ function updateBattleUI(gameState, battleState) {
         });
     }
     
+    // Update ultimate abilities panel
+    renderUltimateAbilities(gameState, battleState);
+    
     // Update battle log
     const logContainer = document.getElementById('battle-log');
     if (logContainer) {
         logContainer.innerHTML = '';
         
-        // Show last 10 log entries
-        const recentLogs = battleState.battleLog.slice(-10);
+        // Show last 15 log entries
+        const recentLogs = battleState.battleLog.slice(-15);
         recentLogs.forEach(log => {
             const entry = document.createElement('div');
             entry.className = `log-entry log-${log.type}`;
@@ -502,6 +528,135 @@ function updateBattleUI(gameState, battleState) {
         // Scroll to bottom
         logContainer.scrollTop = logContainer.scrollHeight;
     }
+}
+
+// ===========================
+// RENDER ULTIMATE ABILITIES
+// ===========================
+
+function renderUltimateAbilities(gameState, battleState) {
+    const container = document.getElementById('ultimate-abilities-grid');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    battleState.heroes.forEach(hero => {
+        const card = createUltimateAbilityCard(hero, gameState, battleState);
+        container.appendChild(card);
+    });
+}
+
+// ===========================
+// CREATE ULTIMATE ABILITY CARD
+// ===========================
+
+function createUltimateAbilityCard(hero, gameState, battleState) {
+    const card = document.createElement('div');
+    card.className = 'ultimate-ability-card';
+    
+    if (!hero.isAlive) {
+        card.classList.add('disabled');
+    } else if (hero.canUseUltimate()) {
+        card.classList.add('ready');
+    }
+    
+    // Hero name with element
+    const heroName = document.createElement('div');
+    heroName.className = 'ultimate-hero-name';
+    heroName.innerHTML = `
+        <span>${hero.name}</span>
+        <span>${getElementEmoji(hero.element)}</span>
+    `;
+    card.appendChild(heroName);
+    
+    // Ability name with icon
+    const abilityName = document.createElement('div');
+    abilityName.className = 'ultimate-ability-name';
+    abilityName.innerHTML = `
+        <span class="ultimate-ability-icon">${getClassIcon(hero.class)}</span>
+        <span>${hero.ultimate.name}</span>
+    `;
+    card.appendChild(abilityName);
+    
+    // Mana bar
+    const manaBar = document.createElement('div');
+    manaBar.className = 'ultimate-mana-bar';
+    
+    const manaFill = document.createElement('div');
+    manaFill.className = 'ultimate-mana-fill';
+    manaFill.style.width = `${hero.getManaPercent()}%`;
+    
+    manaBar.appendChild(manaFill);
+    card.appendChild(manaBar);
+    
+    // Mana text
+    const manaText = document.createElement('div');
+    manaText.style.cssText = 'text-align: center; margin-top: 0.25rem; font-size: 0.75rem; color: #94a3b8;';
+    manaText.textContent = `${hero.mana}/${hero.maxMana}`;
+    card.appendChild(manaText);
+    
+    // Ready badge
+    if (hero.canUseUltimate() && hero.isAlive) {
+        const badge = document.createElement('div');
+        badge.className = 'ultimate-ready-badge';
+        badge.textContent = 'READY!';
+        card.appendChild(badge);
+    }
+    
+    // Tooltip with fantasy description
+    const tooltip = document.createElement('div');
+    tooltip.className = 'ultimate-tooltip';
+    tooltip.innerHTML = `
+        <div style="font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">${hero.ultimate.name}</div>
+        <div style="margin-bottom: 0.5rem; font-style: italic;">${getFantasyDescription(hero)}</div>
+        <div style="color: #94a3b8; font-size: 0.75rem;">
+            ${hero.ultimate.desc}
+        </div>
+    `;
+    card.appendChild(tooltip);
+    
+    // Click handler
+    if (hero.canUseUltimate() && hero.isAlive && !gameState.autoCast) {
+        card.style.cursor = 'pointer';
+        card.onclick = () => {
+            if (currentBattleState) {
+                useHeroUltimate(hero, currentBattleState, gameState);
+                updateBattleUI(gameState, currentBattleState);
+            }
+        };
+    }
+    
+    return card;
+}
+
+// ===========================
+// GET CLASS ICON
+// ===========================
+
+function getClassIcon(heroClass) {
+    const icons = {
+        'Tank': '🛡️',
+        'Healer': '💚',
+        'DPS (Single)': '⚔️',
+        'DPS (AoE)': '💥',
+        'Buffer': '✨'
+    };
+    return icons[heroClass] || '⭐';
+}
+
+// ===========================
+// GET FANTASY DESCRIPTION
+// ===========================
+
+function getFantasyDescription(hero) {
+    const descriptions = {
+        'Tank': `${hero.name} channels ancient defensive magic, becoming an unbreakable bulwark against the forces of darkness.`,
+        'Healer': `Drawing upon the essence of life itself, ${hero.name} weaves restorative energy through the battlefield.`,
+        'DPS (Single)': `${hero.name} focuses their killing intent into a single devastating strike that can shatter mountains.`,
+        'DPS (AoE)': `With a mighty roar, ${hero.name} unleashes destructive power that engulfs all who dare oppose them.`,
+        'Buffer': `${hero.name}'s inspiring presence empowers allies with supernatural strength and unwavering resolve.`
+    };
+    return descriptions[hero.class] || `${hero.name} unleashes their ultimate technique!`;
 }
 
 // ===========================
