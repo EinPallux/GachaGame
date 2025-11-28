@@ -344,6 +344,21 @@ function handleWaveVictory(gameState, battleState) {
         foundSeed = randomSeed;
     }
     
+    // Petals & Orbs (RESTORED)
+    let petals = 0;
+    let orbs = 0;
+    const isBoss = (gameState.currentWave % 10 === 0);
+    
+    if (isBoss) {
+        petals = Math.floor(5 + gameState.currentWave/2);
+        orbs = Math.floor(2 + gameState.currentWave/5);
+    } else if (Math.random() < 0.15) { // 15% Chance on normal waves
+        petals = 1;
+        if (Math.random() < 0.05) orbs = 1; // Very rare orb on normal wave
+    }
+    gameState.petals += petals;
+    gameState.spiritOrbs += orbs;
+    
     if (gameState.currentWave > gameState.highestWave) {
         gameState.highestWave = gameState.currentWave;
     }
@@ -351,6 +366,8 @@ function handleWaveVictory(gameState, battleState) {
     gameState.updateQuest('killEnemies', battleState.enemies.length);
     
     let msg = `Cleared Wave ${gameState.currentWave}! +${baseGold} Gold.`;
+    if (petals > 0) msg += ` +${petals} 🌸`;
+    if (orbs > 0) msg += ` +${orbs} 🔮`;
     if (foundSeed) msg += ` Found ${foundSeed.name} 🌱!`;
     
     battleState.addLog(`🏆 VICTORY! ${msg}`, 'success');

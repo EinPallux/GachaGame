@@ -255,9 +255,9 @@ class Enemy {
         this.name = enemyData.name;
         this.element = enemyData.element;
         
-        // Scaling
-        const waveScale = 1 + (waveNumber - 1) * 0.05; 
-        const bossMultiplier = (waveNumber % 10 === 0) ? 1.5 : 1; 
+        // Scaling - NERFED BOSSES
+        const waveScale = 1 + (waveNumber - 1) * 0.035; // Lower wave scaling
+        const bossMultiplier = (waveNumber % 10 === 0) ? 1.2 : 1; // Nerfed from 1.5 to 1.2
         const totalScale = waveScale * bossMultiplier;
         
         this.maxHP = Math.floor(enemyData.baseStats.hp * totalScale);

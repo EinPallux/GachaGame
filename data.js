@@ -338,10 +338,10 @@ const ENEMIES_DATABASE = [
 
 const GARDEN_ITEMS_DATABASE = {
     seeds: [
-        { id: 's001', name: 'Sakura Seed', emoji: '🌸', growthTime: 15000, resultId: 't001', desc: 'Grows into a healing tea.' },
-        { id: 's002', name: 'Matcha Seed', emoji: '🍵', growthTime: 30000, resultId: 't002', desc: 'Grows into an energy boosting tea.' },
-        { id: 's003', name: 'Dragon Root Seed', emoji: '🐉', growthTime: 60000, resultId: 't003', desc: 'Grows into a power boosting brew.' },
-        { id: 's004', name: 'Spirit Herb Seed', emoji: '🌿', growthTime: 45000, resultId: 't004', desc: 'Grows into a mana restoring potion.' }
+        { id: 's001', name: 'Sakura Seed', emoji: '🌸', growthTime: 30000, resultId: 't001', desc: 'Grows into a healing tea.' }, // 30s
+        { id: 's002', name: 'Matcha Seed', emoji: '🍵', growthTime: 60000, resultId: 't002', desc: 'Grows into an energy boosting tea.' }, // 1m
+        { id: 's003', name: 'Dragon Root Seed', emoji: '🐉', growthTime: 300000, resultId: 't003', desc: 'Grows into a power boosting brew.' }, // 5m
+        { id: 's004', name: 'Spirit Herb Seed', emoji: '🌿', growthTime: 120000, resultId: 't004', desc: 'Grows into a mana restoring potion.' } // 2m
     ],
     teas: [
         { 

@@ -16,6 +16,7 @@ function updateUI(gameState) {
     const activeTab = document.querySelector('.tab-content.active');
     if (activeTab) {
         const tabId = activeTab.id;
+        if (tabId === 'battle-tab') renderTeamSelection(gameState); // FIXED: Render team on battle tab
         if (tabId === 'roster-tab') renderRoster(gameState);
         if (tabId === 'skill-tree-tab') renderSkillTree(gameState);
         if (tabId === 'expedition-tab') updateExpeditionUI(gameState);
@@ -250,7 +251,7 @@ function showHeroDetails(hero, gameState) {
     `;
     detailContainer.appendChild(stats);
     
-    // Awakening Section (RESTORED)
+    // Awakening
     const awakening = document.createElement('div');
     awakening.className = 'bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4';
     const shardsNeeded = hero.stars * 10;
@@ -599,6 +600,7 @@ function switchTab(tabName, gameState = null) {
     });
     
     if (gameState) {
+        if (tabName === 'battle') renderTeamSelection(gameState); // FIXED: Force render on switch
         if (tabName === 'roster') renderRoster(gameState);
         if (tabName === 'skill-tree') renderSkillTree(gameState);
         if (tabName === 'expedition') updateExpeditionUI(gameState);
