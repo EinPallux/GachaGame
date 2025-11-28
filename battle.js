@@ -22,7 +22,7 @@ class BattleState {
         this.isActive = true;
         this.turnCounter = 0;
         this.skillTreeBonuses = skillTreeBonuses;
-        this.combatLog = []; // New: Track combat events
+        this.combatLog = [];
         
         this.spawnEnemies();
     }
@@ -40,8 +40,7 @@ class BattleState {
         this.enemies = [];
         
         for (let i = 0; i < enemyCount; i++) {
-            // Determine Enemy Pool based on Wave
-            let poolRange = [0, 5]; // Default
+            let poolRange = [0, 5];
             if (this.waveNumber > 10) poolRange = [5, 10];
             if (this.waveNumber > 25) poolRange = [10, 15];
             if (this.waveNumber > 40) poolRange = [15, 20];
@@ -67,7 +66,7 @@ class BattleState {
 function startRun(gameState) {
     const team = gameState.getTeamHeroes();
     if (team.length === 0) {
-        showToast('Please select at least one hero in the Roster tab!', 'error');
+        showToast('Please add heroes to your team first!', 'error');
         return;
     }
     
@@ -75,7 +74,6 @@ function startRun(gameState) {
     gameState.enemiesDefeated = 0;
     gameState.isBattleActive = true;
     
-    // Switch UI to Active Mode
     renderBattleDashboard(gameState);
     startWave(gameState);
 }
@@ -95,7 +93,6 @@ function startWave(gameState) {
     
     updateBattleUI(gameState, currentBattleState);
     
-    // Start Game Loop (1 Turn per second)
     if (battleInterval) clearInterval(battleInterval);
     battleInterval = setInterval(() => {
         processBattleTurn(gameState, currentBattleState);
@@ -108,7 +105,7 @@ function stopBattle(gameState) {
         battleInterval = null;
     }
     gameState.isBattleActive = false;
-    renderBattleDashboard(gameState); // Re-render to show "Start Run" screen
+    renderBattleDashboard(gameState);
 }
 
 // ===========================
@@ -120,7 +117,6 @@ function processBattleTurn(gameState, battleState) {
     
     battleState.turnCounter++;
     
-    // 1. Check Win/Loss
     const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
     const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
     
@@ -134,39 +130,30 @@ function processBattleTurn(gameState, battleState) {
         return;
     }
     
-    // 2. Determine Turn Order (Speed based)
     const allUnits = [
         ...aliveHeroes.map(h => ({ unit: h, isHero: true })),
         ...aliveEnemies.map(e => ({ unit: e, isHero: false }))
     ].sort((a, b) => b.unit.spd - a.unit.spd);
     
-    // 3. Execute Actions
-    // Highlight active unit visually
     allUnits.forEach(({ unit, isHero }, index) => {
         setTimeout(() => {
             if (!unit.isAlive) return;
             
-            // Visual Turn Indicator would go here (adding a class)
-            
             if (isHero) {
-                // Auto-Cast Check
                 if (gameState.autoCast && unit.canUseUltimate()) {
                     useHeroUltimate(unit, battleState, gameState);
                 } else {
-                    // Normal Attack
                     const target = getRandomTarget(battleState.enemies);
                     if (target) performAttack(unit, target, battleState, true);
                 }
             } else {
-                // Enemy Attack
                 const target = getRandomTarget(battleState.heroes);
                 if (target) performAttack(unit, target, battleState, false);
             }
             
-            // Update UI after every specific action for smoothness
             updateBattleUI(gameState, battleState);
             
-        }, index * 200); // Stagger actions slightly for visual clarity
+        }, index * 200);
     });
 }
 
@@ -179,25 +166,21 @@ function getRandomTarget(units) {
 function performAttack(attacker, defender, battleState, isHero) {
     let damage = Math.max(1, attacker.atk - (defender.def * 0.5));
     
-    // Element Bonus
     if (attacker.element && defender.element) {
         const adv = ELEMENT_ADVANTAGE[attacker.element];
         if (adv && adv.strong === defender.element) damage *= 1.5;
         if (adv && adv.weak === defender.element) damage *= 0.75;
     }
     
-    // Crit
     const isCrit = Math.random() < 0.15;
     if (isCrit) damage *= 1.5;
     
     damage = Math.floor(damage);
     defender.takeDamage(damage);
     
-    // Mana Gen
     if (isHero) attacker.gainMana(15);
-    else defender.gainMana(10); // Enemies gain less mana usually
+    else defender.gainMana(10);
     
-    // Logs & Visuals
     const critText = isCrit ? ' CRIT!' : '';
     battleState.addLog(`${attacker.name} hit ${defender.name} for ${damage}${critText}`, isHero ? 'success' : 'warning');
     
@@ -213,9 +196,8 @@ function useHeroUltimate(hero, battleState, gameState) {
     
     hero.useUltimate();
     battleState.addLog(`${hero.name} cast ${hero.ultimate.name}!`, 'special');
-    showFloatingText(hero, 'ULTIMATE!', 'heal'); // Blue text
+    showFloatingText(hero, 'ULTIMATE!', 'heal');
     
-    // Simple Effect Logic
     const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
     const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
     
@@ -232,7 +214,6 @@ function useHeroUltimate(hero, battleState, gameState) {
             showFloatingText(e, `-${dmg}`, 'damage');
         });
     } else {
-        // Single Target Nuke
         const target = getRandomTarget(aliveEnemies);
         if (target) {
             const dmg = Math.floor(hero.atk * 3.5);
@@ -253,18 +234,14 @@ function renderBattleDashboard(gameState) {
     const container = document.getElementById('battle-tab');
     if (!container) return;
 
-    // SCENE 1: PRE-BATTLE (Team Selection)
     if (!gameState.isBattleActive) {
         renderPreBattleScreen(container, gameState);
         return;
     }
 
-    // SCENE 2: ACTIVE BATTLE DASHBOARD
-    // Only render the grid structure ONCE, then update contents
     if (!document.getElementById('battle-dashboard-grid')) {
         container.innerHTML = `
             <div id="battle-dashboard-grid" class="battle-dashboard animate-entry h-[calc(100vh-140px)] min-h-[500px]">
-                
                 <div class="flex flex-col gap-4">
                     <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
                         <h3 class="font-bold text-slate-700 text-sm mb-3 uppercase tracking-wider">Run Stats</h3>
@@ -321,7 +298,6 @@ function renderBattleDashboard(gameState) {
         `;
     }
     
-    // If grid exists, we just update via updateBattleUI
     if (currentBattleState) updateBattleUI(gameState, currentBattleState);
 }
 
@@ -340,10 +316,13 @@ function renderPreBattleScreen(container, gameState) {
             <div class="bg-white p-6 rounded-xl border border-slate-100 w-full mb-8 text-left">
                 <h3 class="font-bold text-slate-700 mb-4 flex justify-between">
                     <span>Current Team</span>
-                    <button class="text-sm text-primary hover:underline" onclick="switchView('roster')">Edit Team</button>
+                    <button class="text-sm text-primary hover:underline" onclick="switchView('roster')">View Roster</button>
                 </h3>
                 <div class="flex justify-between gap-2" id="pre-battle-team">
                     ${renderTeamPreview(gameState)}
+                </div>
+                <div class="mt-4 text-xs text-slate-400 text-center">
+                    Click a slot to add or remove a hero.
                 </div>
             </div>
             
@@ -360,17 +339,26 @@ function renderTeamPreview(gameState) {
         const heroId = gameState.team[i];
         const hero = heroId ? gameState.roster.find(h => h.id === heroId) : null;
         
+        // Use createHeroPlaceholder from ui.js logic (simplified string)
+        const placeholder = hero ? createHeroPlaceholder(hero) : '';
+        
+        const commonClasses = "w-16 h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-primary transition-colors relative shadow-sm";
+        
         if (hero) {
             html += `
-                <div class="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden border border-slate-200 relative">
-                    <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.style.display='none'">
-                    <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[10px] text-center font-bold truncate px-1">
+                <div class="${commonClasses} bg-slate-100 border-slate-200" onclick="showHeroSelectionModal(${i}, window.gameState)">
+                    <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='${placeholder}'">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] text-center font-bold truncate px-1">
                         Lv.${hero.level}
                     </div>
                 </div>
             `;
         } else {
-            html += `<div class="w-16 h-16 rounded-lg bg-slate-50 border border-dashed border-slate-300 flex items-center justify-center text-slate-300"><i class="fa-solid fa-plus"></i></div>`;
+            html += `
+                <div class="${commonClasses} bg-slate-50 border-dashed border-slate-300 flex items-center justify-center text-slate-300 hover:text-primary hover:bg-slate-100" onclick="showHeroSelectionModal(${i}, window.gameState)">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+            `;
         }
     }
     return html;
@@ -379,11 +367,9 @@ function renderTeamPreview(gameState) {
 function updateBattleUI(gameState, battleState) {
     if (!document.getElementById('battle-dashboard-grid')) return;
 
-    // Update Stats
     document.getElementById('dash-wave').textContent = gameState.currentWave;
     document.getElementById('dash-kills').textContent = gameState.enemiesDefeated;
     
-    // Update Log
     const logContainer = document.getElementById('combat-log');
     logContainer.innerHTML = battleState.combatLog.map(log => 
         `<div class="${log.type === 'info' ? 'text-blue-500 font-bold' : log.type === 'success' ? 'text-green-600' : log.type === 'warning' ? 'text-orange-500' : 'text-slate-500'}">
@@ -391,17 +377,11 @@ function updateBattleUI(gameState, battleState) {
         </div>`
     ).join('');
 
-    // Render Arenas
-    const heroContainer = document.getElementById('arena-heroes');
-    const enemyContainer = document.getElementById('arena-enemies');
+    renderUnits(document.getElementById('arena-heroes'), battleState.heroes, true);
+    renderUnits(document.getElementById('arena-enemies'), battleState.enemies, false);
     
-    renderUnits(heroContainer, battleState.heroes, true);
-    renderUnits(enemyContainer, battleState.enemies, false);
-    
-    // Render Ultimates
-    const ultContainer = document.getElementById('ultimates-list');
-    ultContainer.innerHTML = battleState.heroes.map(hero => {
-        if (!hero.isAlive) return ''; // Hide dead
+    document.getElementById('ultimates-list').innerHTML = battleState.heroes.map(hero => {
+        if (!hero.isAlive) return '';
         const canCast = hero.canUseUltimate();
         const pct = hero.getManaPercent();
         
@@ -421,14 +401,10 @@ function updateBattleUI(gameState, battleState) {
 }
 
 function renderUnits(container, units, isHero) {
-    // We diff the DOM to avoid destroying animations (simple id check)
-    // For this prototype, full re-render is fine but we keep the element IDs stable if possible
-    
     container.innerHTML = '';
     
     units.forEach(unit => {
         const div = document.createElement('div');
-        div.id = `unit-${isHero ? unit.id : unit.name}-${isHero ? 'h' : 'e'}`; // pseudo-stable ID
         div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy'} ${!unit.isAlive ? 'dead' : ''} w-24 flex-shrink-0 flex flex-col items-center`;
         div.innerHTML = `
             <div class="w-16 h-16 rounded-lg shadow-sm border border-slate-200 relative overflow-hidden bg-white mb-2">
@@ -448,25 +424,14 @@ function renderUnits(container, units, isHero) {
             </div>
             <div class="text-[10px] font-bold text-slate-600 mt-1 truncate w-full text-center">${unit.name}</div>
         `;
-        
-        // Floating Text Container attachment point
         div.style.position = 'relative';
         container.appendChild(div);
     });
 }
 
 function showFloatingText(unit, text, type) {
-    // Find the DOM element for this unit
-    // Since we re-render often, this is tricky. 
-    // Hack: We append to the dashboard container and position absolutely based on rects
-    
-    // For simplicity in this text-based env, we assume the unit was just rendered.
-    // In a real app, we'd use a stable ID system.
-    
-    // Finding the unit in the DOM based on name (Weak, but works for prototype)
     const domUnits = document.querySelectorAll('.battle-unit');
     let targetEl = null;
-    
     domUnits.forEach(el => {
         if (el.textContent.includes(unit.name)) targetEl = el;
     });
@@ -476,33 +441,24 @@ function showFloatingText(unit, text, type) {
     const floater = document.createElement('div');
     floater.className = `damage-number ${type === 'crit' ? 'text-red-600 text-2xl' : type === 'heal' ? 'text-green-500' : 'text-slate-800'}`;
     floater.textContent = text;
-    
     targetEl.appendChild(floater);
-    
     setTimeout(() => floater.remove(), 800);
 }
-
-// ===========================
-// WAVE MANAGEMENT
-// ===========================
 
 function handleWaveVictory(gameState, battleState) {
     if (battleInterval) clearInterval(battleInterval);
     battleState.isActive = false;
     
-    // Rewards
     const gold = 50 + (gameState.currentWave * 10);
     gameState.gold += gold;
     gameState.enemiesDefeated += battleState.enemies.length;
     
-    // Next Wave
     gameState.currentWave++;
     if (gameState.currentWave > gameState.highestWave) gameState.highestWave = gameState.currentWave;
     
     showToast(`Wave Cleared! +${gold} Gold`, 'success');
     saveGame(gameState);
     
-    // Auto-continue after 2 seconds
     setTimeout(() => {
         startWave(gameState);
     }, 2000);
@@ -511,8 +467,6 @@ function handleWaveVictory(gameState, battleState) {
 function handleRunDefeat(gameState, battleState) {
     stopBattle(gameState);
     showToast(`Run Ended at Wave ${gameState.currentWave}`, 'error');
-    
-    // Reset HP
     gameState.roster.forEach(h => h.resetForBattle());
     saveGame(gameState);
 }

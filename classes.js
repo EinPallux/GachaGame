@@ -304,11 +304,11 @@ class GameState {
         
         // Currencies
         this.gold = 500;
-        this.petals = 100; // Start with 100 Petals (1x 10-Pull)
+        this.petals = 100;
         this.spiritOrbs = 0;
         
         // Progression
-        this.roster = []; // Start with 0 Heroes
+        this.roster = [];
         this.team = [null, null, null, null, null];
         
         this.inventory = {
@@ -364,6 +364,13 @@ class GameState {
         return this.team
             .map(id => this.roster.find(h => h.id === id))
             .filter(h => h !== undefined);
+    }
+    
+    // ADDED THIS FUNCTION
+    setTeamMember(slotIndex, heroId) {
+        if (slotIndex >= 0 && slotIndex < 5) {
+            this.team[slotIndex] = heroId;
+        }
     }
     
     // Inventory

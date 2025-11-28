@@ -37,6 +37,94 @@ function updateCurrencyDisplay(gameState) {
 }
 
 // ===========================
+// TEAM SELECTION (NEW)
+// ===========================
+
+function showHeroSelectionModal(slotIndex, gameState) {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+    
+    // Filter out heroes already in other slots to prevent duplicates
+    // (Optional: You can allow duplicates if your game supports it, but usually not)
+    // For now, we will just visually dim them.
+    
+    let html = `
+        <div class="bg-slate-50 p-6 min-h-[500px]">
+            <h3 class="text-xl font-heading font-bold text-slate-800 mb-4">Select Hero for Slot ${slotIndex + 1}</h3>
+            
+            <div class="grid grid-cols-3 md:grid-cols-4 gap-3">
+                <div class="hero-card border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center cursor-pointer hover:bg-slate-200 aspect-[3/4] rounded-xl"
+                     onclick="selectHeroForSlot(${slotIndex}, null)">
+                    <div class="text-center text-slate-400">
+                        <i class="fa-solid fa-xmark text-2xl mb-1"></i>
+                        <div class="text-xs font-bold">Empty</div>
+                    </div>
+                </div>
+                
+                ${generateSelectionGrid(gameState, slotIndex)}
+            </div>
+        </div>
+    `;
+    
+    modalBody.innerHTML = html;
+    
+    // Show Modal
+    const modal = document.getElementById('modal-overlay');
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => modal.classList.remove('opacity-0', 'pointer-events-none'));
+}
+
+function generateSelectionGrid(gameState, currentSlotIndex) {
+    // Sort heroes by power
+    const sortedHeroes = [...gameState.roster].sort((a, b) => b.getPower() - a.getPower());
+    
+    return sortedHeroes.map(hero => {
+        // Check if hero is already in another slot
+        const assignedSlot = gameState.team.indexOf(hero.id);
+        const isAssigned = assignedSlot !== -1 && assignedSlot !== currentSlotIndex;
+        
+        // If assigned, disable click or show visual indicator
+        const opacityClass = isAssigned ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer hover:scale-105';
+        const clickAction = isAssigned ? '' : `onclick="selectHeroForSlot(${currentSlotIndex}, '${hero.id}')"`;
+        
+        return `
+            <div class="hero-card relative transition-transform duration-200 ${opacityClass}" ${clickAction}>
+                <div class="aspect-[3/4] rounded-xl overflow-hidden relative">
+                    <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='${createHeroPlaceholder(hero)}'">
+                    
+                    <div class="absolute top-1 right-1 badge-${hero.rarity} text-[10px] text-white px-1.5 rounded shadow">${hero.rarity}</div>
+                    
+                    ${isAssigned ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-xs">IN TEAM</div>' : ''}
+                </div>
+                <div class="text-center mt-1">
+                    <div class="text-xs font-bold text-slate-700 truncate">${hero.name}</div>
+                    <div class="text-[10px] text-slate-500">Lv.${hero.level}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Global handler for selection
+window.selectHeroForSlot = function(slotIndex, heroId) {
+    // 1. Update State
+    window.gameState.setTeamMember(slotIndex, heroId);
+    
+    // 2. Save
+    saveGame(window.gameState);
+    
+    // 3. Update UI
+    // We need to refresh the battle dashboard specifically
+    if (typeof renderBattleDashboard === 'function') {
+        renderBattleDashboard(window.gameState);
+    }
+    
+    // 4. Close Modal
+    closeModal();
+    showNotification(heroId ? 'Hero assigned!' : 'Slot cleared.', 'success');
+};
+
+// ===========================
 // ROSTER TAB
 // ===========================
 
