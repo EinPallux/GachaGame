@@ -509,3 +509,80 @@ html {
     from { opacity: 0; transform: translateX(20px); }
     to { opacity: 1; transform: translateX(0); }
 }
+
+/* =========================================
+   GACHA ANIMATION UPGRADES
+   ========================================= */
+
+/* 1. The Shrine Shake (Charging Up) */
+@keyframes violent-shake {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(-2px, 2px) rotate(-1deg); }
+    50% { transform: translate(2px, -2px) rotate(1deg); }
+    75% { transform: translate(-2px, -2px) rotate(-1deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.animate-shake-charging {
+    animation: violent-shake 0.1s infinite;
+}
+
+/* 2. The Beam Expansion (Shooting to the sky) */
+@keyframes beam-expand-epic {
+    0% { height: 0%; opacity: 0; width: 10px; }
+    10% { height: 100%; opacity: 1; width: 20px; }
+    50% { opacity: 1; width: 150px; filter: brightness(2); }
+    100% { height: 100%; opacity: 0; width: 1000px; }
+}
+
+/* 3. The Screen Flash (The Transition) */
+@keyframes screen-flash-white {
+    0% { opacity: 0; }
+    50% { opacity: 1; background: white; }
+    100% { opacity: 0; }
+}
+
+/* 4. Rarity Specific Beam/Flash Colors */
+.gacha-beam {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0px;
+    height: 0%;
+    z-index: 20;
+    pointer-events: none;
+}
+
+.beam-N { background: linear-gradient(to top, #10B981, white); box-shadow: 0 0 50px #10B981; }
+.beam-R { background: linear-gradient(to top, #3B82F6, white); box-shadow: 0 0 50px #3B82F6; }
+.beam-SR { background: linear-gradient(to top, #8B5CF6, white); box-shadow: 0 0 50px #8B5CF6; }
+.beam-SSR { background: linear-gradient(to top, #F59E0B, #FEF3C7); box-shadow: 0 0 80px #F59E0B; }
+
+/* UR gets a special animated rainbow beam */
+.beam-UR { 
+    background: linear-gradient(to top, #ec4899, #8b5cf6, #3b82f6, #10b981, #f59e0b); 
+    box-shadow: 0 0 100px rgba(255, 255, 255, 0.8);
+    filter: hue-rotate(0deg);
+    animation: hue-cycle 1s infinite linear;
+}
+
+@keyframes hue-cycle {
+    from { filter: hue-rotate(0deg); }
+    to { filter: hue-rotate(360deg); }
+}
+
+/* 5. Particle Effects (Orbs rising) */
+@keyframes float-up-fast {
+    0% { transform: translateY(0) scale(1); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(-400px) scale(0); opacity: 0; }
+}
+
+.gacha-particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: float-up-fast 1.5s ease-out forwards;
+    background: white;
+    box-shadow: 0 0 10px white;
+}

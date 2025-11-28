@@ -158,46 +158,35 @@ function playSummonAnimation(results) {
     
     if (!modal || !modalBody) return;
 
-    // Determine highest rarity for light color & Text
+    // 1. Determine Visuals based on Highest Rarity
     const highestRarity = results.some(r => r.rarity === 'UR') ? 'UR' : 
                           results.some(r => r.rarity === 'SSR') ? 'SSR' : 
-                          results.some(r => r.rarity === 'SR') ? 'SR' : 'N';
+                          results.some(r => r.rarity === 'SR') ? 'SR' : 
+                          results.some(r => r.rarity === 'R') ? 'R' : 'N';
     
-    let beamColor = 'from-blue-400 to-cyan-300';
-    let flavorText = "Summoning...";
-    let flavorColor = "text-white";
-
-    if (highestRarity === 'UR') {
-        beamColor = 'from-pink-500 via-purple-500 to-indigo-500';
-        flavorText = "🌈 LEGENDARY SIGNAL DETECTED!";
-        flavorColor = "text-pink-300";
-    } else if (highestRarity === 'SSR') {
-        beamColor = 'from-amber-400 via-orange-500 to-yellow-300';
-        flavorText = "✨ Golden Aura Felt!";
-        flavorColor = "text-amber-300";
-    } else if (highestRarity === 'SR') {
-        beamColor = 'from-purple-400 to-indigo-400';
-        flavorText = "Rare Energy Gathering...";
-        flavorColor = "text-purple-300";
-    }
-
-    // 1. Play Animation
+    // 2. Prepare the Stage (Initial Dark State)
     modalBody.innerHTML = `
-        <div class="h-[500px] flex items-center justify-center bg-slate-900 relative overflow-hidden">
+        <div class="h-[500px] flex items-center justify-center bg-slate-900 relative overflow-hidden select-none" id="gacha-stage">
             <div class="absolute inset-0 bg-[url('/images/summon-bg.jpg')] bg-cover opacity-20"></div>
-            
-            <div class="gacha-shrine z-10 flex flex-col items-center gap-8">
-                <div class="shrine-door border-4 border-white/20 bg-slate-800 w-32 h-48 relative flex items-center justify-center overflow-hidden shadow-2xl">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                    <i class="fa-solid fa-torii-gate text-6xl text-white/30"></i>
-                    
-                    <div class="absolute inset-0 bg-gradient-to-t ${beamColor} opacity-0 animate-[lightBeam_2s_ease-out_forwards]"></div>
+            <div class="absolute inset-0 bg-black/40 z-0"></div>
+
+            <div id="gacha-particles" class="absolute inset-0 z-10 pointer-events-none"></div>
+
+            <div id="shrine-gate" class="relative z-20 flex flex-col items-center justify-end mt-20 transition-transform duration-100">
+                <div class="shrine-structure w-48 h-64 border-4 border-slate-600 bg-slate-800 relative flex items-center justify-center shadow-2xl overflow-hidden rounded-t-lg">
+                     <div class="absolute inset-0 opacity-30 flex flex-col items-center justify-center gap-4">
+                        <div class="w-full h-1 bg-slate-500"></div>
+                        <div class="w-full h-1 bg-slate-500"></div>
+                        <div class="w-full h-1 bg-slate-500"></div>
+                     </div>
+                     <i class="fa-solid fa-torii-gate text-8xl text-slate-700/50"></i>
+                     
+                     <div id="summon-beam" class="gacha-beam beam-${highestRarity}"></div>
                 </div>
-                
-                <div class="text-center animate-bounce">
-                    <div class="${flavorColor} font-bold tracking-widest text-lg drop-shadow-lg">${flavorText}</div>
-                </div>
+                <div class="w-64 h-4 bg-slate-700 rounded-full mt-[-2px] shadow-lg"></div>
             </div>
+
+            <div id="gacha-flash" class="absolute inset-0 bg-white opacity-0 z-50 pointer-events-none"></div>
         </div>
     `;
 
@@ -205,11 +194,68 @@ function playSummonAnimation(results) {
     modal.classList.remove('hidden');
     modalContent.classList.remove('scale-95'); 
     requestAnimationFrame(() => modal.classList.remove('opacity-0', 'pointer-events-none'));
+    
+    // Hide Close button during animation to prevent breaking immersion
+    const closeBtn = document.querySelector('.modal-close-btn');
+    if(closeBtn) closeBtn.style.display = 'none';
 
-    // 2. Show Results after delay
+    // === TIMELINE OF EVENTS ===
+
+    // Phase 1: Charging (0s - 2.0s)
+    const shrine = document.getElementById('shrine-gate');
+    const particles = document.getElementById('gacha-particles');
+    
+    // Start shaking after a moment
+    setTimeout(() => {
+        if(shrine) shrine.classList.add('animate-shake-charging');
+        spawnChargingParticles(particles);
+    }, 500);
+
+    // Phase 2: The Beam (2.0s - 3.5s)
+    setTimeout(() => {
+        // Trigger Beam
+        const beam = document.getElementById('summon-beam');
+        if(beam) {
+            beam.style.animation = "beam-expand-epic 2s ease-in forwards";
+        }
+    }, 2000);
+
+    // Phase 3: The Flash (3.5s - 4.5s)
+    setTimeout(() => {
+        const flash = document.getElementById('gacha-flash');
+        if(!flash) return;
+
+        // Color the flash based on rarity
+        if (highestRarity === 'UR') flash.style.background = "linear-gradient(45deg, #ec4899, #8b5cf6, #f59e0b)";
+        else if (highestRarity === 'SSR') flash.style.background = "#FEF3C7"; // Light Gold
+        else flash.style.background = "white";
+
+        flash.style.animation = "screen-flash-white 0.8s ease-out forwards";
+    }, 3500);
+
+    // Phase 4: Reveal Results (4.2s)
     setTimeout(() => {
         showGachaResults(results);
-    }, 2500);
+        if(closeBtn) closeBtn.style.display = 'flex'; // Restore close button
+    }, 4200);
+}
+
+// Helper to spawn little dots rising up during charge phase
+function spawnChargingParticles(container) {
+    if (!container) return;
+    const count = 30;
+    for(let i=0; i<count; i++) {
+        setTimeout(() => {
+            const p = document.createElement('div');
+            p.className = 'gacha-particle';
+            const size = Math.random() * 6 + 2;
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = `${20 + Math.random() * 60}%`; // Keep center
+            p.style.bottom = '100px';
+            container.appendChild(p);
+        }, Math.random() * 1500);
+    }
 }
 
 function showGachaResults(results) {
@@ -248,7 +294,7 @@ function showGachaResults(results) {
         img.src = `/images/${r.hero.id}.jpg`;
         img.className = 'w-full h-full object-cover transition-transform duration-500 group-hover:scale-110';
         img.onerror = () => {
-            // Placeholder logic logic from ui.js
+            // Placeholder logic from ui.js
             const div = document.createElement('div');
             const colors = {
                 'Fire': 'from-red-400 to-orange-500', 'Water': 'from-blue-400 to-cyan-500',
@@ -280,7 +326,7 @@ function showGachaResults(results) {
             topBadgeContainer.appendChild(shardBadge);
         }
 
-        // Rarity Badge (Requested)
+        // Rarity Badge
         const rarityBadge = document.createElement('span');
         rarityBadge.className = `badge-${r.rarity} text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow ml-auto`;
         rarityBadge.textContent = r.rarity;
