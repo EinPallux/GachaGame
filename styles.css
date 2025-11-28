@@ -506,6 +506,69 @@ body {
     filter: grayscale(100%);
 }
 
+/* Battle Units Grid - Compact Layout */
+.battle-units-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+    max-width: 100%;
+}
+
+@media (max-width: 768px) {
+    .battle-units-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+}
+
+/* Make battle cards more compact */
+.battle-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(255, 183, 197, 0.2);
+}
+
+.battle-card-placeholder {
+    font-size: 1.5rem !important;
+}
+
+.battle-card-name {
+    padding: 0.4rem !important;
+    font-size: 0.7rem !important;
+}
+
+.battle-card-level-badge {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.6rem !important;
+}
+
+.battle-card-stats {
+    bottom: 60px !important;
+    padding: 0.2rem !important;
+}
+
+.battle-stat {
+    font-size: 0.65rem !important;
+}
+
+.battle-card-bars {
+    padding: 0.4rem !important;
+}
+
+.battle-bar-text {
+    font-size: 0.6rem !important;
+    margin-bottom: 0.1rem !important;
+}
+
+.hp-bar {
+    height: 5px !important;
+    margin-bottom: 0.2rem !important;
+}
+
+.mana-bar {
+    height: 4px !important;
+    margin-top: 0.1rem !important;
+}
+
 /* ===========================
    BATTLE PAGE - LIGHT MODE
    =========================== */
@@ -695,14 +758,14 @@ body {
 }
 
 .battle-field-light {
-    padding: 2rem;
+    padding: 1.5rem;
     background: 
         radial-gradient(circle at 20% 50%, rgba(255, 183, 197, 0.08) 0%, transparent 50%),
         radial-gradient(circle at 80% 50%, rgba(251, 191, 36, 0.08) 0%, transparent 50%);
 }
 
 .battle-section-light {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .section-label-light {
@@ -725,11 +788,11 @@ body {
 
 .battle-divider-light {
     position: relative;
-    height: 60px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 2rem 0;
+    margin: 1.5rem 0;
 }
 
 .battle-divider-light::before {
@@ -748,8 +811,8 @@ body {
 .vs-circle-light {
     position: relative;
     z-index: 10;
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     background: linear-gradient(135deg, #ef4444, #dc2626);
     border-radius: 50%;
     display: flex;
@@ -772,7 +835,7 @@ body {
 }
 
 .vs-text-light {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 900;
     color: white;
     letter-spacing: 2px;
