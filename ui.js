@@ -37,72 +37,114 @@ function updateCurrencyDisplay(gameState) {
 }
 
 // ===========================
-// TEAM SELECTION (NEW)
+// TEAM SELECTION (NEW & FIXED)
 // ===========================
 
 function showHeroSelectionModal(slotIndex, gameState) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
     
-    // Filter out heroes already in other slots to prevent duplicates
-    // (Optional: You can allow duplicates if your game supports it, but usually not)
-    // For now, we will just visually dim them.
-    
-    let html = `
-        <div class="bg-slate-50 p-6 min-h-[500px]">
-            <h3 class="text-xl font-heading font-bold text-slate-800 mb-4">Select Hero for Slot ${slotIndex + 1}</h3>
-            
-            <div class="grid grid-cols-3 md:grid-cols-4 gap-3">
-                <div class="hero-card border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center cursor-pointer hover:bg-slate-200 aspect-[3/4] rounded-xl"
-                     onclick="selectHeroForSlot(${slotIndex}, null)">
-                    <div class="text-center text-slate-400">
-                        <i class="fa-solid fa-xmark text-2xl mb-1"></i>
-                        <div class="text-xs font-bold">Empty</div>
-                    </div>
-                </div>
-                
-                ${generateSelectionGrid(gameState, slotIndex)}
-            </div>
+    modalBody.innerHTML = ''; // Clear content
+
+    // Container
+    const container = document.createElement('div');
+    container.className = 'bg-slate-50 p-6 min-h-[500px]';
+
+    // Header
+    const header = document.createElement('h3');
+    header.className = 'text-xl font-heading font-bold text-slate-800 mb-4';
+    header.textContent = `Select Hero for Slot ${slotIndex + 1}`;
+    container.appendChild(header);
+
+    // Grid
+    const grid = document.createElement('div');
+    grid.className = 'grid grid-cols-3 md:grid-cols-4 gap-3';
+
+    // "Clear Slot" Option
+    const clearCard = document.createElement('div');
+    clearCard.className = 'hero-card border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center cursor-pointer hover:bg-slate-200 aspect-[3/4] rounded-xl';
+    clearCard.innerHTML = `
+        <div class="text-center text-slate-400">
+            <i class="fa-solid fa-xmark text-2xl mb-1"></i>
+            <div class="text-xs font-bold">Empty</div>
         </div>
     `;
-    
-    modalBody.innerHTML = html;
+    clearCard.onclick = () => selectHeroForSlot(slotIndex, null);
+    grid.appendChild(clearCard);
+
+    // Hero List
+    const sortedHeroes = [...gameState.roster].sort((a, b) => b.getPower() - a.getPower());
+
+    sortedHeroes.forEach(hero => {
+        // Check if hero is already in another slot
+        const assignedSlot = gameState.team.indexOf(hero.id);
+        const isAssigned = assignedSlot !== -1 && assignedSlot !== slotIndex;
+
+        // Card Wrapper
+        const card = document.createElement('div');
+        card.className = `hero-card relative transition-transform duration-200 ${isAssigned ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`;
+        
+        if (!isAssigned) {
+            card.onclick = () => selectHeroForSlot(slotIndex, hero.id);
+        }
+
+        // Image Container
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'aspect-[3/4] rounded-xl overflow-hidden relative';
+
+        const img = document.createElement('img');
+        img.src = `/images/${hero.id}.jpg`;
+        img.className = 'w-full h-full object-cover';
+        
+        // Error Handler
+        img.onerror = () => {
+            const div = document.createElement('div');
+            const colors = {
+                'Fire': 'from-red-400 to-orange-500', 'Water': 'from-blue-400 to-cyan-500',
+                'Wind': 'from-emerald-400 to-teal-500', 'Light': 'from-yellow-300 to-amber-500',
+                'Dark': 'from-purple-500 to-indigo-600'
+            };
+            const gradient = colors[hero.element] || 'from-slate-400 to-slate-600';
+            div.className = `w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90`;
+            div.textContent = hero.name.substring(0, 2).toUpperCase();
+            img.replaceWith(div);
+        };
+        imgContainer.appendChild(img);
+
+        // Badges
+        const badge = document.createElement('div');
+        badge.className = `absolute top-1 right-1 badge-${hero.rarity} text-[10px] text-white px-1.5 rounded shadow`;
+        badge.textContent = hero.rarity;
+        imgContainer.appendChild(badge);
+
+        if (isAssigned) {
+            const overlay = document.createElement('div');
+            overlay.className = 'absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-xs';
+            overlay.textContent = 'IN TEAM';
+            imgContainer.appendChild(overlay);
+        }
+
+        card.appendChild(imgContainer);
+
+        // Info
+        const info = document.createElement('div');
+        info.className = 'text-center mt-1';
+        info.innerHTML = `
+            <div class="text-xs font-bold text-slate-700 truncate">${hero.name}</div>
+            <div class="text-[10px] text-slate-500">Lv.${hero.level}</div>
+        `;
+        card.appendChild(info);
+
+        grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+    modalBody.appendChild(container);
     
     // Show Modal
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden');
     requestAnimationFrame(() => modal.classList.remove('opacity-0', 'pointer-events-none'));
-}
-
-function generateSelectionGrid(gameState, currentSlotIndex) {
-    // Sort heroes by power
-    const sortedHeroes = [...gameState.roster].sort((a, b) => b.getPower() - a.getPower());
-    
-    return sortedHeroes.map(hero => {
-        // Check if hero is already in another slot
-        const assignedSlot = gameState.team.indexOf(hero.id);
-        const isAssigned = assignedSlot !== -1 && assignedSlot !== currentSlotIndex;
-        
-        // If assigned, disable click or show visual indicator
-        const opacityClass = isAssigned ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer hover:scale-105';
-        const clickAction = isAssigned ? '' : `onclick="selectHeroForSlot(${currentSlotIndex}, '${hero.id}')"`;
-        
-        return `
-            <div class="hero-card relative transition-transform duration-200 ${opacityClass}" ${clickAction}>
-                <div class="aspect-[3/4] rounded-xl overflow-hidden relative">
-                    <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='${createHeroPlaceholder(hero)}'">
-                    
-                    <div class="absolute top-1 right-1 badge-${hero.rarity} text-[10px] text-white px-1.5 rounded shadow">${hero.rarity}</div>
-                    
-                    ${isAssigned ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-xs">IN TEAM</div>' : ''}
-                </div>
-                <div class="text-center mt-1">
-                    <div class="text-xs font-bold text-slate-700 truncate">${hero.name}</div>
-                    <div class="text-[10px] text-slate-500">Lv.${hero.level}</div>
-                </div>
-            </div>
-        `;
-    }).join('');
 }
 
 // Global handler for selection
@@ -125,7 +167,7 @@ window.selectHeroForSlot = function(slotIndex, heroId) {
 };
 
 // ===========================
-// ROSTER TAB
+// ROSTER TAB (Unchanged but included for completeness)
 // ===========================
 
 function renderRoster(gameState) {
@@ -260,8 +302,6 @@ function createHeroCard(hero) {
 
 function createHeroPlaceholderElement(hero) {
     const div = document.createElement('div');
-    
-    // Generate a beautiful gradient placeholder
     const colors = {
         'Fire': 'from-red-400 to-orange-500',
         'Water': 'from-blue-400 to-cyan-500',
@@ -270,13 +310,12 @@ function createHeroPlaceholderElement(hero) {
         'Dark': 'from-purple-500 to-indigo-600'
     };
     const gradient = colors[hero.element] || 'from-slate-400 to-slate-600';
-    
     div.className = `w-full aspect-[3/4] bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90 transition-transform duration-500 group-hover:scale-110`;
     div.textContent = hero.name.substring(0, 2).toUpperCase();
-    
     return div;
 }
 
+// Retaining string version for non-DOM contexts if needed
 function createHeroPlaceholder(hero) {
     const colors = {
         'Fire': 'from-red-400 to-orange-500',

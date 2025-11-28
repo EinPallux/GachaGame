@@ -84,7 +84,7 @@ function handleGachaPull(count) {
     gameState.petals -= cost;
     updateCurrencyDisplay(gameState);
 
-    // Perform Pulls (Logic from original gacha.js, simplified)
+    // Perform Pulls
     const results = performPullLogic(count);
     
     // Save Game
@@ -198,34 +198,103 @@ function playSummonAnimation(results) {
 
 function showGachaResults(results) {
     const modalBody = document.getElementById('modal-body');
-    
-    let gridHtml = results.map(r => `
-        <div class="flex flex-col items-center animate-entry">
-            <div class="hero-card w-full aspect-[3/4] mb-2 relative group" data-rarity="${r.rarity}">
-                <img src="/images/${r.hero.id}.jpg" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='${createHeroPlaceholder(r.hero)}'">
-                ${r.isNew ? '<div class="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm animate-bounce">NEW!</div>' : ''}
-                <div class="absolute bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent p-2">
-                    <div class="text-white text-xs font-bold truncate">${r.hero.name}</div>
-                    <div class="text-white/80 text-[10px]">${r.hero.class}</div>
-                </div>
-            </div>
-            ${!r.isNew ? `<div class="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">+${r.shards} Shards</div>` : ''}
-        </div>
-    `).join('');
+    modalBody.innerHTML = ''; // Clear existing content
 
-    modalBody.innerHTML = `
-        <div class="bg-slate-50 p-6 text-center">
-            <h3 class="text-2xl font-heading font-bold text-slate-800 mb-6">Summoning Results</h3>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                ${gridHtml}
-            </div>
-            <button class="btn btn-primary w-full md:w-auto px-8" onclick="closeModal(); renderGacha(gameState); updateUI(gameState);">
-                Continue
-            </button>
-        </div>
-    `;
-    
-    // Refresh the Roster grid in background if it's visible
+    // Main Container
+    const container = document.createElement('div');
+    container.className = 'bg-slate-50 p-6 text-center';
+
+    // Title
+    const title = document.createElement('h3');
+    title.className = 'text-2xl font-heading font-bold text-slate-800 mb-6';
+    title.textContent = 'Summoning Results';
+    container.appendChild(title);
+
+    // Grid
+    const grid = document.createElement('div');
+    grid.className = 'grid grid-cols-2 md:grid-cols-5 gap-4 mb-8';
+
+    results.forEach((r, index) => {
+        // Wrapper for animation
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex flex-col items-center animate-entry';
+        wrapper.style.animationDelay = `${index * 0.1}s`;
+
+        // Card Container
+        const card = document.createElement('div');
+        card.className = 'hero-card w-full aspect-[3/4] mb-2 relative group rounded-xl overflow-hidden shadow-sm bg-white';
+        card.setAttribute('data-rarity', r.rarity);
+
+        // Image Container with Error Handling
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'absolute inset-0';
+        
+        const img = document.createElement('img');
+        img.src = `/images/${r.hero.id}.jpg`;
+        img.className = 'w-full h-full object-cover transition-transform duration-500 group-hover:scale-110';
+        
+        // Define Placeholder logic locally to avoid dependency race conditions
+        img.onerror = () => {
+            const div = document.createElement('div');
+            const colors = {
+                'Fire': 'from-red-400 to-orange-500', 'Water': 'from-blue-400 to-cyan-500',
+                'Wind': 'from-emerald-400 to-teal-500', 'Light': 'from-yellow-300 to-amber-500',
+                'Dark': 'from-purple-500 to-indigo-600'
+            };
+            const gradient = colors[r.hero.element] || 'from-slate-400 to-slate-600';
+            div.className = `w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90`;
+            div.textContent = r.hero.name.substring(0, 2).toUpperCase();
+            img.replaceWith(div);
+        };
+        imgContainer.appendChild(img);
+        card.appendChild(imgContainer);
+
+        // "NEW" Badge
+        if (r.isNew) {
+            const badge = document.createElement('div');
+            badge.className = 'absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm animate-bounce';
+            badge.textContent = 'NEW!';
+            card.appendChild(badge);
+        }
+
+        // Info Overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'absolute bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent p-2';
+        overlay.innerHTML = `
+            <div class="text-white text-xs font-bold truncate">${r.hero.name}</div>
+            <div class="text-white/80 text-[10px]">${r.hero.class}</div>
+        `;
+        card.appendChild(overlay);
+
+        wrapper.appendChild(card);
+
+        // Shards Label
+        if (!r.isNew) {
+            const shards = document.createElement('div');
+            shards.className = 'text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100';
+            shards.textContent = `+${r.shards} Shards`;
+            wrapper.appendChild(shards);
+        }
+
+        grid.appendChild(wrapper);
+    });
+
+    container.appendChild(grid);
+
+    // Continue Button
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary w-full md:w-auto px-8';
+    btn.textContent = 'Continue';
+    btn.onclick = () => {
+        closeModal();
+        renderGacha(gameState);
+        updateUI(gameState);
+    };
+    container.appendChild(btn);
+
+    modalBody.appendChild(container);
+
+    // Refresh Roster if needed
     if (!document.getElementById('roster-tab').classList.contains('hidden')) {
         renderRoster(gameState);
     }
