@@ -27,7 +27,16 @@ class BattleState {
     }
     
     spawnEnemies() {
-        const enemyCount = Math.min(5, 2 + Math.floor(this.waveNumber / 5));
+        // Dynamic enemy count: 1-4 enemies based on wave with some randomness
+        let baseCount = 1;
+        if (this.waveNumber >= 5) baseCount = 2;
+        if (this.waveNumber >= 15) baseCount = 3;
+        if (this.waveNumber >= 30) baseCount = 4;
+        
+        // Add randomness: -1, 0, or +1 enemy
+        const variation = Math.floor(Math.random() * 3) - 1;
+        const enemyCount = Math.max(1, Math.min(4, baseCount + variation));
+        
         this.enemies = [];
         
         for (let i = 0; i < enemyCount; i++) {
@@ -450,11 +459,34 @@ function handleBattleDefeat(gameState, battleState) {
     battleState.isActive = false;
     stopBattle(gameState);
     
-    gameState.currentWave = Math.max(1, gameState.currentWave - 1);
+    // Update battle status
+    const battleStatus = document.getElementById('battle-status');
+    if (battleStatus) {
+        battleStatus.textContent = 'Defeated!';
+        battleStatus.style.color = '#dc2626';
+    }
     
-    showNotification('💀 Your team has been defeated! Try again.', 'error');
+    // Don't reduce wave on defeat - let them try again
+    showNotification('💀 Your team has been defeated! Try again with a stronger team.', 'error');
+    
+    // Change button to "Try Again"
+    showTryAgainButton(gameState);
     
     saveGame(gameState);
+}
+
+// ===========================
+// SHOW TRY AGAIN BUTTON
+// ===========================
+
+function showTryAgainButton(gameState) {
+    const startBattleBtn = document.getElementById('start-battle-btn');
+    
+    if (startBattleBtn) {
+        startBattleBtn.textContent = 'Try Again';
+        startBattleBtn.className = 'btn btn-primary w-full';
+        startBattleBtn.style.animation = 'pulse 1.5s infinite';
+    }
 }
 
 // ===========================
@@ -464,14 +496,14 @@ function handleBattleDefeat(gameState, battleState) {
 function updateBattleUI(gameState, battleState) {
     if (!battleState) return;
     
-    // Update wave display
+    // Update wave displays (multiple locations)
     const waveDisplay = document.getElementById('wave-display');
-    const battleWaveNumber = document.getElementById('battle-wave-number');
+    const waveDisplayHeader = document.getElementById('wave-display-header');
     if (waveDisplay) {
         waveDisplay.textContent = gameState.currentWave;
     }
-    if (battleWaveNumber) {
-        battleWaveNumber.textContent = gameState.currentWave;
+    if (waveDisplayHeader) {
+        waveDisplayHeader.textContent = gameState.currentWave;
     }
     
     // Update battle status

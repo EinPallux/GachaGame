@@ -255,9 +255,9 @@ class Enemy {
         this.name = enemyData.name;
         this.element = enemyData.element;
         
-        // Scale stats based on wave number
-        const waveScale = 1 + (waveNumber - 1) * 0.15;
-        const bossMultiplier = (waveNumber % 10 === 0) ? 2.5 : 1;
+        // Reduced scale stats based on wave number for better balance
+        const waveScale = 1 + (waveNumber - 1) * 0.08; // Reduced from 0.15 to 0.08
+        const bossMultiplier = (waveNumber % 10 === 0) ? 1.8 : 1; // Reduced from 2.5 to 1.8
         const totalScale = waveScale * bossMultiplier;
         
         this.maxHP = Math.floor(enemyData.baseStats.hp * totalScale);

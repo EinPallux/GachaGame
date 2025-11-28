@@ -72,96 +72,127 @@
             
             <!-- Battle Tab -->
             <div id="battle-tab" class="tab-content active">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    <!-- Team Selection & Battle Controls -->
-                    <div class="lg:col-span-1 space-y-4">
-                        <div class="glass-panel p-6">
-                            <h2 class="section-title">Your Team</h2>
-                            <div id="team-selection" class="space-y-2"></div>
-                            <div class="mt-4 space-y-2">
-                                <button id="start-battle-btn" class="btn btn-primary w-full">Start Battle</button>
-                                <button id="auto-battle-toggle" class="btn btn-secondary w-full">Auto-Cast: OFF</button>
-                            </div>
+                <!-- Battle Page Header -->
+                <div class="battle-page-header">
+                    <div class="battle-header-content">
+                        <div class="battle-title-section">
+                            <h1 class="battle-main-title">⚔️ Battle Arena</h1>
+                            <p class="battle-subtitle">Lead your heroes to victory through endless waves of enemies</p>
                         </div>
-                        
-                        <div class="glass-panel p-6">
-                            <h3 class="text-lg font-semibold mb-3">Battle Info</h3>
-                            <div class="space-y-2 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-slate-600">Current Wave:</span>
-                                    <span id="wave-display" class="font-semibold">0</span>
+                        <div class="battle-stats-cards">
+                            <div class="stat-card">
+                                <div class="stat-icon">🌊</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Current Wave</div>
+                                    <div class="stat-value" id="wave-display-header">0</div>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-slate-600">Highest Wave:</span>
-                                    <span id="highest-wave-display" class="font-semibold">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🏆</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Highest Wave</div>
+                                    <div class="stat-value" id="highest-wave-display">0</div>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-slate-600">Enemies Defeated:</span>
-                                    <span id="enemies-defeated-display" class="font-semibold">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">💀</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Enemies Slain</div>
+                                    <div class="stat-value" id="enemies-defeated-display">0</div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Main Battle Layout -->
+                <div class="battle-main-layout">
                     
-                    <!-- Battle Arena -->
-                    <div class="lg:col-span-2">
-                        <div class="battle-arena-container">
+                    <!-- Left Sidebar - Team Selection -->
+                    <div class="battle-sidebar">
+                        <div class="battle-panel">
+                            <div class="panel-header">
+                                <span class="panel-icon">👥</span>
+                                <h2 class="panel-title">Your Team</h2>
+                            </div>
+                            <div class="panel-content">
+                                <div id="team-selection" class="space-y-2"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="battle-panel">
+                            <div class="panel-header">
+                                <span class="panel-icon">🎮</span>
+                                <h2 class="panel-title">Battle Controls</h2>
+                            </div>
+                            <div class="panel-content">
+                                <button id="start-battle-btn" class="btn btn-primary w-full mb-2">Start Battle</button>
+                                <button id="auto-battle-toggle" class="btn btn-secondary w-full">Auto-Cast: OFF</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Center - Battle Arena -->
+                    <div class="battle-center">
+                        <div class="battle-arena-container-light">
                             <!-- Wave Header -->
-                            <div class="battle-wave-header">
-                                <div class="wave-title">
-                                    <span class="wave-icon">⚔️</span>
-                                    <span>Wave <span id="battle-wave-number">0</span></span>
+                            <div class="battle-wave-header-light">
+                                <div class="wave-title-light">
+                                    <span class="wave-icon-light">⚔️</span>
+                                    <span>Wave <span id="wave-display">0</span></span>
                                 </div>
-                                <div class="battle-status" id="battle-status">Prepare for Battle</div>
+                                <div class="battle-status-light" id="battle-status">Ready to Battle</div>
                             </div>
                             
                             <!-- Main Battle Field -->
-                            <div class="battle-field">
+                            <div class="battle-field-light">
                                 <!-- Heroes Section -->
-                                <div class="battle-section hero-section">
-                                    <div class="section-label">
-                                        <span class="label-icon">🛡️</span>
+                                <div class="battle-section-light hero-section-light">
+                                    <div class="section-label-light">
+                                        <span class="label-icon-light">🛡️</span>
                                         <span>Your Heroes</span>
                                     </div>
                                     <div id="battle-heroes" class="battle-units-grid"></div>
                                 </div>
                                 
                                 <!-- VS Divider -->
-                                <div class="battle-divider">
-                                    <div class="vs-circle">
-                                        <span class="vs-text">VS</span>
-                                        <div class="vs-glow"></div>
+                                <div class="battle-divider-light">
+                                    <div class="vs-circle-light">
+                                        <span class="vs-text-light">VS</span>
                                     </div>
-                                    <div class="divider-line"></div>
                                 </div>
                                 
                                 <!-- Enemies Section -->
-                                <div class="battle-section enemy-section">
-                                    <div class="section-label enemy-label">
-                                        <span class="label-icon">💀</span>
+                                <div class="battle-section-light enemy-section-light">
+                                    <div class="section-label-light enemy-label-light">
+                                        <span class="label-icon-light">💀</span>
                                         <span>Enemies</span>
                                     </div>
                                     <div id="battle-enemies" class="battle-units-grid"></div>
                                 </div>
                             </div>
                             
-                            <!-- Ultimate Abilities Panel -->
-                            <div class="ultimate-panel">
-                                <div class="ultimate-panel-header">
-                                    <span class="text-lg">✨</span>
-                                    <span class="font-bold">Ultimate Abilities</span>
-                                </div>
-                                <div id="ultimate-abilities-grid" class="ultimate-abilities-grid"></div>
-                            </div>
-                            
                             <!-- Battle Log -->
-                            <div class="battle-log-container">
-                                <div class="battle-log-header">
+                            <div class="battle-log-container-light">
+                                <div class="battle-log-header-light">
                                     <span class="text-lg">📜</span>
                                     <span class="font-semibold">Combat Log</span>
                                 </div>
-                                <div id="battle-log" class="battle-log"></div>
+                                <div id="battle-log" class="battle-log-light"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Sidebar - Ultimate Abilities -->
+                    <div class="battle-sidebar">
+                        <div class="battle-panel">
+                            <div class="panel-header">
+                                <span class="panel-icon">✨</span>
+                                <h2 class="panel-title">Ultimate Abilities</h2>
+                            </div>
+                            <div class="panel-content">
+                                <p class="panel-description">Click on glowing abilities to cast them manually, or enable Auto-Cast to let heroes use them automatically.</p>
+                                <div id="ultimate-abilities-grid" class="ultimate-abilities-stack"></div>
                             </div>
                         </div>
                     </div>
