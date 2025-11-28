@@ -93,7 +93,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
         imgContainer.className = 'aspect-[3/4] rounded-xl overflow-hidden relative';
 
         const img = document.createElement('img');
-        img.src = `/images/${hero.id}.jpg`;
+        img.src = `images/${hero.id}.jpg`; // FIXED PATH
         img.className = 'w-full h-full object-cover';
         
         // Error Handler
@@ -256,7 +256,7 @@ function createHeroCard(hero) {
 
     // 3. Image Element with Error Handling
     const img = document.createElement('img');
-    img.src = `/images/${hero.id}.jpg`;
+    img.src = `images/${hero.id}.jpg`; // FIXED PATH
     img.className = 'hero-card-image transition-transform duration-500 group-hover:scale-110';
     img.alt = hero.name;
     
@@ -342,7 +342,7 @@ function showHeroDetails(hero, gameState) {
     const canAfford = gameState.gold >= xpNeeded;
     
     // Awakening Calculations
-    const maxStars = 5; // Hard cap for stars to prevent infinite stats
+    const maxStars = 5; 
     const isMaxStars = hero.stars >= maxStars;
     const shardsRequired = hero.stars * 10;
     const canAwaken = !isMaxStars && hero.awakeningShards >= shardsRequired;
@@ -358,11 +358,11 @@ function showHeroDetails(hero, gameState) {
     const html = `
         <div class="relative">
             <div class="h-32 bg-gradient-to-r from-slate-800 to-slate-900 relative overflow-hidden">
-                <img src="/images/${hero.id}.jpg" class="absolute inset-0 w-full h-full object-cover opacity-30" onerror="this.style.display='none'">
+                <img src="images/${hero.id}.jpg" class="absolute inset-0 w-full h-full object-cover opacity-30" onerror="this.style.display='none'">
                 
                 <div class="absolute bottom-4 left-6 flex items-end gap-4 z-10">
                      <div class="w-20 h-20 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-slate-200 relative">
-                        <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-slate-400 flex items-center justify-center text-white font-bold text-xl\'>${hero.name.substring(0,2).toUpperCase()}</div>'">
+                        <img src="images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-slate-400 flex items-center justify-center text-white font-bold text-xl\'>${hero.name.substring(0,2).toUpperCase()}</div>'">
                      </div>
                      <div class="mb-1">
                         <h2 class="text-2xl font-bold text-white leading-none">${hero.name}</h2>

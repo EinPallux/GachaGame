@@ -18,7 +18,7 @@ function renderGacha(gameState) {
         <div class="max-w-4xl mx-auto animate-entry">
             <div class="relative h-64 rounded-2xl overflow-hidden shadow-lg mb-8 group">
                 <div class="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-600"></div>
-                <div class="absolute top-0 left-0 w-full h-full opacity-20 bg-[url('/images/h041.jpg')] bg-cover bg-center"></div>
+                <div class="absolute top-0 left-0 w-full h-full opacity-20 bg-[url('images/h041.jpg')] bg-cover bg-center"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 
                 <div class="absolute bottom-6 left-8 text-white z-10">
@@ -167,7 +167,7 @@ function playSummonAnimation(results) {
     // 2. Prepare the Stage (Initial Dark State)
     modalBody.innerHTML = `
         <div class="h-[500px] flex items-center justify-center bg-slate-900 relative overflow-hidden select-none" id="gacha-stage">
-            <div class="absolute inset-0 bg-[url('/images/summon-bg.jpg')] bg-cover opacity-20"></div>
+            <div class="absolute inset-0 bg-[url('images/summon-bg.jpg')] bg-cover opacity-20"></div>
             <div class="absolute inset-0 bg-black/40 z-0"></div>
 
             <div id="gacha-particles" class="absolute inset-0 z-10 pointer-events-none"></div>
@@ -291,7 +291,7 @@ function showGachaResults(results) {
         const imgContainer = document.createElement('div');
         imgContainer.className = 'absolute inset-0';
         const img = document.createElement('img');
-        img.src = `/images/${r.hero.id}.jpg`;
+        img.src = `images/${r.hero.id}.jpg`; // FIXED PATH
         img.className = 'w-full h-full object-cover transition-transform duration-500 group-hover:scale-110';
         img.onerror = () => {
             // Placeholder logic from ui.js

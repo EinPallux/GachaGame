@@ -366,7 +366,7 @@ function createTeamSlotElement(index, gameState) {
         
         // Image
         const img = document.createElement('img');
-        img.src = `/images/${hero.id}.jpg`;
+        img.src = `images/${hero.id}.jpg`; // FIXED PATH
         img.className = "w-full h-full object-cover";
         img.onerror = () => {
             // Helper from ui.js logic inline
@@ -437,7 +437,7 @@ function renderUnits(container, units, isHero) {
         div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy'} ${!unit.isAlive ? 'dead' : ''} w-24 flex-shrink-0 flex flex-col items-center`;
         div.innerHTML = `
             <div class="w-16 h-16 rounded-lg shadow-sm border border-slate-200 relative overflow-hidden bg-white mb-2">
-                <img src="${isHero ? `/images/${unit.id}.jpg` : '/images/enemies/e001.jpg'}" class="w-full h-full object-cover" 
+                <img src="${isHero ? `images/${unit.id}.jpg` : 'images/enemies/e001.jpg'}" class="w-full h-full object-cover" 
                      onerror="this.style.display='none'; this.parentElement.classList.add('flex','items-center','justify-center','bg-slate-100'); this.parentElement.innerHTML='${isHero ? unit.name[0] : '💀'}'">
                 ${!unit.isAlive ? '<div class="absolute inset-0 bg-slate-500/50 flex items-center justify-center text-white font-bold text-xs">DEAD</div>' : ''}
             </div>
