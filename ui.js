@@ -115,34 +115,65 @@ function renderRosterGrid(gameState) {
 }
 
 function createHeroCard(hero) {
+    // 1. Create Card Container
     const card = document.createElement('div');
     card.className = 'hero-card cursor-pointer group';
     card.setAttribute('data-rarity', hero.rarity);
+
+    // 2. Create Image Container
+    const imgContainer = document.createElement('div');
+    imgContainer.className = 'relative overflow-hidden';
+
+    // 3. Image Element with Error Handling
+    const img = document.createElement('img');
+    img.src = `/images/${hero.id}.jpg`;
+    img.className = 'hero-card-image transition-transform duration-500 group-hover:scale-110';
+    img.alt = hero.name;
     
-    card.innerHTML = `
-        <div class="relative overflow-hidden">
-            <img src="/images/${hero.id}.jpg" class="hero-card-image transition-transform duration-500 group-hover:scale-110" onerror="this.onerror=null; this.parentElement.innerHTML='${createHeroPlaceholder(hero)}'">
-            <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded">Lv.${hero.level}</div>
-            <div class="absolute top-2 right-2 badge-${hero.rarity} text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm">${hero.rarity}</div>
-        </div>
-        <div class="p-3 bg-white">
-            <div class="font-bold text-slate-800 text-sm truncate">${hero.name}</div>
-            <div class="flex justify-between items-center mt-1">
-                <div class="text-xs text-slate-500 flex items-center gap-1">
-                    <span>${getElementEmoji(hero.element)}</span>
-                    <span>${hero.class}</span>
-                </div>
-                <div class="flex gap-0.5 text-[0.6rem] text-yellow-400">
-                    ${'⭐'.repeat(hero.stars)}
-                </div>
+    // Fix: Attach error handler programmatically
+    img.onerror = function() {
+        const placeholder = createHeroPlaceholderElement(hero);
+        this.replaceWith(placeholder);
+    };
+
+    imgContainer.appendChild(img);
+
+    // 4. Badges (Level & Rarity)
+    const levelBadge = document.createElement('div');
+    levelBadge.className = 'absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded';
+    levelBadge.textContent = `Lv.${hero.level}`;
+    imgContainer.appendChild(levelBadge);
+
+    const rarityBadge = document.createElement('div');
+    rarityBadge.className = `absolute top-2 right-2 badge-${hero.rarity} text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm`;
+    rarityBadge.textContent = hero.rarity;
+    imgContainer.appendChild(rarityBadge);
+
+    // 5. Info Section
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'p-3 bg-white';
+    infoDiv.innerHTML = `
+        <div class="font-bold text-slate-800 text-sm truncate">${hero.name}</div>
+        <div class="flex justify-between items-center mt-1">
+            <div class="text-xs text-slate-500 flex items-center gap-1">
+                <span>${getElementEmoji(hero.element)}</span>
+                <span>${hero.class}</span>
+            </div>
+            <div class="flex gap-0.5 text-[0.6rem] text-yellow-400">
+                ${'⭐'.repeat(hero.stars)}
             </div>
         </div>
     `;
+
+    card.appendChild(imgContainer);
+    card.appendChild(infoDiv);
     
     return card;
 }
 
-function createHeroPlaceholder(hero) {
+function createHeroPlaceholderElement(hero) {
+    const div = document.createElement('div');
+    
     // Generate a beautiful gradient placeholder
     const colors = {
         'Fire': 'from-red-400 to-orange-500',
@@ -152,8 +183,24 @@ function createHeroPlaceholder(hero) {
         'Dark': 'from-purple-500 to-indigo-600'
     };
     const gradient = colors[hero.element] || 'from-slate-400 to-slate-600';
-    const initials = hero.name.substring(0, 2).toUpperCase();
     
+    div.className = `w-full aspect-[3/4] bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90 transition-transform duration-500 group-hover:scale-110`;
+    div.textContent = hero.name.substring(0, 2).toUpperCase();
+    
+    return div;
+}
+
+// Retaining string version for other non-critical uses if needed
+function createHeroPlaceholder(hero) {
+    const colors = {
+        'Fire': 'from-red-400 to-orange-500',
+        'Water': 'from-blue-400 to-cyan-500',
+        'Wind': 'from-emerald-400 to-teal-500',
+        'Light': 'from-yellow-300 to-amber-500',
+        'Dark': 'from-purple-500 to-indigo-600'
+    };
+    const gradient = colors[hero.element] || 'from-slate-400 to-slate-600';
+    const initials = hero.name.substring(0, 2).toUpperCase();
     return `<div class="w-full aspect-[3/4] bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90">${initials}</div>`;
 }
 
@@ -171,10 +218,11 @@ function showHeroDetails(hero, gameState) {
     const html = `
         <div class="relative">
             <div class="h-32 bg-gradient-to-r from-slate-800 to-slate-900 relative overflow-hidden">
-                <div class="absolute inset-0 opacity-30 bg-[url('/images/${hero.id}.jpg')] bg-cover bg-center"></div>
+                <img src="/images/${hero.id}.jpg" class="absolute inset-0 w-full h-full object-cover opacity-30" onerror="this.style.display='none'">
+                
                 <div class="absolute bottom-4 left-6 flex items-end gap-4 z-10">
-                     <div class="w-20 h-20 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-slate-200">
-                        <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxIDEiPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjYmQ1ZTEiLz48L3N2Zz4='">
+                     <div class="w-20 h-20 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-slate-200 relative">
+                        <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-slate-400 flex items-center justify-center text-white font-bold text-xl\'>${hero.name.substring(0,2).toUpperCase()}</div>'">
                      </div>
                      <div class="mb-1">
                         <h2 class="text-2xl font-bold text-white leading-none">${hero.name}</h2>
@@ -248,6 +296,26 @@ function showHeroDetails(hero, gameState) {
                 updateUI(gameState);
                 renderRoster(gameState); // Refresh grid
                 showHeroDetails(hero, gameState); // Refresh modal
+            }
+        };
+    }
+    
+    // Bind Awaken
+    const awakenBtn = document.getElementById('modal-awaken-btn');
+    if (awakenBtn) {
+        awakenBtn.onclick = () => {
+            if (hero.awakeningShards >= hero.stars * 10) {
+                // Logic should ideally be in Hero class, but handling here for now
+                // Assuming Hero class has method or just modifying props:
+                hero.awakeningShards -= hero.stars * 10;
+                hero.stars++;
+                hero.calculateStats(gameState.getSkillTreeBonuses());
+                
+                showNotification(`Awakened! ${hero.name} is now ${hero.stars} Stars!`, 'success');
+                saveGame(gameState);
+                updateUI(gameState);
+                renderRoster(gameState);
+                showHeroDetails(hero, gameState);
             }
         };
     }
@@ -422,31 +490,12 @@ function renderProfile(gameState) {
 }
 
 // ===========================
-// FORGE UI (New Feature)
+// FORGE UI 
 // ===========================
-
+// (Moved to forge.js, but keeping placeholder logic just in case)
 function renderForge(gameState) {
+    // If forge.js is loaded, this function is overridden there.
+    // If not, this is a fallback.
     const container = document.getElementById('forge-tab');
-    if (!container) return;
-    
-    // Initial Placeholder UI for the feature
-    container.innerHTML = `
-        <div class="flex flex-col items-center justify-center h-[60vh] text-center animate-entry">
-            <div class="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-400 text-4xl mb-6 shadow-sm">
-                <i class="fa-solid fa-hammer"></i>
-            </div>
-            <h2 class="text-3xl font-heading font-bold text-slate-800 mb-2">The Celestial Forge</h2>
-            <p class="text-slate-500 max-w-md mb-8">
-                The ancient forge is awakening. Soon you will be able to craft legendary weapons using materials from your expeditions.
-            </p>
-            <div class="grid grid-cols-3 gap-4 opacity-50 pointer-events-none">
-                <div class="forge-slot w-16 h-16 rounded-lg bg-slate-100 border-2 border-slate-200"></div>
-                <div class="forge-slot w-16 h-16 rounded-lg bg-slate-100 border-2 border-slate-200"></div>
-                <div class="forge-slot w-16 h-16 rounded-lg bg-slate-100 border-2 border-slate-200"></div>
-            </div>
-            <div class="mt-8 text-xs font-bold text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
-                COMING SOON IN V1.2
-            </div>
-        </div>
-    `;
+    if (container) container.innerHTML = '<div class="text-center p-10">Forge loading...</div>';
 }

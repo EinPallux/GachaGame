@@ -61,7 +61,7 @@ class Hero {
         let totalHP = Math.floor(this.baseStats.hp * levelMultiplier * starMultiplier);
         let totalATK = Math.floor(this.baseStats.atk * levelMultiplier * starMultiplier);
         let totalDEF = Math.floor(this.baseStats.def * levelMultiplier * starMultiplier);
-        let totalSPD = Math.floor(this.baseStats.spd * levelMultiplier * starMultiplier); // SPD scales slower usually, but scaling here for simplicity
+        let totalSPD = Math.floor(this.baseStats.spd * levelMultiplier * starMultiplier);
         
         // 2. Add Equipment (Future Proofing)
         if (this.equipment.weapon) totalATK += this.equipment.weapon.stats.atk || 0;
@@ -71,7 +71,6 @@ class Hero {
         }
         
         // 3. Apply Skill Tree Bonuses (Percentages)
-        // Global
         if (skillTreeBonuses.allStatsPercent) {
             const factor = 1 + (skillTreeBonuses.allStatsPercent / 100);
             totalHP = Math.floor(totalHP * factor);
@@ -79,7 +78,6 @@ class Hero {
             totalDEF = Math.floor(totalDEF * factor);
         }
         
-        // Element Specific
         const elKey = `${this.element.toLowerCase()}Bonus`;
         if (skillTreeBonuses[elKey]) {
             totalATK = Math.floor(totalATK * (1 + skillTreeBonuses[elKey] / 100));
@@ -103,13 +101,10 @@ class Hero {
     
     // Leveling Logic
     getUpgradeCost() {
-        // Exponential cost curve
         return Math.floor(100 * Math.pow(1.08, this.level - 1));
     }
     
     levelUp(goldSpent) {
-        const cost = this.getUpgradeCost();
-        // Validation happens in UI usually, but double check here if needed
         this.level++;
         this.calculateStats();
         return true;
@@ -119,7 +114,7 @@ class Hero {
     resetForBattle(skillTreeBonuses = {}) {
         this.calculateStats(skillTreeBonuses);
         this.currentHP = this.maxHP;
-        this.mana = skillTreeBonuses.startingMana || 0; // Skill Tree Bonus
+        this.mana = skillTreeBonuses.startingMana || 0;
         this.isAlive = true;
         this.buffs = [];
         this.debuffs = [];
@@ -128,7 +123,7 @@ class Hero {
     takeDamage(amount) {
         this.currentHP = Math.max(0, this.currentHP - amount);
         if (this.currentHP <= 0) this.isAlive = false;
-        return amount; // Return actual damage taken (could calculate mitigation here)
+        return amount;
     }
     
     heal(amount) {
@@ -201,14 +196,13 @@ class Enemy {
         this.element = template.element;
         
         // Scaling Logic
-        // +5% stats per wave
         const multiplier = 1 + (waveNumber - 1) * 0.05;
         
         this.maxHP = Math.floor(template.baseStats.hp * multiplier);
         this.currentHP = this.maxHP;
         this.atk = Math.floor(template.baseStats.atk * multiplier);
         this.def = Math.floor(template.baseStats.def * multiplier);
-        this.spd = Math.floor(template.baseStats.spd * multiplier); // Speed scales linearly too? Careful not to outspeed everything.
+        this.spd = Math.floor(template.baseStats.spd * multiplier);
         
         this.maxMana = 100;
         this.mana = 0;
@@ -236,11 +230,10 @@ class Enemy {
 
 class Garden {
     constructor() {
-        // 6 Plots (2 Free, 4 Locked)
         this.plots = Array(6).fill(null).map((_, i) => ({
             id: i,
             unlocked: i < 2,
-            plant: null // { seedId, plantedAt, growthTime, ready }
+            plant: null
         }));
     }
     
@@ -288,7 +281,7 @@ class Garden {
         if (plot && plot.plant && plot.plant.ready) {
             const seed = GARDEN_ITEMS_DATABASE.seeds.find(s => s.id === plot.plant.seedId);
             plot.plant = null;
-            return seed.resultId; // Return Item ID
+            return seed.resultId;
         }
         return null;
     }
@@ -311,17 +304,17 @@ class GameState {
         
         // Currencies
         this.gold = 500;
-        this.petals = 50;
+        this.petals = 100; // UPDATED: Start with 100 petals (10-pull)
         this.spiritOrbs = 0;
         
         // Progression
-        this.roster = []; // Array of Hero objects
-        this.team = [null, null, null, null, null]; // Hero IDs
+        this.roster = []; // UPDATED: Start empty
+        this.team = [null, null, null, null, null];
         
         this.inventory = {
-            seeds: { 's001': 2 }, // Starter seeds
+            seeds: { 's001': 2 },
             teas: {},
-            materials: {} // New: For Forge
+            materials: {}
         };
         
         this.garden = new Garden();
@@ -345,16 +338,9 @@ class GameState {
         
         // Expedition
         this.expedition = { isActive: true, startTime: Date.now(), lastClaimTime: Date.now() };
-
-        // Init
-        this.giveStarterHeroes();
     }
     
     // --- Helpers ---
-    
-    giveStarterHeroes() {
-        ['h001', 'h002', 'h003'].forEach(id => this.addHero(id));
-    }
     
     addHero(id) {
         const existing = this.roster.find(h => h.id === id);
@@ -400,7 +386,6 @@ class GameState {
     
     // Skill Tree
     initSkillTree() {
-        // Simple mapping of the structure
         return [
             { id: 'st01', name: 'ATK Boost I', icon: '⚔️', desc: '+5% ATK', cost: 10, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 5 },
             { id: 'st02', name: 'HP Boost I', icon: '❤️', desc: '+5% HP', cost: 10, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 5 },
@@ -409,7 +394,6 @@ class GameState {
             { id: 'st05', name: 'Fire Mastery', icon: '🔥', desc: '+10% Fire ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'fireBonus', value: 10 },
             { id: 'st06', name: 'Water Mastery', icon: '💧', desc: '+10% Water ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'waterBonus', value: 10 },
             { id: 'st07', name: 'Wind Mastery', icon: '🌪️', desc: '+10% Wind ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'windBonus', value: 10 },
-            // Add more nodes as needed...
         ];
     }
     
@@ -440,7 +424,6 @@ class GameState {
     checkQuestReset() {
         const now = Date.now();
         const oneDay = 24 * 60 * 60 * 1000;
-        // Simple 24h reset logic, ideally check midnight
         if (now - this.lastQuestReset > oneDay || this.quests.length === 0) {
             this.quests = [
                 { id: 'q1', desc: 'Defeat 20 Enemies', target: 20, current: 0, reward: { gold: 200 }, type: 'killEnemies', completed: false, claimed: false },
@@ -508,7 +491,7 @@ class GameState {
             team: this.team,
             inventory: this.inventory,
             garden: this.garden.toJSON(),
-            skillTree: this.skillTree, // Save levels
+            skillTree: this.skillTree,
             stats: this.stats,
             pityCounter: this.pityCounter,
             highestWave: this.highestWave,
@@ -530,7 +513,6 @@ class GameState {
         if (data.inventory) s.inventory = data.inventory;
         if (data.garden) s.garden = Garden.fromJSON(data.garden);
         
-        // Skill Tree: Restore levels
         if (data.skillTree) {
             data.skillTree.forEach(savedNode => {
                 const node = s.skillTree.find(n => n.id === savedNode.id);
