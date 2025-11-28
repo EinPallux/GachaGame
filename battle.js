@@ -115,10 +115,15 @@ function startBattle(gameState) {
 // STOP BATTLE
 // ===========================
 
-function stopBattle(gameState) {
+function stopBattle(gameState, isMidBattle = false) {
     if (battleInterval) {
         clearInterval(battleInterval);
         battleInterval = null;
+    }
+    
+    // If stopping mid-battle (user clicked stop), decrement the wave
+    if (isMidBattle && gameState.currentWave > 0) {
+        gameState.currentWave--;
     }
     
     gameState.isBattleActive = false;
@@ -707,6 +712,10 @@ function createBattleCard(unit, isHero, gameState = null) {
         }
     }
     
+    // Image Container
+    const imageContainer = document.createElement('div');
+    imageContainer.className = 'battle-card-image-container';
+    
     // Image or placeholder
     const img = document.createElement('img');
     img.className = 'battle-card-image';
@@ -727,41 +736,56 @@ function createBattleCard(unit, isHero, gameState = null) {
         };
     }
     
-    card.appendChild(img);
+    imageContainer.appendChild(img);
     
     // Unit name overlay
     const nameOverlay = document.createElement('div');
     nameOverlay.className = 'battle-card-name';
     nameOverlay.textContent = unit.name;
-    card.appendChild(nameOverlay);
+    imageContainer.appendChild(nameOverlay);
     
     // Level badge for heroes
     if (isHero) {
         const levelBadge = document.createElement('div');
         levelBadge.className = 'battle-card-level-badge';
         levelBadge.textContent = `Lv.${unit.level}`;
-        card.appendChild(levelBadge);
+        imageContainer.appendChild(levelBadge);
     }
     
-    // Stats overlay
-    const statsOverlay = document.createElement('div');
-    statsOverlay.className = 'battle-card-stats';
-    statsOverlay.innerHTML = `
-        <div class="battle-stat">⚔️ ${unit.atk}</div>
-        <div class="battle-stat">🛡️ ${unit.def}</div>
-        <div class="battle-stat">⚡ ${unit.spd}</div>
+    card.appendChild(imageContainer);
+    
+    // Stats Below Image
+    const statsBelow = document.createElement('div');
+    statsBelow.className = 'battle-card-stats-below';
+    
+    // Stats Row
+    const statsRow = document.createElement('div');
+    statsRow.className = 'battle-stats-row';
+    statsRow.innerHTML = `
+        <div class="battle-stat-item">
+            <span class="battle-stat-icon">⚔️</span>
+            <div class="battle-stat-value">${unit.atk}</div>
+        </div>
+        <div class="battle-stat-item">
+            <span class="battle-stat-icon">🛡️</span>
+            <div class="battle-stat-value">${unit.def}</div>
+        </div>
+        <div class="battle-stat-item">
+            <span class="battle-stat-icon">⚡</span>
+            <div class="battle-stat-value">${unit.spd}</div>
+        </div>
     `;
-    card.appendChild(statsOverlay);
+    statsBelow.appendChild(statsRow);
     
-    // HP and Mana bars container
-    const barsContainer = document.createElement('div');
-    barsContainer.className = 'battle-card-bars';
+    // Bars Below
+    const barsBelow = document.createElement('div');
+    barsBelow.className = 'battle-bars-below';
     
-    // HP text and bar
-    const hpText = document.createElement('div');
-    hpText.className = 'battle-bar-text';
-    hpText.textContent = `HP: ${unit.currentHP}/${unit.maxHP}`;
-    barsContainer.appendChild(hpText);
+    // HP Bar
+    const hpLabel = document.createElement('div');
+    hpLabel.className = 'battle-bar-label';
+    hpLabel.innerHTML = `<span>HP</span><span>${unit.currentHP}/${unit.maxHP}</span>`;
+    barsBelow.appendChild(hpLabel);
     
     const hpBar = document.createElement('div');
     hpBar.className = 'hp-bar';
@@ -778,14 +802,14 @@ function createBattleCard(unit, isHero, gameState = null) {
     }
     
     hpBar.appendChild(hpFill);
-    barsContainer.appendChild(hpBar);
+    barsBelow.appendChild(hpBar);
     
     // Mana bar for heroes
     if (isHero) {
-        const manaText = document.createElement('div');
-        manaText.className = 'battle-bar-text';
-        manaText.textContent = `Mana: ${unit.mana}/${unit.maxMana}`;
-        barsContainer.appendChild(manaText);
+        const manaLabel = document.createElement('div');
+        manaLabel.className = 'battle-bar-label';
+        manaLabel.innerHTML = `<span>Mana</span><span>${unit.mana}/${unit.maxMana}</span>`;
+        barsBelow.appendChild(manaLabel);
         
         const manaBar = document.createElement('div');
         manaBar.className = 'mana-bar';
@@ -795,7 +819,7 @@ function createBattleCard(unit, isHero, gameState = null) {
         manaFill.style.width = `${unit.getManaPercent()}%`;
         
         manaBar.appendChild(manaFill);
-        barsContainer.appendChild(manaBar);
+        barsBelow.appendChild(manaBar);
         
         // Click to use ultimate manually
         if (!gameState?.autoCast && unit.canUseUltimate()) {
@@ -809,7 +833,8 @@ function createBattleCard(unit, isHero, gameState = null) {
         }
     }
     
-    card.appendChild(barsContainer);
+    statsBelow.appendChild(barsBelow);
+    card.appendChild(statsBelow);
     
     // Add tooltip on hover
     card.title = isHero ? 
@@ -836,7 +861,9 @@ function setupBattleListeners(gameState, updateUI) {
                 startBattle(gameState);
                 updateUI();
             } else {
-                stopBattle(gameState);
+                // User is stopping mid-battle
+                stopBattle(gameState, true);
+                showNotification('Battle stopped. Wave progress reset.', 'info');
                 updateUI();
             }
         };

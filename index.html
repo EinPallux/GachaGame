@@ -72,43 +72,42 @@
             
             <!-- Battle Tab -->
             <div id="battle-tab" class="tab-content active">
-                <!-- Battle Page Header -->
-                <div class="battle-page-header">
-                    <div class="battle-header-content">
-                        <div class="battle-title-section">
-                            <h1 class="battle-main-title">⚔️ Battle Arena</h1>
-                            <p class="battle-subtitle">Lead your heroes to victory through endless waves of enemies</p>
-                        </div>
-                        <div class="battle-stats-cards">
-                            <div class="stat-card">
-                                <div class="stat-icon">🌊</div>
-                                <div class="stat-info">
+                <!-- Compact Battle Header -->
+                <div class="battle-page-header-compact">
+                    <h1 class="battle-main-title-compact">⚔️ Battle Arena</h1>
+                </div>
+
+                <!-- Main Battle Layout with Stats on Left -->
+                <div class="battle-main-layout-new">
+                    
+                    <!-- Far Left - Battle Stats -->
+                    <div class="battle-stats-sidebar">
+                        <div class="battle-panel">
+                            <div class="panel-header">
+                                <span class="panel-icon">📊</span>
+                                <h2 class="panel-title">Battle Stats</h2>
+                            </div>
+                            <div class="panel-content">
+                                <div class="stat-card-vertical">
+                                    <div class="stat-icon-large">🌊</div>
                                     <div class="stat-label">Current Wave</div>
-                                    <div class="stat-value" id="wave-display-header">0</div>
+                                    <div class="stat-value-large" id="wave-display-header">0</div>
                                 </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">🏆</div>
-                                <div class="stat-info">
+                                <div class="stat-card-vertical">
+                                    <div class="stat-icon-large">🏆</div>
                                     <div class="stat-label">Highest Wave</div>
-                                    <div class="stat-value" id="highest-wave-display">0</div>
+                                    <div class="stat-value-large" id="highest-wave-display">0</div>
                                 </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">💀</div>
-                                <div class="stat-info">
+                                <div class="stat-card-vertical">
+                                    <div class="stat-icon-large">💀</div>
                                     <div class="stat-label">Enemies Slain</div>
-                                    <div class="stat-value" id="enemies-defeated-display">0</div>
+                                    <div class="stat-value-large" id="enemies-defeated-display">0</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Main Battle Layout -->
-                <div class="battle-main-layout">
                     
-                    <!-- Left Sidebar - Team Selection -->
+                    <!-- Left - Team Selection -->
                     <div class="battle-sidebar">
                         <div class="battle-panel">
                             <div class="panel-header">
@@ -183,7 +182,7 @@
                         </div>
                     </div>
                     
-                    <!-- Right Sidebar - Ultimate Abilities -->
+                    <!-- Right - Ultimate Abilities -->
                     <div class="battle-sidebar">
                         <div class="battle-panel">
                             <div class="panel-header">

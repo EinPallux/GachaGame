@@ -362,7 +362,7 @@ body {
 .badge-UR { background: linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6); }
 
 /* ===========================
-   BATTLE CARDS
+   BATTLE CARDS - STATS BELOW
    =========================== */
 
 .battle-card {
@@ -372,12 +372,22 @@ body {
     overflow: hidden;
     transition: all 0.3s;
     cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(255, 183, 197, 0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+.battle-card-image-container {
+    position: relative;
+    width: 100%;
 }
 
 .battle-card-image {
     width: 100%;
     aspect-ratio: 1;
     object-fit: cover;
+    display: block;
 }
 
 .battle-card-placeholder {
@@ -386,7 +396,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: white;
 }
@@ -398,70 +408,76 @@ body {
     right: 0;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent);
     color: white;
-    padding: 0.5rem;
-    font-size: 0.85rem;
+    padding: 0.4rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-align: center;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    z-index: 2;
 }
 
 .battle-card-level-badge {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: 0.4rem;
+    right: 0.4rem;
     background: rgba(251, 191, 36, 0.95);
     color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.6rem;
     font-weight: 700;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    z-index: 2;
 }
 
-.battle-card-stats {
-    position: absolute;
-    bottom: 90px;
-    left: 0;
-    right: 0;
+.battle-card-stats-below {
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-top: 1px solid rgba(255, 183, 197, 0.3);
+}
+
+.battle-stats-row {
     display: flex;
     justify-content: space-around;
-    padding: 0.25rem;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    margin-bottom: 0.4rem;
 }
 
-.battle-stat {
+.battle-stat-item {
+    text-align: center;
+}
+
+.battle-stat-icon {
+    font-size: 0.75rem;
+    display: block;
+    margin-bottom: 0.1rem;
+}
+
+.battle-stat-value {
     font-size: 0.7rem;
     font-weight: 700;
-    color: white;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    color: var(--deep-slate);
 }
 
-.battle-card-bars {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.85);
-    padding: 0.5rem;
-    backdrop-filter: blur(4px);
+.battle-bars-below {
+    margin-top: 0.3rem;
 }
 
-.battle-bar-text {
-    font-size: 0.65rem;
-    color: white;
+.battle-bar-label {
+    font-size: 0.6rem;
+    color: var(--slate-light);
     font-weight: 600;
-    margin-bottom: 0.15rem;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    margin-bottom: 0.1rem;
+    display: flex;
+    justify-content: space-between;
 }
 
 .hp-bar {
     width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.3);
+    height: 5px;
+    background: rgba(16, 185, 129, 0.2);
     border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.3rem;
 }
 
 .hp-bar-fill {
@@ -473,18 +489,17 @@ body {
 
 .mana-bar {
     width: 100%;
-    height: 5px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
+    height: 4px;
+    background: rgba(59, 130, 246, 0.2);
+    border-radius: 2px;
     overflow: hidden;
-    margin-top: 0.15rem;
 }
 
 .mana-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
     transition: width 0.3s;
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
 .battle-card.ultimate-ready {
@@ -504,6 +519,13 @@ body {
 .battle-card.dead {
     opacity: 0.3;
     filter: grayscale(100%);
+}
+
+/* Remove old overlay styles */
+.battle-card-stats,
+.battle-card-bars,
+.battle-bar-text {
+    display: none;
 }
 
 /* Battle Units Grid - Compact Layout */
@@ -572,6 +594,66 @@ body {
 /* ===========================
    BATTLE PAGE - LIGHT MODE
    =========================== */
+
+.battle-page-header-compact {
+    background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 2px solid rgba(255, 183, 197, 0.3);
+}
+
+.battle-main-title-compact {
+    font-size: 1.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--sakura-dark), var(--soft-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.battle-main-layout-new {
+    display: grid;
+    grid-template-columns: 200px 280px 1fr 300px;
+    gap: 1rem;
+}
+
+.battle-stats-sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-card-vertical {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 0.75rem;
+    border: 2px solid rgba(255, 183, 197, 0.2);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.stat-icon-large {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--slate-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value-large {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--deep-slate);
+}
 
 .battle-page-header {
     background: linear-gradient(135deg, #fce7f3, #fff1f2, #fef3c7);
@@ -1021,13 +1103,28 @@ body {
    RESPONSIVE BATTLE PAGE
    =========================== */
 
+@media (max-width: 1400px) {
+    .battle-main-layout-new {
+        grid-template-columns: 180px 260px 1fr 280px;
+        gap: 0.75rem;
+    }
+}
+
 @media (max-width: 1200px) {
-    .battle-main-layout {
+    .battle-main-layout-new {
         grid-template-columns: 1fr;
     }
     
+    .battle-stats-sidebar,
     .battle-sidebar {
         order: -1;
+    }
+    
+    .stat-card-vertical {
+        display: inline-block;
+        width: calc(33.333% - 0.5rem);
+        margin-right: 0.5rem;
+        vertical-align: top;
     }
     
     .ultimate-abilities-stack {
@@ -1038,6 +1135,18 @@ body {
     .ultimate-ability-card {
         flex: 1;
         min-width: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .battle-units-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .stat-card-vertical {
+        width: 100%;
+        margin-right: 0;
     }
 }
 
