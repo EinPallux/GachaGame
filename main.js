@@ -37,6 +37,9 @@ function initializeGame() {
         setTimeout(() => showWelcomeMessage(), 1000);
     }
     
+    // CRITICAL: Expose state to window for other modules (storage.js, forge.js)
+    window.gameState = gameState;
+    
     // Setup App Shell
     renderNavigation();
     setupEventListeners();
@@ -80,7 +83,7 @@ function renderNavigation() {
         `;
         desktopNav.appendChild(dItem);
         
-        // Mobile Item (Limit items for space)
+        // Mobile Item
         if (['battle', 'garden', 'forge', 'roster', 'gacha'].includes(nav.id)) {
             const mItem = document.createElement('div');
             mItem.className = 'mobile-nav-item';
@@ -135,7 +138,6 @@ function refreshViewContent(viewId) {
     // Call render functions from their respective files
     switch(viewId) {
         case 'battle':
-            // FIX: Now calls renderBattleDashboard from battle.js
             if (typeof renderBattleDashboard === 'function') renderBattleDashboard(gameState);
             break;
         case 'roster':
@@ -145,11 +147,9 @@ function refreshViewContent(viewId) {
             if (typeof renderGarden === 'function') renderGarden(gameState);
             break;
         case 'gacha':
-            // FIX: Added Gacha renderer from gacha.js
             if (typeof renderGacha === 'function') renderGacha(gameState);
             break;
         case 'forge':
-            // FIX: Added Forge renderer (we will create forge.js next)
             if (typeof renderForge === 'function') renderForge(gameState);
             break;
         case 'skill-tree':
@@ -231,7 +231,17 @@ function closeModal() {
 window.debug = {
     addGold: (amt) => { gameState.gold += amt; updateUI(gameState); },
     addPetals: (amt) => { gameState.petals += amt; updateUI(gameState); },
-    reset: () => { deleteSave(); location.reload(); }
+    
+    // FIXED RESET FUNCTION
+    reset: () => { 
+        deleteSave(); 
+        // Critical: Nullify the global state so 'beforeunload' in storage.js 
+        // doesn't see it and try to save the old data back to storage!
+        window.gameState = null; 
+        gameState = null;
+        
+        location.reload(); 
+    }
 };
 
 // Initialize

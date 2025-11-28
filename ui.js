@@ -190,7 +190,6 @@ function createHeroPlaceholderElement(hero) {
 }
 
 function createHeroPlaceholder(hero) {
-    // String version for gacha result grid
     const colors = {
         'Fire': 'from-red-400 to-orange-500',
         'Water': 'from-blue-400 to-cyan-500',
