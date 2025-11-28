@@ -16,7 +16,7 @@ function updateUI(gameState) {
     const activeTab = document.querySelector('.tab-content.active');
     if (activeTab) {
         const tabId = activeTab.id;
-        if (tabId === 'battle-tab') renderTeamSelection(gameState); // FIXED: Render team on battle tab
+        if (tabId === 'battle-tab') renderTeamSelection(gameState); 
         if (tabId === 'roster-tab') renderRoster(gameState);
         if (tabId === 'skill-tree-tab') renderSkillTree(gameState);
         if (tabId === 'expedition-tab') updateExpeditionUI(gameState);
@@ -359,41 +359,39 @@ function createTeamSlot(index, gameState) {
     slot.className = 'team-slot';
     
     const heroId = gameState.team[index];
+    const hero = heroId ? gameState.roster.find(h => h.id === heroId) : null;
     
-    if (heroId) {
-        const hero = gameState.roster.find(h => h.id === heroId);
-        if (hero) {
-            slot.classList.add('filled');
-            
-            const img = document.createElement('img');
-            img.className = 'team-slot-image';
-            img.src = `/images/${hero.id}.jpg`;
-            img.onerror = () => img.replaceWith(createHeroPlaceholder(hero));
-            slot.appendChild(img);
-            
-            const info = document.createElement('div');
-            info.className = 'team-slot-info';
-            info.innerHTML = `
-                <div class="team-slot-name">${hero.name}</div>
-                <div class="team-slot-level">Lv.${hero.level}</div>
-            `;
-            slot.appendChild(info);
-            
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'text-red-500 hover:text-red-700 font-bold';
-            removeBtn.innerHTML = '✕';
-            removeBtn.onclick = (e) => {
-                e.stopPropagation();
-                if (gameState.isBattleActive) {
-                    showNotification('Cannot remove hero during a run!', 'error');
-                    return;
-                }
-                gameState.setTeamMember(index, null);
-                renderTeamSelection(gameState);
-                saveGame(gameState);
-            };
-            slot.appendChild(removeBtn);
-        }
+    if (hero) {
+        slot.classList.add('filled');
+        
+        const img = document.createElement('img');
+        img.className = 'team-slot-image';
+        img.src = `/images/${hero.id}.jpg`;
+        img.onerror = () => img.replaceWith(createHeroPlaceholder(hero));
+        slot.appendChild(img);
+        
+        const info = document.createElement('div');
+        info.className = 'team-slot-info';
+        info.innerHTML = `
+            <div class="team-slot-name">${hero.name}</div>
+            <div class="team-slot-level">Lv.${hero.level}</div>
+        `;
+        slot.appendChild(info);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'text-red-500 hover:text-red-700 font-bold';
+        removeBtn.innerHTML = '✕';
+        removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (gameState.isBattleActive) {
+                showNotification('Cannot remove hero during a run!', 'error');
+                return;
+            }
+            gameState.setTeamMember(index, null);
+            renderTeamSelection(gameState);
+            saveGame(gameState);
+        };
+        slot.appendChild(removeBtn);
     } else {
         slot.innerHTML = `
             <div class="team-slot-placeholder bg-slate-200">+</div>
@@ -600,7 +598,7 @@ function switchTab(tabName, gameState = null) {
     });
     
     if (gameState) {
-        if (tabName === 'battle') renderTeamSelection(gameState); // FIXED: Force render on switch
+        if (tabName === 'battle') renderTeamSelection(gameState); 
         if (tabName === 'roster') renderRoster(gameState);
         if (tabName === 'skill-tree') renderSkillTree(gameState);
         if (tabName === 'expedition') updateExpeditionUI(gameState);

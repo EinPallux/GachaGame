@@ -20,7 +20,6 @@ class BattleState {
         this.enemies = [];
         this.waveNumber = waveNumber;
         this.isActive = true;
-        this.battleLog = [];
         this.turnCounter = 0;
         this.skillTreeBonuses = skillTreeBonuses;
         
@@ -60,13 +59,6 @@ class BattleState {
             const randomEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
             const enemy = new Enemy(randomEnemy, this.waveNumber);
             this.enemies.push(enemy);
-        }
-    }
-    
-    addLog(message, type = 'normal') {
-        this.battleLog.push({ message, type, time: Date.now() });
-        if (this.battleLog.length > 50) {
-            this.battleLog.shift();
         }
     }
 }
@@ -118,8 +110,6 @@ function startWave(gameState) {
     
     const skillTreeBonuses = gameState.getSkillTreeBonuses();
     currentBattleState = new BattleState(team, gameState.currentWave, skillTreeBonuses);
-    
-    currentBattleState.addLog(`⚔️ Run Wave ${gameState.currentWave} Started!`, 'normal');
     
     // Update UI
     const battleStatus = document.getElementById('battle-status');
@@ -223,33 +213,28 @@ function useHeroUltimate(hero, battleState, gameState) {
     const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
     const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
     
-    battleState.addLog(`💫 ${hero.name} uses ${hero.ultimate.name}!`, 'ultimate');
     gameState.updateQuest('useUltimates', 1);
     
     switch (hero.class) {
         case 'Healer':
-            let totalHealing = 0;
             aliveHeroes.forEach(h => {
                 const healAmount = Math.floor(150 + hero.level * 5 + (hero.atk * 0.5)); 
-                const actualHeal = h.heal(healAmount);
-                totalHealing += actualHeal;
-                battleState.addLog(`  💚 ${h.name} healed +${actualHeal}`, 'heal');
+                h.heal(healAmount);
             });
             break;
             
         case 'Tank':
-            battleState.addLog(`  🛡️ Team DEF up! (Passive mitigation enabled)`, 'normal');
+            // Logic handled in damage calc or abstractly
             break;
             
         case 'Buffer':
-            battleState.addLog(`  ⚔️ Team ATK up!`, 'normal');
+            // Buff logic abstract
             break;
             
         case 'DPS (AoE)':
             aliveEnemies.forEach(enemy => {
                 const damage = calculateDamage(hero, enemy, 1.4);
                 enemy.takeDamage(damage);
-                battleState.addLog(`  💥 ${enemy.name} hit for ${damage}`, 'damage');
             });
             break;
             
@@ -257,7 +242,6 @@ function useHeroUltimate(hero, battleState, gameState) {
             const target = aliveEnemies[0]; 
             const damage = calculateDamage(hero, target, 2.8);
             target.takeDamage(damage);
-            battleState.addLog(`  💢 ${target.name} CRUSHED for ${damage}!`, 'critical');
             break;
     }
     
@@ -286,23 +270,14 @@ function performAttack(attacker, defender, battleState, isHeroAttacking) {
     const isDodge = Math.random() < 0.10;
     
     if (isDodge) {
-        battleState.addLog(`💨 ${defender.name} dodged!`, 'normal');
         return;
     }
     
     const finalDamage = isCrit ? Math.floor(damage * 1.5) : damage;
-    const actualDamage = defender.takeDamage(finalDamage);
-    
-    const icon = isCrit ? '💥' : '⚔️';
-    const style = isCrit ? 'critical' : 'damage';
-    battleState.addLog(`${icon} ${attacker.name} hits ${defender.name} for ${actualDamage}`, style);
+    defender.takeDamage(finalDamage);
     
     if (isHeroAttacking) attacker.gainMana(15);
     else defender.gainMana(10);
-    
-    if (!defender.isAlive) {
-        battleState.addLog(`☠️ ${defender.name} defeated!`, 'normal');
-    }
 }
 
 // ===========================
@@ -344,7 +319,7 @@ function handleWaveVictory(gameState, battleState) {
         foundSeed = randomSeed;
     }
     
-    // Petals & Orbs (RESTORED)
+    // Petals & Orbs
     let petals = 0;
     let orbs = 0;
     const isBoss = (gameState.currentWave % 10 === 0);
@@ -370,7 +345,6 @@ function handleWaveVictory(gameState, battleState) {
     if (orbs > 0) msg += ` +${orbs} 🔮`;
     if (foundSeed) msg += ` Found ${foundSeed.name} 🌱!`;
     
-    battleState.addLog(`🏆 VICTORY! ${msg}`, 'success');
     showNotification(msg, 'success');
     
     const nextBtn = document.getElementById('next-wave-btn');
@@ -395,9 +369,6 @@ function handleRunDefeat(gameState, battleState) {
     if (battleState) battleState.isActive = false;
     stopBattle(gameState);
     
-    if (battleState) {
-        battleState.addLog(`💀 DEFEAT! The team fell at Wave ${gameState.currentWave}.`, 'error');
-    }
     showNotification(`Run Over! Reached Wave ${gameState.currentWave}`, 'error');
     
     const battleStatus = document.getElementById('battle-status');
@@ -436,7 +407,6 @@ function useConsumable(gameState, itemId) {
             aliveHeroes.forEach(h => {
                 const amount = Math.floor(h.maxHP * itemData.effectValue);
                 h.heal(amount);
-                currentBattleState.addLog(`🍵 ${itemData.name}: Healed ${h.name} for ${amount}`, 'heal');
             });
             used = true;
             break;
@@ -444,7 +414,6 @@ function useConsumable(gameState, itemId) {
         case 'mana':
             aliveHeroes.forEach(h => {
                 h.gainMana(itemData.effectValue);
-                currentBattleState.addLog(`🍵 ${itemData.name}: Restored ${itemData.effectValue} Mana to ${h.name}`, 'heal');
             });
             used = true;
             break;
@@ -452,7 +421,6 @@ function useConsumable(gameState, itemId) {
         case 'buff_atk':
             aliveHeroes.forEach(h => {
                 h.atk = Math.floor(h.atk * (1 + itemData.effectValue));
-                currentBattleState.addLog(`🍵 ${itemData.name}: ${h.name} ATK up by ${(itemData.effectValue*100)}%!`, 'normal');
             });
             used = true;
             break;
@@ -462,7 +430,6 @@ function useConsumable(gameState, itemId) {
             if (targets.length > 0) {
                 targets.forEach(e => {
                     e.takeDamage(99999);
-                    currentBattleState.addLog(`🍵 ${itemData.name}: Executed ${e.name}!`, 'critical');
                 });
                 used = true;
             } else {
@@ -526,33 +493,8 @@ function updateBattleUI(gameState, battleState) {
         battleState.enemies.forEach(e => enemiesCont.appendChild(createBattleCard(e, false)));
     }
     
-    const logCont = document.getElementById('battle-log');
-    if (logCont && battleState) {
-        logCont.innerHTML = '';
-        battleState.battleLog.slice(-15).forEach(log => {
-            const el = document.createElement('div');
-            el.className = `log-entry text-xs mb-1 ${getLogClass(log.type)}`;
-            el.textContent = log.message;
-            logCont.appendChild(el);
-        });
-        logCont.scrollTop = logCont.scrollHeight;
-    }
-    
     renderBattleInventory(gameState);
     if (battleState) renderUltimateAbilities(gameState, battleState);
-}
-
-function getLogClass(type) {
-    const map = {
-        'normal': 'text-slate-700',
-        'damage': 'text-slate-900',
-        'critical': 'text-red-600 font-bold',
-        'heal': 'text-green-600',
-        'ultimate': 'text-purple-600 font-bold',
-        'success': 'text-amber-600 font-bold',
-        'error': 'text-red-500 font-bold'
-    };
-    return map[type] || 'text-slate-700';
 }
 
 // ===========================
@@ -590,7 +532,7 @@ function renderBattleInventory(gameState) {
 }
 
 // ===========================
-// MISSING RENDER FUNCTIONS (RESTORED)
+// RENDER FUNCTIONS
 // ===========================
 
 function renderUltimateAbilities(gameState, battleState) {

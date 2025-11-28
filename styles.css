@@ -974,45 +974,6 @@ body {
     letter-spacing: 2px;
 }
 
-.battle-log-container-light {
-    background: #f8fafc;
-    border-top: 2px solid rgba(255, 183, 197, 0.3);
-}
-
-.battle-log-header-light {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    color: var(--deep-slate);
-    background: rgba(255, 183, 197, 0.1);
-    font-weight: 600;
-}
-
-.battle-log-light {
-    background: white;
-    padding: 1rem 1.5rem;
-    max-height: 200px;
-    overflow-y: auto;
-    font-size: 0.8rem;
-    line-height: 1.8;
-    font-family: 'Courier New', monospace;
-}
-
-.battle-log-light::-webkit-scrollbar {
-    width: 8px;
-}
-
-.battle-log-light::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 4px;
-}
-
-.battle-log-light::-webkit-scrollbar-thumb {
-    background: var(--sakura-pink);
-    border-radius: 4px;
-}
-
 /* ===========================
    ULTIMATE ABILITIES - STACK
    =========================== */
