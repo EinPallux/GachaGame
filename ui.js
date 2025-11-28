@@ -1,642 +1,452 @@
-/* ===========================
-   SAKURA CHRONICLES - UI
-   UI Management & Rendering
-   =========================== */
+/* =========================================
+   SAKURA CHRONICLES - UI MANAGER
+   Rendering & Component Logic
+   ========================================= */
 
 // ===========================
-// UPDATE ALL UI
+// GLOBAL UI UPDATES
 // ===========================
 
 function updateUI(gameState) {
-    updateCurrencyDisplay(gameState);
-    updateBattleStats(gameState);
-    updatePityDisplay(gameState);
-    updateBattleButtonState(gameState); 
-    
-    // Update Header Username
-    const usernameDisplay = document.getElementById('header-username');
-    if (usernameDisplay) usernameDisplay.textContent = gameState.username;
+    if (!gameState) return;
 
-    const activeTab = document.querySelector('.tab-content.active');
-    if (activeTab) {
-        const tabId = activeTab.id;
-        if (tabId === 'battle-tab') renderTeamSelection(gameState); 
-        if (tabId === 'roster-tab') renderRoster(gameState);
-        if (tabId === 'skill-tree-tab') renderSkillTree(gameState);
-        if (tabId === 'expedition-tab') updateExpeditionUI(gameState);
-        if (tabId === 'quests-tab') renderQuests(gameState);
-        if (tabId === 'garden-tab') renderGarden(gameState); 
-        if (tabId === 'profile-tab') renderProfile(gameState); // NEW
+    updateCurrencyDisplay(gameState);
+    
+    // Update Sidebar Profile
+    const sidebarName = document.getElementById('sidebar-username');
+    const sidebarLevel = document.getElementById('sidebar-level');
+    
+    if (sidebarName) sidebarName.textContent = gameState.username;
+    if (sidebarLevel) {
+        // Calculate a pseudo-player level based on total hero levels
+        const totalLevels = gameState.roster.reduce((acc, h) => acc + h.level, 0);
+        const playerLevel = Math.floor(Math.sqrt(totalLevels)) || 1;
+        sidebarLevel.textContent = playerLevel;
     }
 }
-
-// ===========================
-// UPDATE CURRENCY DISPLAY
-// ===========================
 
 function updateCurrencyDisplay(gameState) {
     const goldDisplay = document.getElementById('gold-display');
     const petalsDisplay = document.getElementById('petals-display');
     const orbsDisplay = document.getElementById('orbs-display');
     
+    // Animate numbers (simple implementation)
     if (goldDisplay) goldDisplay.textContent = formatNumber(gameState.gold);
     if (petalsDisplay) petalsDisplay.textContent = formatNumber(gameState.petals);
     if (orbsDisplay) orbsDisplay.textContent = formatNumber(gameState.spiritOrbs);
 }
 
 // ===========================
-// UPDATE BATTLE STATS 
-// ===========================
-
-function updateBattleStats(gameState) {
-    const waveDisplay = document.getElementById('wave-display');
-    const waveDisplayHeader = document.getElementById('wave-display-header');
-    const highestWaveDisplay = document.getElementById('highest-wave-display');
-    const enemiesDefeatedDisplay = document.getElementById('enemies-defeated-display');
-    
-    if (waveDisplay) waveDisplay.textContent = gameState.currentWave;
-    if (waveDisplayHeader) waveDisplayHeader.textContent = gameState.currentWave;
-    if (highestWaveDisplay) highestWaveDisplay.textContent = gameState.highestWave;
-    if (enemiesDefeatedDisplay) enemiesDefeatedDisplay.textContent = formatNumber(gameState.enemiesDefeated);
-}
-
-// ===========================
-// RENDER PROFILE (NEW)
-// ===========================
-
-function renderProfile(gameState) {
-    // Update Username Input Value if it's empty (first load)
-    const usernameInput = document.getElementById('username-input');
-    if (usernameInput && usernameInput.value === '') {
-        usernameInput.value = gameState.username;
-    }
-
-    // Update Stats
-    const playTimeEl = document.getElementById('profile-playtime');
-    const battlesEl = document.getElementById('profile-battles');
-    const pullsEl = document.getElementById('profile-pulls');
-    const waveEl = document.getElementById('profile-wave');
-
-    if (playTimeEl) {
-        const hours = Math.floor(gameState.stats.playTime / 3600);
-        const minutes = Math.floor((gameState.stats.playTime % 3600) / 60);
-        playTimeEl.textContent = `${hours}h ${minutes}m`;
-    }
-
-    if (battlesEl) battlesEl.textContent = formatNumber(gameState.stats.totalBattles);
-    if (pullsEl) pullsEl.textContent = formatNumber(gameState.stats.totalPulls);
-    if (waveEl) waveEl.textContent = gameState.highestWave;
-}
-
-// ===========================
-// RENDER ROSTER
+// ROSTER TAB
 // ===========================
 
 function renderRoster(gameState) {
-    const container = document.getElementById('roster-grid');
+    const container = document.getElementById('roster-tab');
     if (!container) return;
     
-    container.innerHTML = '';
+    // Filters Header
+    const headerHtml = `
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 animate-entry">
+            <h2 class="text-2xl font-heading font-bold text-slate-800">Hero Roster <span class="text-slate-400 text-lg font-normal">(${gameState.roster.length})</span></h2>
+            <div class="flex gap-2">
+                <select id="roster-filter-rarity" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5 outline-none" onchange="renderRosterGrid(window.gameStateRef)">
+                    <option value="all">All Rarities</option>
+                    <option value="N">Normal</option>
+                    <option value="R">Rare</option>
+                    <option value="SR">Super Rare</option>
+                    <option value="SSR">SSR</option>
+                    <option value="UR">Ultra Rare</option>
+                </select>
+                <select id="roster-sort" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5 outline-none" onchange="renderRosterGrid(window.gameStateRef)">
+                    <option value="rarity">Sort: Rarity</option>
+                    <option value="level">Sort: Level</option>
+                    <option value="power">Sort: Power</option>
+                </select>
+            </div>
+        </div>
+        <div id="roster-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-entry"></div>
+    `;
+    
+    container.innerHTML = headerHtml;
+    
+    // Store ref for onchange handlers
+    window.gameStateRef = gameState;
+    
+    renderRosterGrid(gameState);
+}
+
+function renderRosterGrid(gameState) {
+    const grid = document.getElementById('roster-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
     
     const rarityFilter = document.getElementById('roster-filter-rarity')?.value || 'all';
-    const elementFilter = document.getElementById('roster-filter-element')?.value || 'all';
     const sortFilter = document.getElementById('roster-sort')?.value || 'rarity';
     
     let heroes = [...gameState.roster];
     
+    // Filter
     if (rarityFilter !== 'all') {
         heroes = heroes.filter(h => h.rarity === rarityFilter);
     }
     
-    if (elementFilter !== 'all') {
-        heroes = heroes.filter(h => h.element === elementFilter);
-    }
-    
+    // Sort
     const rarityOrder = { 'UR': 5, 'SSR': 4, 'SR': 3, 'R': 2, 'N': 1 };
     heroes.sort((a, b) => {
-        if (sortFilter === 'team') {
-            const aInTeam = gameState.team.includes(a.id);
-            const bInTeam = gameState.team.includes(b.id);
-            if (aInTeam && !bInTeam) return -1;
-            if (!aInTeam && bInTeam) return 1;
-            if (aInTeam && bInTeam) return gameState.team.indexOf(a.id) - gameState.team.indexOf(b.id);
+        if (sortFilter === 'level') return b.level - a.level;
+        if (sortFilter === 'power') return (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp);
+        // Default Rarity
+        if (rarityOrder[b.rarity] !== rarityOrder[a.rarity]) {
             return rarityOrder[b.rarity] - rarityOrder[a.rarity];
-        } else if (sortFilter === 'level') {
-            return b.level - a.level;
-        } else {
-            if (rarityOrder[b.rarity] !== rarityOrder[a.rarity]) {
-                return rarityOrder[b.rarity] - rarityOrder[a.rarity];
-            }
-            return b.level - a.level;
         }
-    });
-    
-    heroes.forEach(hero => {
-        const card = createHeroCard(hero, gameState);
-        container.appendChild(card);
+        return b.level - a.level;
     });
     
     if (heroes.length === 0) {
-        const emptyMessage = document.createElement('div');
-        emptyMessage.className = 'col-span-full text-center text-slate-500 py-8';
-        emptyMessage.textContent = 'No heroes found with these filters.';
-        container.appendChild(emptyMessage);
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No heroes found matching criteria.</div>`;
+        return;
     }
+    
+    heroes.forEach(hero => {
+        const card = createHeroCard(hero);
+        card.onclick = () => showHeroDetails(hero, gameState);
+        grid.appendChild(card);
+    });
 }
 
-// ===========================
-// CREATE HERO CARD
-// ===========================
-
-function createHeroCard(hero, gameState) {
+function createHeroCard(hero) {
     const card = document.createElement('div');
-    card.className = `hero-card rarity-${hero.rarity}`;
+    card.className = 'hero-card cursor-pointer group';
+    card.setAttribute('data-rarity', hero.rarity);
     
-    const isInTeam = gameState.team.includes(hero.id);
-    if (isInTeam) {
-        card.classList.add('in-team');
-    }
-    
-    const img = document.createElement('img');
-    img.className = 'hero-card-image';
-    img.src = `/images/${hero.id}.jpg`;
-    img.alt = hero.name;
-    img.onerror = function() {
-        const placeholder = createHeroPlaceholder(hero);
-        img.replaceWith(placeholder);
-    };
-    card.appendChild(img);
-    
-    if (isInTeam) {
-        const teamBadge = document.createElement('div');
-        teamBadge.className = 'in-team-badge';
-        const teamSlot = gameState.team.indexOf(hero.id) + 1;
-        teamBadge.innerHTML = `<span class="team-badge-icon">⭐</span><span>Team Slot ${teamSlot}</span>`;
-        card.appendChild(teamBadge);
-    }
-    
-    const levelBadge = document.createElement('div');
-    levelBadge.className = 'hero-card-level';
-    levelBadge.textContent = `Lv.${hero.level}`;
-    card.appendChild(levelBadge);
-    
-    const rarityBadge = document.createElement('div');
-    rarityBadge.className = `hero-card-rarity badge-${hero.rarity}`;
-    rarityBadge.textContent = hero.rarity;
-    card.appendChild(rarityBadge);
-    
-    const info = document.createElement('div');
-    info.className = 'hero-card-info';
-    
-    const name = document.createElement('div');
-    name.className = 'hero-card-name';
-    name.textContent = hero.name;
-    
-    const details = document.createElement('div');
-    details.className = 'hero-card-details';
-    
-    const element = document.createElement('span');
-    element.textContent = getElementEmoji(hero.element);
-    
-    const classSpan = document.createElement('span');
-    classSpan.textContent = hero.class;
-    
-    details.appendChild(element);
-    details.appendChild(classSpan);
-    
-    const stars = document.createElement('div');
-    stars.className = 'hero-card-stars';
-    for (let i = 0; i < hero.stars; i++) {
-        const star = document.createElement('span');
-        star.textContent = '⭐';
-        star.style.fontSize = '0.75rem';
-        stars.appendChild(star);
-    }
-    
-    info.appendChild(name);
-    info.appendChild(details);
-    info.appendChild(stars);
-    
-    card.appendChild(info);
-    card.onclick = () => showHeroDetails(hero, gameState);
+    card.innerHTML = `
+        <div class="relative overflow-hidden">
+            <img src="/images/${hero.id}.jpg" class="hero-card-image transition-transform duration-500 group-hover:scale-110" onerror="this.onerror=null; this.parentElement.innerHTML='${createHeroPlaceholder(hero)}'">
+            <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded">Lv.${hero.level}</div>
+            <div class="absolute top-2 right-2 badge-${hero.rarity} text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm">${hero.rarity}</div>
+        </div>
+        <div class="p-3 bg-white">
+            <div class="font-bold text-slate-800 text-sm truncate">${hero.name}</div>
+            <div class="flex justify-between items-center mt-1">
+                <div class="text-xs text-slate-500 flex items-center gap-1">
+                    <span>${getElementEmoji(hero.element)}</span>
+                    <span>${hero.class}</span>
+                </div>
+                <div class="flex gap-0.5 text-[0.6rem] text-yellow-400">
+                    ${'⭐'.repeat(hero.stars)}
+                </div>
+            </div>
+        </div>
+    `;
     
     return card;
 }
 
+function createHeroPlaceholder(hero) {
+    // Generate a beautiful gradient placeholder
+    const colors = {
+        'Fire': 'from-red-400 to-orange-500',
+        'Water': 'from-blue-400 to-cyan-500',
+        'Wind': 'from-emerald-400 to-teal-500',
+        'Light': 'from-yellow-300 to-amber-500',
+        'Dark': 'from-purple-500 to-indigo-600'
+    };
+    const gradient = colors[hero.element] || 'from-slate-400 to-slate-600';
+    const initials = hero.name.substring(0, 2).toUpperCase();
+    
+    return `<div class="w-full aspect-[3/4] bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90">${initials}</div>`;
+}
+
 // ===========================
-// SHOW HERO DETAILS MODAL
+// HERO DETAILS MODAL
 // ===========================
 
 function showHeroDetails(hero, gameState) {
-    const modal = document.getElementById('hero-modal');
-    const detailContainer = document.getElementById('hero-detail');
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
     
-    if (!modal || !detailContainer) return;
+    const xpNeeded = hero.getUpgradeCost();
+    const canAfford = gameState.gold >= xpNeeded;
     
-    detailContainer.innerHTML = '';
-    
-    // Image
-    const img = document.createElement('img');
-    img.className = 'w-full rounded-lg mb-4';
-    img.style.maxHeight = '300px';
-    img.style.objectFit = 'cover';
-    img.src = `/images/${hero.id}.jpg`;
-    img.onerror = function() {
-        const placeholder = createHeroPlaceholder(hero);
-        placeholder.style.height = '300px';
-        img.replaceWith(placeholder);
-    };
-    detailContainer.appendChild(img);
-    
-    // Header
-    const header = document.createElement('div');
-    header.className = 'mb-4';
-    header.innerHTML = `
-        <h2 class="text-2xl font-bold mb-2">${hero.name}</h2>
-        <div class="flex gap-2 items-center">
-            <span class="badge-${hero.rarity} px-3 py-1 rounded-lg text-white font-semibold">${hero.rarity}</span>
-            <span>${getElementEmoji(hero.element)} ${hero.element}</span>
-            <span>⚔️ ${hero.class}</span>
-        </div>
-    `;
-    detailContainer.appendChild(header);
-    
-    // Stats
-    const stats = document.createElement('div');
-    stats.className = 'grid grid-cols-2 gap-3 mb-4';
-    stats.innerHTML = `
-        <div class="bg-pink-50 p-3 rounded-lg">
-            <div class="text-sm text-slate-600">Level</div>
-            <div class="text-xl font-bold">${hero.level}</div>
-        </div>
-        <div class="bg-pink-50 p-3 rounded-lg">
-            <div class="text-sm text-slate-600">HP</div>
-            <div class="text-xl font-bold">${hero.maxHP}</div>
-        </div>
-        <div class="bg-pink-50 p-3 rounded-lg">
-            <div class="text-sm text-slate-600">ATK</div>
-            <div class="text-xl font-bold">${hero.atk}</div>
-        </div>
-        <div class="bg-pink-50 p-3 rounded-lg">
-            <div class="text-sm text-slate-600">DEF</div>
-            <div class="text-xl font-bold">${hero.def}</div>
-        </div>
-    `;
-    detailContainer.appendChild(stats);
-    
-    // Awakening
-    const awakening = document.createElement('div');
-    awakening.className = 'bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4';
-    const shardsNeeded = hero.stars * 10;
-    awakening.innerHTML = `
-        <div class="font-semibold mb-2">Awakening Progress</div>
-        <div class="text-sm mb-2">Shards: ${hero.awakeningShards} / ${shardsNeeded}</div>
-        <div class="w-full bg-gray-200 rounded-full h-2">
-            <div class="bg-amber-500 h-2 rounded-full" style="width: ${(hero.awakeningShards / shardsNeeded) * 100}%"></div>
-        </div>
-    `;
-    
-    if (hero.stars < 5 && hero.awakeningShards >= shardsNeeded) {
-        const awakenBtn = document.createElement('button');
-        awakenBtn.className = 'btn btn-gold w-full mt-3';
-        awakenBtn.textContent = `Awaken to ${hero.stars + 1} Stars`;
-        awakenBtn.onclick = () => {
-            if (hero.awaken()) {
-                showNotification(`✨ ${hero.name} awakened to ${hero.stars} stars!`, 'success');
-                showHeroDetails(hero, gameState);
-                saveGame(gameState);
-            }
-        };
-        awakening.appendChild(awakenBtn);
-    } else if (hero.stars >= 5) {
-        awakening.innerHTML += '<div class="text-center text-amber-600 font-semibold mt-2">★ MAX STARS ★</div>';
-    }
-    detailContainer.appendChild(awakening);
-    
-    // Level Up
-    const upgradeCost = hero.getUpgradeCost();
-    const levelUpBtn = document.createElement('button');
-    levelUpBtn.className = 'btn btn-primary w-full mb-4';
-    levelUpBtn.innerHTML = `Level Up (${upgradeCost} Gold)`;
-    levelUpBtn.disabled = gameState.gold < upgradeCost;
-    levelUpBtn.onclick = () => {
-        if (gameState.gold >= upgradeCost) {
-            gameState.gold -= upgradeCost;
-            hero.levelUp(upgradeCost);
-            showNotification(`${hero.name} leveled up!`, 'success');
-            showHeroDetails(hero, gameState);
-            updateCurrencyDisplay(gameState);
-            gameState.updateQuest('levelUp', 1);
-            saveGame(gameState);
-        }
-    };
-    detailContainer.appendChild(levelUpBtn);
-    
-    // Add to Team Button
-    const addToTeamBtn = document.createElement('button');
-    addToTeamBtn.className = 'btn btn-secondary w-full';
-    addToTeamBtn.textContent = 'Add to Team';
-    addToTeamBtn.onclick = () => {
-        if (gameState.isBattleActive) {
-            showNotification('Cannot change team during an active run!', 'error');
-            return;
-        }
-        modal.classList.remove('active');
-        switchTab('battle');
-        showTeamSelectionForHero(hero, gameState);
-    };
-    detailContainer.appendChild(addToTeamBtn);
-    
-    modal.classList.add('active');
-}
-
-// ===========================
-// SHOW TEAM SELECTION
-// ===========================
-
-function showTeamSelectionForHero(hero, gameState) {
-    const emptySlotIndex = gameState.team.indexOf(null);
-    
-    if (emptySlotIndex !== -1) {
-        gameState.setTeamMember(emptySlotIndex, hero.id);
-        renderTeamSelection(gameState);
-        showNotification(`${hero.name} added to team!`, 'success');
-        saveGame(gameState);
-    } else {
-        showNotification('Team is full! Click a slot to replace a hero.', 'error');
-    }
-}
-
-// ===========================
-// RENDER TEAM SELECTION
-// ===========================
-
-function renderTeamSelection(gameState) {
-    const container = document.getElementById('team-selection');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    for (let i = 0; i < 5; i++) {
-        const slot = createTeamSlot(i, gameState);
-        container.appendChild(slot);
-    }
-}
-
-// ===========================
-// CREATE TEAM SLOT
-// ===========================
-
-function createTeamSlot(index, gameState) {
-    const slot = document.createElement('div');
-    slot.className = 'team-slot';
-    
-    const heroId = gameState.team[index];
-    const hero = heroId ? gameState.roster.find(h => h.id === heroId) : null;
-    
-    if (hero) {
-        slot.classList.add('filled');
-        
-        const img = document.createElement('img');
-        img.className = 'team-slot-image';
-        img.src = `/images/${hero.id}.jpg`;
-        img.onerror = () => img.replaceWith(createHeroPlaceholder(hero));
-        slot.appendChild(img);
-        
-        const info = document.createElement('div');
-        info.className = 'team-slot-info';
-        info.innerHTML = `
-            <div class="team-slot-name">${hero.name}</div>
-            <div class="team-slot-level">Lv.${hero.level}</div>
-        `;
-        slot.appendChild(info);
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'text-red-500 hover:text-red-700 font-bold';
-        removeBtn.innerHTML = '✕';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            if (gameState.isBattleActive) {
-                showNotification('Cannot remove hero during a run!', 'error');
-                return;
-            }
-            gameState.setTeamMember(index, null);
-            renderTeamSelection(gameState);
-            saveGame(gameState);
-        };
-        slot.appendChild(removeBtn);
-    } else {
-        slot.innerHTML = `
-            <div class="team-slot-placeholder bg-slate-200">+</div>
-            <div class="team-slot-info">
-                <div class="team-slot-name text-slate-500">Empty</div>
+    const html = `
+        <div class="relative">
+            <div class="h-32 bg-gradient-to-r from-slate-800 to-slate-900 relative overflow-hidden">
+                <div class="absolute inset-0 opacity-30 bg-[url('/images/${hero.id}.jpg')] bg-cover bg-center"></div>
+                <div class="absolute bottom-4 left-6 flex items-end gap-4 z-10">
+                     <div class="w-20 h-20 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-slate-200">
+                        <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxIDEiPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNjYmQ1ZTEiLz48L3N2Zz4='">
+                     </div>
+                     <div class="mb-1">
+                        <h2 class="text-2xl font-bold text-white leading-none">${hero.name}</h2>
+                        <div class="text-slate-300 text-sm flex items-center gap-2 mt-1">
+                            <span class="badge-${hero.rarity} px-1.5 rounded text-[0.65rem]">${hero.rarity}</span>
+                            <span>${getElementEmoji(hero.element)} ${hero.element}</span> • <span>${hero.class}</span>
+                        </div>
+                     </div>
+                </div>
             </div>
-        `;
-    }
-    
-    slot.onclick = () => showHeroSelectionModal(index, gameState);
-    
-    return slot;
-}
 
-// ===========================
-// SHOW HERO SELECTION MODAL
-// ===========================
+            <div class="p-6 pt-4">
+                <div class="grid grid-cols-4 gap-2 mb-6">
+                    <div class="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
+                        <div class="text-xs text-slate-400 uppercase font-bold">HP</div>
+                        <div class="font-bold text-slate-700">${formatNumber(hero.maxHP)}</div>
+                    </div>
+                    <div class="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
+                        <div class="text-xs text-slate-400 uppercase font-bold">ATK</div>
+                        <div class="font-bold text-slate-700">${formatNumber(hero.atk)}</div>
+                    </div>
+                    <div class="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
+                        <div class="text-xs text-slate-400 uppercase font-bold">DEF</div>
+                        <div class="font-bold text-slate-700">${formatNumber(hero.def)}</div>
+                    </div>
+                    <div class="bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
+                        <div class="text-xs text-slate-400 uppercase font-bold">SPD</div>
+                        <div class="font-bold text-slate-700">${hero.spd}</div>
+                    </div>
+                </div>
 
-function showHeroSelectionModal(slotIndex, gameState) {
-    if (gameState.isBattleActive) {
-        showNotification('Cannot change team during a run!', 'error');
-        return;
-    }
-
-    const modal = document.getElementById('hero-modal');
-    const detailContainer = document.getElementById('hero-detail');
+                <div class="space-y-3">
+                    <button id="modal-levelup-btn" class="w-full btn ${canAfford ? 'btn-primary' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}" ${!canAfford ? 'disabled' : ''}>
+                        <div class="flex flex-col items-center leading-tight">
+                            <span>Level Up</span>
+                            <span class="text-xs font-normal opacity-80">${formatNumber(xpNeeded)} Gold</span>
+                        </div>
+                    </button>
+                    
+                    ${hero.awakeningShards >= hero.stars * 10 ? `
+                    <button id="modal-awaken-btn" class="w-full btn bg-amber-500 text-white hover:bg-amber-600">
+                        Awaken Hero (Requires ${hero.stars * 10} Shards)
+                    </button>` : ''}
+                </div>
+                
+                <div class="mt-6 border-t border-slate-100 pt-4">
+                    <h4 class="font-bold text-slate-700 mb-2 text-sm">Ultimate Ability</h4>
+                    <div class="bg-purple-50 border border-purple-100 rounded-lg p-3">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-purple-700 text-sm">${hero.ultimate.name}</span>
+                            <span class="text-xs bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded">100 Mana</span>
+                        </div>
+                        <p class="text-xs text-purple-800/80 leading-relaxed">${hero.ultimate.desc}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
     
-    if (!modal || !detailContainer) return;
+    modalBody.innerHTML = html;
     
-    detailContainer.innerHTML = '';
-    
-    const title = document.createElement('h2');
-    title.className = 'section-title mb-4';
-    title.textContent = `Select Hero for Slot ${slotIndex + 1}`;
-    detailContainer.appendChild(title);
-    
-    const grid = document.createElement('div');
-    grid.className = 'grid grid-cols-3 gap-3 max-h-96 overflow-y-auto';
-    
-    gameState.roster.forEach(hero => {
-        const miniCard = document.createElement('div');
-        miniCard.className = `hero-card rarity-${hero.rarity} cursor-pointer hover:scale-105 transition`;
-        
-        if (gameState.team.includes(hero.id)) {
-            miniCard.style.opacity = '0.5';
-        }
-        
-        const img = document.createElement('img');
-        img.className = 'hero-card-image';
-        img.src = `/images/${hero.id}.jpg`;
-        img.onerror = () => img.replaceWith(createHeroPlaceholder(hero));
-        miniCard.appendChild(img);
-        
-        const name = document.createElement('div');
-        name.className = 'hero-card-name text-xs p-2';
-        name.textContent = hero.name;
-        miniCard.appendChild(name);
-        
-        miniCard.onclick = () => {
-            gameState.setTeamMember(slotIndex, hero.id);
-            renderTeamSelection(gameState);
-            modal.classList.remove('active');
-            saveGame(gameState);
+    // Bind Events
+    const lvlBtn = document.getElementById('modal-levelup-btn');
+    if (lvlBtn && canAfford) {
+        lvlBtn.onclick = () => {
+            if (hero.levelUp(xpNeeded)) {
+                gameState.gold -= xpNeeded;
+                showNotification(`Level Up! ${hero.name} is now Lv.${hero.level}`, 'success');
+                gameState.updateQuest('levelUp', 1);
+                saveGame(gameState);
+                updateUI(gameState);
+                renderRoster(gameState); // Refresh grid
+                showHeroDetails(hero, gameState); // Refresh modal
+            }
         };
-        
-        grid.appendChild(miniCard);
+    }
+    
+    // Show Modal
+    const modal = document.getElementById('modal-overlay');
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0', 'pointer-events-none');
     });
-    
-    detailContainer.appendChild(grid);
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'btn btn-secondary w-full mt-4';
-    closeBtn.textContent = 'Cancel';
-    closeBtn.onclick = () => modal.classList.remove('active');
-    detailContainer.appendChild(closeBtn);
-    
-    modal.classList.add('active');
 }
 
 // ===========================
-// RENDER QUESTS
+// QUESTS TAB
 // ===========================
 
 function renderQuests(gameState) {
-    const container = document.getElementById('quests-list');
+    const container = document.getElementById('quests-tab');
     if (!container) return;
     
     gameState.checkQuestReset();
-    container.innerHTML = '';
     
-    gameState.quests.forEach(quest => {
-        const card = createQuestCard(quest, gameState);
-        container.appendChild(card);
-    });
-}
-
-function createQuestCard(quest, gameState) {
-    const card = document.createElement('div');
-    card.className = `quest-card ${quest.completed ? 'completed' : ''}`;
-    
-    card.innerHTML = `
-        <div class="flex justify-between items-center mb-2">
-            <div class="font-semibold">${quest.desc}</div>
-            <div class="text-sm text-slate-600">${quest.current} / ${quest.target}</div>
-        </div>
-        <div class="quest-progress-bar">
-            <div class="quest-progress-fill" style="width: ${(quest.current / quest.target) * 100}%"></div>
-        </div>
+    let html = `
+        <h2 class="text-2xl font-heading font-bold text-slate-800 mb-6 animate-entry">Daily Quests</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-entry">
     `;
     
-    if (quest.completed && !quest.claimed) {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-primary w-full mt-3';
-        btn.textContent = 'Claim Rewards';
-        btn.onclick = () => {
-            gameState.claimQuest(quest.id);
-            showNotification('Rewards claimed!', 'success');
-            renderQuests(gameState);
-            updateCurrencyDisplay(gameState);
-            saveGame(gameState);
-        };
-        card.appendChild(btn);
-    } else if (quest.claimed) {
-        card.innerHTML += '<div class="text-center text-green-600 font-semibold mt-2">✓ Claimed</div>';
-    }
+    gameState.quests.forEach(quest => {
+        const progress = Math.min(100, (quest.current / quest.target) * 100);
+        const isFinished = quest.current >= quest.target;
+        
+        html += `
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between h-full">
+                <div class="mb-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-slate-700">${quest.desc}</h3>
+                        ${quest.claimed ? '<span class="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded">CLAIMED</span>' : ''}
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2.5 mb-1">
+                        <div class="bg-primary h-2.5 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
+                    </div>
+                    <div class="text-xs text-slate-500 text-right">${quest.current} / ${quest.target}</div>
+                </div>
+                
+                ${isFinished && !quest.claimed ? `
+                    <button class="btn btn-primary w-full text-sm py-2" onclick="claimQuestReward('${quest.id}')">
+                        Claim Rewards
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    });
     
-    return card;
+    html += `</div>`;
+    container.innerHTML = html;
+    
+    // Global function for the onclick handler
+    window.claimQuestReward = (qid) => {
+        const reward = gameState.claimQuest(qid);
+        if (reward) {
+            showNotification('Quest Rewards Claimed!', 'success');
+            updateUI(gameState);
+            renderQuests(gameState);
+            saveGame(gameState);
+        }
+    };
 }
 
 // ===========================
-// UPDATE EXPEDITION UI
+// EXPEDITION TAB
 // ===========================
 
 function updateExpeditionUI(gameState) {
-    const statusContainer = document.getElementById('expedition-status');
-    const claimBtn = document.getElementById('claim-expedition-btn');
-    
-    if (!statusContainer || !claimBtn) return;
+    const container = document.getElementById('expedition-tab');
+    if (!container) return;
     
     const rewards = gameState.calculateExpeditionRewards();
+    const isRunning = gameState.expedition.isActive;
     
-    if (rewards && rewards.gold > 0) {
-        statusContainer.innerHTML = `
-            <div class="mb-2">Expedition Time: <strong>${rewards.hours}</strong> hours</div>
-            <div class="text-sm">Rewards: 💰 ${rewards.gold} Gold, 🌸 ${rewards.petals} Petals</div>
-        `;
-        claimBtn.disabled = false;
-        claimBtn.onclick = () => {
-            const claimed = gameState.claimExpeditionRewards();
-            if (claimed) {
-                showNotification(`Claimed ${claimed.gold} Gold & ${claimed.petals} Petals!`, 'success');
-                updateExpeditionUI(gameState);
-                updateCurrencyDisplay(gameState);
-                saveGame(gameState);
-            }
-        };
-    } else {
-        statusContainer.innerHTML = '<div>Heroes are exploring...</div><div class="text-sm text-slate-600 mt-2">Check back later!</div>';
-        claimBtn.disabled = true;
-    }
-}
-
-// ===========================
-// SETUP FILTER LISTENERS
-// ===========================
-
-function setupFilterListeners(gameState) {
-    ['roster-filter-rarity', 'roster-filter-element', 'roster-sort'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.onchange = () => renderRoster(gameState);
-    });
-}
-
-// ===========================
-// SETUP MODAL LISTENERS
-// ===========================
-
-function setupModalListeners() {
-    const modal = document.getElementById('hero-modal');
-    if (modal) {
-        const closeBtn = modal.querySelector('.modal-close');
-        if (closeBtn) closeBtn.onclick = () => modal.classList.remove('active');
-        modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
-    }
-}
-
-// ===========================
-// SETUP TAB LISTENERS
-// ===========================
-
-function setupTabListeners(gameState) {
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.onclick = () => switchTab(tab.getAttribute('data-tab'), gameState);
-    });
-}
-
-function switchTab(tabName, gameState = null) {
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
-    });
+    container.innerHTML = `
+        <div class="max-w-2xl mx-auto mt-8 animate-entry">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="h-40 bg-amber-50 relative flex items-center justify-center">
+                    <i class="fa-solid fa-map-location-dot text-6xl text-amber-200"></i>
+                    <div class="absolute inset-0 bg-gradient-to-t from-white/50 to-transparent"></div>
+                </div>
+                <div class="p-8 text-center">
+                    <h2 class="text-2xl font-heading font-bold text-slate-800 mb-2">Resource Expedition</h2>
+                    <p class="text-slate-500 mb-8">Your heroes are gathering resources in the background.</p>
+                    
+                    <div class="bg-slate-50 rounded-xl p-6 mb-8 border border-slate-100">
+                        <div class="text-sm text-slate-400 uppercase font-bold mb-4">Accumulated Rewards</div>
+                        <div class="flex justify-center gap-8">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-slate-700">${rewards ? rewards.gold : 0}</div>
+                                <div class="text-xs text-slate-400">Gold</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-slate-700">${rewards ? rewards.petals : 0}</div>
+                                <div class="text-xs text-slate-400">Petals</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-400">Duration: ${rewards ? rewards.hours : '0.0'} hours</div>
+                    </div>
+                    
+                    <button class="btn btn-primary w-full py-3 text-lg" onclick="handleExpeditionClaim()">
+                        Claim & Restart
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
     
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.toggle('active', content.id === `${tabName}-tab`);
-    });
+    window.handleExpeditionClaim = () => {
+        const claimed = gameState.claimExpeditionRewards();
+        if (claimed && claimed.gold > 0) {
+            showNotification(`Claimed ${claimed.gold} Gold & ${claimed.petals} Petals!`, 'success');
+            updateUI(gameState);
+            updateExpeditionUI(gameState);
+            saveGame(gameState);
+        } else {
+            showNotification('Not enough rewards yet!', 'info');
+        }
+    };
+}
+
+// ===========================
+// SETTINGS / PROFILE TAB
+// ===========================
+
+function renderProfile(gameState) {
+    const container = document.getElementById('settings-tab');
+    if (!container) return;
     
-    if (gameState) {
-        if (tabName === 'battle') renderTeamSelection(gameState); 
-        if (tabName === 'roster') renderRoster(gameState);
-        if (tabName === 'skill-tree') renderSkillTree(gameState);
-        if (tabName === 'expedition') updateExpeditionUI(gameState);
-        if (tabName === 'quests') renderQuests(gameState);
-        if (tabName === 'garden') renderGarden(gameState); 
-        if (tabName === 'profile') renderProfile(gameState); // NEW
-    }
+    container.innerHTML = `
+        <div class="max-w-lg mx-auto mt-8 animate-entry">
+            <h2 class="text-2xl font-heading font-bold text-slate-800 mb-6">Settings & Profile</h2>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
+                <h3 class="font-bold text-slate-700 mb-4">Player Profile</h3>
+                <div class="flex gap-4 mb-4">
+                    <input type="text" id="settings-username" value="${gameState.username}" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:border-primary transition-colors">
+                    <button class="btn btn-secondary" onclick="saveUsername()">Update</button>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm text-slate-600">
+                    <div>Total Battles: <span class="font-bold text-slate-800">${gameState.stats.totalBattles}</span></div>
+                    <div>Highest Wave: <span class="font-bold text-slate-800">${gameState.highestWave}</span></div>
+                    <div>Total Pulls: <span class="font-bold text-slate-800">${gameState.stats.totalPulls}</span></div>
+                    <div>Play Time: <span class="font-bold text-slate-800">${Math.floor(gameState.stats.playTime / 3600)}h</span></div>
+                </div>
+            </div>
+            
+            <div class="bg-red-50 rounded-xl border border-red-100 p-6">
+                <h3 class="font-bold text-red-700 mb-2">Danger Zone</h3>
+                <p class="text-sm text-red-600/80 mb-4">Resetting your game is irreversible. All progress will be lost.</p>
+                <button class="btn bg-red-500 text-white hover:bg-red-600 w-full" onclick="debug.reset()">
+                    <i class="fa-solid fa-trash"></i> Reset Game Data
+                </button>
+            </div>
+        </div>
+    `;
+    
+    window.saveUsername = () => {
+        const input = document.getElementById('settings-username');
+        if (input && input.value.trim()) {
+            gameState.username = input.value.trim();
+            updateUI(gameState);
+            saveGame(gameState);
+            showNotification('Username Updated!', 'success');
+        }
+    };
+}
+
+// ===========================
+// FORGE UI (New Feature)
+// ===========================
+
+function renderForge(gameState) {
+    const container = document.getElementById('forge-tab');
+    if (!container) return;
+    
+    // Initial Placeholder UI for the feature
+    container.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-[60vh] text-center animate-entry">
+            <div class="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-400 text-4xl mb-6 shadow-sm">
+                <i class="fa-solid fa-hammer"></i>
+            </div>
+            <h2 class="text-3xl font-heading font-bold text-slate-800 mb-2">The Celestial Forge</h2>
+            <p class="text-slate-500 max-w-md mb-8">
+                The ancient forge is awakening. Soon you will be able to craft legendary weapons using materials from your expeditions.
+            </p>
+            <div class="grid grid-cols-3 gap-4 opacity-50 pointer-events-none">
+                <div class="forge-slot w-16 h-16 rounded-lg bg-slate-100 border-2 border-slate-200"></div>
+                <div class="forge-slot w-16 h-16 rounded-lg bg-slate-100 border-2 border-slate-200"></div>
+                <div class="forge-slot w-16 h-16 rounded-lg bg-slate-100 border-2 border-slate-200"></div>
+            </div>
+            <div class="mt-8 text-xs font-bold text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
+                COMING SOON IN V1.2
+            </div>
+        </div>
+    `;
 }

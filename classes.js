@@ -1,7 +1,7 @@
-/* ===========================
-   SAKURA CHRONICLES - CLASSES
-   Core Game Classes
-   =========================== */
+/* =========================================
+   SAKURA CHRONICLES - CORE CLASSES
+   Game Logic Models
+   ========================================= */
 
 // ===========================
 // HERO CLASS
@@ -9,7 +9,7 @@
 
 class Hero {
     constructor(heroData) {
-        // Base data from database
+        // Identity
         this.id = heroData.id;
         this.name = heroData.name;
         this.rarity = heroData.rarity;
@@ -18,24 +18,24 @@ class Hero {
         this.gender = heroData.gender;
         this.ultimate = heroData.ultimate;
         
-        // Progression stats
+        // Progression
         this.level = 1;
         this.exp = 0;
         this.stars = 1;
         this.awakeningShards = 0;
         this.bond = 0;
         
-        // Base stats
+        // Base stats from DB
         this.baseStats = { ...heroData.baseStats };
         
-        // Equipment
+        // Equipment (Placeholder for Forge)
         this.equipment = {
             weapon: null,
             armor: null,
             accessory: null
         };
         
-        // Battle stats (calculated)
+        // Dynamic Battle Stats
         this.currentHP = 0;
         this.maxHP = 0;
         this.atk = 0;
@@ -44,7 +44,7 @@ class Hero {
         this.mana = 0;
         this.maxMana = 100;
         
-        // Status flags
+        // State
         this.isAlive = true;
         this.buffs = [];
         this.debuffs = [];
@@ -52,150 +52,102 @@ class Hero {
         this.calculateStats();
     }
     
-    // Calculate total stats based on level, stars, equipment, and bonuses
+    // Core Stat Calculation
     calculateStats(skillTreeBonuses = {}) {
         const levelMultiplier = 1 + (this.level - 1) * 0.1;
         const starMultiplier = 1 + (this.stars - 1) * 0.15;
         
-        // Base stats with level and star scaling
+        // 1. Calculate Base with Multipliers
         let totalHP = Math.floor(this.baseStats.hp * levelMultiplier * starMultiplier);
         let totalATK = Math.floor(this.baseStats.atk * levelMultiplier * starMultiplier);
         let totalDEF = Math.floor(this.baseStats.def * levelMultiplier * starMultiplier);
-        let totalSPD = Math.floor(this.baseStats.spd * levelMultiplier * starMultiplier);
+        let totalSPD = Math.floor(this.baseStats.spd * levelMultiplier * starMultiplier); // SPD scales slower usually, but scaling here for simplicity
         
-        // Add equipment bonuses
-        if (this.equipment.weapon) {
-            totalATK += this.equipment.weapon.stats.atk || 0;
-        }
+        // 2. Add Equipment (Future Proofing)
+        if (this.equipment.weapon) totalATK += this.equipment.weapon.stats.atk || 0;
         if (this.equipment.armor) {
             totalDEF += this.equipment.armor.stats.def || 0;
             totalHP += this.equipment.armor.stats.hp || 0;
         }
-        if (this.equipment.accessory) {
-            totalATK += this.equipment.accessory.stats.atk || 0;
-            totalDEF += this.equipment.accessory.stats.def || 0;
-            totalSPD += this.equipment.accessory.stats.spd || 0;
-            totalHP += this.equipment.accessory.stats.hp || 0;
-        }
         
-        // Add bond bonuses (up to 10% at max bond)
-        const bondBonus = 1 + (this.bond / 1000) * 0.1;
-        totalATK = Math.floor(totalATK * bondBonus);
-        totalDEF = Math.floor(totalDEF * bondBonus);
-        
-        // Apply skill tree bonuses
+        // 3. Apply Skill Tree Bonuses (Percentages)
+        // Global
         if (skillTreeBonuses.allStatsPercent) {
-            const bonus = 1 + skillTreeBonuses.allStatsPercent / 100;
-            totalHP = Math.floor(totalHP * bonus);
-            totalATK = Math.floor(totalATK * bonus);
-            totalDEF = Math.floor(totalDEF * bonus);
-            totalSPD = Math.floor(totalSPD * bonus);
+            const factor = 1 + (skillTreeBonuses.allStatsPercent / 100);
+            totalHP = Math.floor(totalHP * factor);
+            totalATK = Math.floor(totalATK * factor);
+            totalDEF = Math.floor(totalDEF * factor);
         }
         
-        // Element-specific bonuses
-        const elementKey = `${this.element.toLowerCase()}Bonus`;
-        if (skillTreeBonuses[elementKey]) {
-            const bonus = 1 + skillTreeBonuses[elementKey] / 100;
-            totalATK = Math.floor(totalATK * bonus);
+        // Element Specific
+        const elKey = `${this.element.toLowerCase()}Bonus`;
+        if (skillTreeBonuses[elKey]) {
+            totalATK = Math.floor(totalATK * (1 + skillTreeBonuses[elKey] / 100));
         }
-        
-        // Class-specific bonuses
-        const classKey = `${this.class.replace(/\s/g, '').toLowerCase()}Bonus`;
-        if (skillTreeBonuses[classKey]) {
-            const bonus = 1 + skillTreeBonuses[classKey] / 100;
-            totalHP = Math.floor(totalHP * bonus);
-        }
-        
-        // Set calculated stats
+
+        // Final Assignment
         this.maxHP = totalHP;
         this.atk = totalATK;
         this.def = totalDEF;
         this.spd = totalSPD;
         
-        // Set current HP if not in battle
-        if (this.currentHP === 0 || this.currentHP > this.maxHP) {
-            this.currentHP = this.maxHP;
-        }
+        // Ensure HP is valid
+        if (this.currentHP <= 0 && this.isAlive) this.currentHP = this.maxHP;
+        this.currentHP = Math.min(this.currentHP, this.maxHP);
     }
     
-    // Level up the hero
-    levelUp(goldSpent) {
-        const goldRequired = this.getUpgradeCost();
-        if (goldSpent >= goldRequired) {
-            this.level++;
-            this.calculateStats();
-            return true;
-        }
-        return false;
+    // Combat Power for Sorting
+    getPower() {
+        return Math.floor(this.maxHP / 10 + this.atk + this.def + this.spd);
     }
     
-    // Get cost to level up
+    // Leveling Logic
     getUpgradeCost() {
-        return Math.floor(100 * Math.pow(1.09, this.level - 1));
+        // Exponential cost curve
+        return Math.floor(100 * Math.pow(1.08, this.level - 1));
     }
     
-    // Awaken hero with shards
-    awaken() {
-        const shardsRequired = this.stars * 10;
-        if (this.awakeningShards >= shardsRequired && this.stars < 5) {
-            this.awakeningShards -= shardsRequired;
-            this.stars++;
-            this.calculateStats();
-            return true;
-        }
-        return false;
+    levelUp(goldSpent) {
+        const cost = this.getUpgradeCost();
+        // Validation happens in UI usually, but double check here if needed
+        this.level++;
+        this.calculateStats();
+        return true;
     }
     
-    // Add awakening shards (from duplicate pulls)
-    addShards(amount) {
-        this.awakeningShards += amount;
-    }
-    
-    // Increase bond level
-    addBond(amount) {
-        this.bond = Math.min(1000, this.bond + amount);
-    }
-    
-    // Reset for new battle
+    // Battle State Management
     resetForBattle(skillTreeBonuses = {}) {
         this.calculateStats(skillTreeBonuses);
         this.currentHP = this.maxHP;
-        this.mana = 0;
+        this.mana = skillTreeBonuses.startingMana || 0; // Skill Tree Bonus
         this.isAlive = true;
         this.buffs = [];
         this.debuffs = [];
     }
     
-    // Take damage
-    takeDamage(damage) {
-        const actualDamage = Math.max(1, damage - this.def);
-        this.currentHP = Math.max(0, this.currentHP - actualDamage);
-        
-        if (this.currentHP <= 0) {
-            this.isAlive = false;
-        }
-        
-        return actualDamage;
+    takeDamage(amount) {
+        this.currentHP = Math.max(0, this.currentHP - amount);
+        if (this.currentHP <= 0) this.isAlive = false;
+        return amount; // Return actual damage taken (could calculate mitigation here)
     }
     
-    // Heal HP
     heal(amount) {
-        const actualHeal = Math.min(amount, this.maxHP - this.currentHP);
-        this.currentHP = Math.min(this.maxHP, this.currentHP + actualHeal);
-        return actualHeal;
+        if (!this.isAlive) return 0;
+        const missing = this.maxHP - this.currentHP;
+        const actual = Math.min(amount, missing);
+        this.currentHP += actual;
+        return actual;
     }
     
-    // Gain mana
     gainMana(amount) {
+        if (!this.isAlive) return;
         this.mana = Math.min(this.maxMana, this.mana + amount);
     }
     
-    // Check if ultimate is ready
     canUseUltimate() {
         return this.isAlive && this.mana >= this.ultimate.manaReq;
     }
     
-    // Use ultimate (resets mana)
     useUltimate() {
         if (this.canUseUltimate()) {
             this.mana = 0;
@@ -204,17 +156,11 @@ class Hero {
         return false;
     }
     
-    // Get HP percentage
-    getHPPercent() {
-        return (this.currentHP / this.maxHP) * 100;
-    }
+    // UI Helpers
+    getHPPercent() { return (this.currentHP / this.maxHP) * 100; }
+    getManaPercent() { return (this.mana / this.maxMana) * 100; }
     
-    // Get mana percentage
-    getManaPercent() {
-        return (this.mana / this.maxMana) * 100;
-    }
-    
-    // Export for save
+    // Serialization
     toJSON() {
         return {
             id: this.id,
@@ -227,20 +173,19 @@ class Hero {
         };
     }
     
-    // Load from save
-    static fromJSON(savedHero) {
-        const heroData = HEROES_DATABASE.find(h => h.id === savedHero.id);
-        if (!heroData) return null;
+    static fromJSON(data) {
+        const template = HEROES_DATABASE.find(h => h.id === data.id);
+        if (!template) return null;
         
-        const hero = new Hero(heroData);
-        hero.level = savedHero.level;
-        hero.exp = savedHero.exp;
-        hero.stars = savedHero.stars;
-        hero.awakeningShards = savedHero.awakeningShards;
-        hero.bond = savedHero.bond;
-        hero.equipment = savedHero.equipment;
+        const hero = new Hero(template);
+        hero.level = data.level || 1;
+        hero.exp = data.exp || 0;
+        hero.stars = data.stars || 1;
+        hero.awakeningShards = data.awakeningShards || 0;
+        hero.bond = data.bond || 0;
+        if(data.equipment) hero.equipment = data.equipment;
+        
         hero.calculateStats();
-        
         return hero;
     }
 }
@@ -250,535 +195,359 @@ class Hero {
 // ===========================
 
 class Enemy {
-    constructor(enemyData, waveNumber) {
-        this.id = enemyData.id;
-        this.name = enemyData.name;
-        this.element = enemyData.element;
+    constructor(template, waveNumber) {
+        this.id = template.id;
+        this.name = template.name;
+        this.element = template.element;
         
-        // Scaling - NERFED BOSSES
-        const waveScale = 1 + (waveNumber - 1) * 0.035; // Lower wave scaling
-        const bossMultiplier = (waveNumber % 10 === 0) ? 1.2 : 1; // Nerfed from 1.5 to 1.2
-        const totalScale = waveScale * bossMultiplier;
+        // Scaling Logic
+        // +5% stats per wave
+        const multiplier = 1 + (waveNumber - 1) * 0.05;
         
-        this.maxHP = Math.floor(enemyData.baseStats.hp * totalScale);
+        this.maxHP = Math.floor(template.baseStats.hp * multiplier);
         this.currentHP = this.maxHP;
-        this.atk = Math.floor(enemyData.baseStats.atk * totalScale);
-        this.def = Math.floor(enemyData.baseStats.def * totalScale);
-        this.spd = Math.floor(enemyData.baseStats.spd * totalScale);
+        this.atk = Math.floor(template.baseStats.atk * multiplier);
+        this.def = Math.floor(template.baseStats.def * multiplier);
+        this.spd = Math.floor(template.baseStats.spd * multiplier); // Speed scales linearly too? Careful not to outspeed everything.
         
+        this.maxMana = 100;
+        this.mana = 0;
         this.isAlive = true;
         this.isBoss = (waveNumber % 10 === 0);
     }
     
-    // Take damage
-    takeDamage(damage) {
-        const actualDamage = Math.max(1, damage - this.def);
-        this.currentHP = Math.max(0, this.currentHP - actualDamage);
-        
-        if (this.currentHP <= 0) {
-            this.isAlive = false;
-        }
-        
-        return actualDamage;
+    takeDamage(amount) {
+        this.currentHP = Math.max(0, this.currentHP - amount);
+        if (this.currentHP <= 0) this.isAlive = false;
+        return amount;
     }
     
-    // Get HP percentage
-    getHPPercent() {
-        return (this.currentHP / this.maxHP) * 100;
+    gainMana(amount) {
+        if (!this.isAlive) return;
+        this.mana = Math.min(this.maxMana, this.mana + amount);
     }
+    
+    getHPPercent() { return (this.currentHP / this.maxHP) * 100; }
 }
 
 // ===========================
-// GARDEN CLASS (NEW)
+// GARDEN CLASS
 // ===========================
 
 class Garden {
     constructor() {
-        // Initialize 6 plots
-        this.plots = [
-            { id: 0, unlocked: true, plant: null },  // First 2 free
-            { id: 1, unlocked: true, plant: null },
-            { id: 2, unlocked: false, plant: null }, // Unlockable
-            { id: 3, unlocked: false, plant: null },
-            { id: 4, unlocked: false, plant: null },
-            { id: 5, unlocked: false, plant: null }
-        ];
+        // 6 Plots (2 Free, 4 Locked)
+        this.plots = Array(6).fill(null).map((_, i) => ({
+            id: i,
+            unlocked: i < 2,
+            plant: null // { seedId, plantedAt, growthTime, ready }
+        }));
     }
-
-    // Unlock a plot
-    unlockPlot(plotId) {
-        const plot = this.plots.find(p => p.id === plotId);
+    
+    unlockPlot(id) {
+        const plot = this.plots.find(p => p.id === id);
         if (plot && !plot.unlocked) {
             plot.unlocked = true;
             return true;
         }
         return false;
     }
-
-    // Plant a seed
+    
     plantSeed(plotId, seedId) {
         const plot = this.plots.find(p => p.id === plotId);
-        const seedData = GARDEN_ITEMS_DATABASE.seeds.find(s => s.id === seedId);
+        const seed = GARDEN_ITEMS_DATABASE.seeds.find(s => s.id === seedId);
         
-        if (plot && plot.unlocked && !plot.plant && seedData) {
+        if (plot && plot.unlocked && !plot.plant && seed) {
             plot.plant = {
                 seedId: seedId,
                 plantedAt: Date.now(),
-                growthTime: seedData.growthTime,
+                growthTime: seed.growthTime,
                 ready: false
             };
             return true;
         }
         return false;
     }
-
-    // Check growth progress
+    
     checkGrowth() {
-        const now = Date.now();
         let changed = false;
-        
-        this.plots.forEach(plot => {
-            if (plot.plant && !plot.plant.ready) {
-                const elapsedTime = now - plot.plant.plantedAt;
-                if (elapsedTime >= plot.plant.growthTime) {
-                    plot.plant.ready = true;
+        const now = Date.now();
+        this.plots.forEach(p => {
+            if (p.plant && !p.plant.ready) {
+                if (now - p.plant.plantedAt >= p.plant.growthTime) {
+                    p.plant.ready = true;
                     changed = true;
                 }
             }
         });
-        
         return changed;
     }
-
-    // Harvest a plant
+    
     harvest(plotId) {
         const plot = this.plots.find(p => p.id === plotId);
         if (plot && plot.plant && plot.plant.ready) {
-            const seedData = GARDEN_ITEMS_DATABASE.seeds.find(s => s.id === plot.plant.seedId);
-            const rewardId = seedData.resultId;
-            
-            // Reset plot
+            const seed = GARDEN_ITEMS_DATABASE.seeds.find(s => s.id === plot.plant.seedId);
             plot.plant = null;
-            
-            return rewardId;
+            return seed.resultId; // Return Item ID
         }
         return null;
     }
     
-    toJSON() {
-        return {
-            plots: this.plots
-        };
-    }
-    
+    toJSON() { return { plots: this.plots }; }
     static fromJSON(data) {
-        const garden = new Garden();
-        if (data && data.plots) {
-            garden.plots = data.plots;
-        }
-        return garden;
+        const g = new Garden();
+        if(data && data.plots) g.plots = data.plots;
+        return g;
     }
 }
 
 // ===========================
-// GAME STATE CLASS
+// GAME STATE
 // ===========================
 
 class GameState {
     constructor() {
-        this.username = "Player"; // Default username
-
+        this.username = "Traveler";
+        
         // Currencies
-        this.gold = 100;
-        this.petals = 150; 
+        this.gold = 500;
+        this.petals = 50;
         this.spiritOrbs = 0;
         
-        // Hero collection
-        this.roster = [];
-        this.team = [null, null, null, null, null]; 
+        // Progression
+        this.roster = []; // Array of Hero objects
+        this.team = [null, null, null, null, null]; // Hero IDs
         
-        // Roguelike Battle state
-        this.currentWave = 0; // Current run wave
-        this.highestWave = 0; // Best record
+        this.inventory = {
+            seeds: { 's001': 2 }, // Starter seeds
+            teas: {},
+            materials: {} // New: For Forge
+        };
+        
+        this.garden = new Garden();
+        this.skillTree = this.initSkillTree();
+        
+        // Battle
+        this.currentWave = 1;
+        this.highestWave = 0;
         this.enemiesDefeated = 0;
         this.isBattleActive = false;
         this.autoCast = false;
         
-        // Inventory
-        this.inventory = {
-            seeds: {}, 
-            teas: {}   
-        };
-        
-        // Garden
-        this.garden = new Garden();
-        
-        // Gacha state
+        // Gacha
         this.pityCounter = 0;
         this.totalPulls = 0;
+        this.stats = { totalBattles: 0, totalPulls: 0, playTime: 0 };
         
-        // Skill tree state
-        this.skillTree = this.initializeSkillTree();
+        // Quests
+        this.quests = [];
+        this.lastQuestReset = 0;
         
-        // Expedition state
-        this.expedition = {
-            isActive: false,
-            startTime: null,
-            lastClaimTime: Date.now()
-        };
-        
-        // Quests state
-        this.quests = this.generateDailyQuests();
-        this.lastQuestReset = Date.now();
-        
-        // Statistics
-        this.stats = {
-            totalBattles: 0,
-            totalPulls: 0,
-            totalGoldEarned: 0,
-            playTime: 0
-        };
-        
-        // Give starter heroes
+        // Expedition
+        this.expedition = { isActive: true, startTime: Date.now(), lastClaimTime: Date.now() };
+
+        // Init
         this.giveStarterHeroes();
-        
-        // Give starter seeds
-        this.addItem('seeds', 's001', 2);
     }
     
-    // Inventory Management
-    addItem(type, id, amount = 1) {
-        if (!this.inventory[type]) this.inventory[type] = {};
-        if (!this.inventory[type][id]) this.inventory[type][id] = 0;
-        this.inventory[type][id] += amount;
+    // --- Helpers ---
+    
+    giveStarterHeroes() {
+        ['h001', 'h002', 'h003'].forEach(id => this.addHero(id));
     }
     
-    removeItem(type, id, amount = 1) {
-        if (this.inventory[type] && this.inventory[type][id] >= amount) {
-            this.inventory[type][id] -= amount;
-            // Clean up empty entries
-            if (this.inventory[type][id] === 0) {
-                delete this.inventory[type][id];
-            }
-            return true;
+    addHero(id) {
+        const existing = this.roster.find(h => h.id === id);
+        if (existing) {
+            // Duplicate Logic
+            const shards = { 'N': 5, 'R': 10, 'SR': 15, 'SSR': 25, 'UR': 50 }[existing.rarity] || 5;
+            existing.awakeningShards += shards;
+            return { isDuplicate: true, hero: existing, shards };
         }
-        return false;
+        
+        const template = HEROES_DATABASE.find(h => h.id === id);
+        if (template) {
+            const newHero = new Hero(template);
+            this.roster.push(newHero);
+            return { isDuplicate: false, hero: newHero, shards: 0 };
+        }
+        return { isDuplicate: false, hero: null };
+    }
+    
+    getTeamHeroes() {
+        return this.team
+            .map(id => this.roster.find(h => h.id === id))
+            .filter(h => h !== undefined);
+    }
+    
+    // Inventory
+    addItem(type, id, amt=1) {
+        if (!this.inventory[type]) this.inventory[type] = {};
+        this.inventory[type][id] = (this.inventory[type][id] || 0) + amt;
+    }
+    
+    removeItem(type, id, amt=1) {
+        if (!this.inventory[type] || !this.inventory[type][id]) return false;
+        if (this.inventory[type][id] < amt) return false;
+        this.inventory[type][id] -= amt;
+        if (this.inventory[type][id] <= 0) delete this.inventory[type][id];
+        return true;
     }
     
     getItemCount(type, id) {
         return (this.inventory[type] && this.inventory[type][id]) || 0;
     }
-
-    // Initialize skill tree
-    initializeSkillTree() {
+    
+    // Skill Tree
+    initSkillTree() {
+        // Simple mapping of the structure
         return [
-            { id: 'st01', name: 'ATK Boost I', icon: '⚔️', desc: '+5% ATK to all heroes', cost: 10, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 5 },
-            { id: 'st02', name: 'HP Boost I', icon: '❤️', desc: '+5% HP to all heroes', cost: 10, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 5 },
-            { id: 'st03', name: 'Fire Mastery', icon: '🔥', desc: '+10% ATK to Fire heroes', cost: 15, maxLevel: 3, level: 0, bonus: 'fireBonus', value: 10 },
-            { id: 'st04', name: 'Water Mastery', icon: '💧', desc: '+10% ATK to Water heroes', cost: 15, maxLevel: 3, level: 0, bonus: 'waterBonus', value: 10 },
-            { id: 'st05', name: 'Wind Mastery', icon: '🌪️', desc: '+10% ATK to Wind heroes', cost: 15, maxLevel: 3, level: 0, bonus: 'windBonus', value: 10 },
-            { id: 'st06', name: 'Light Mastery', icon: '✨', desc: '+10% ATK to Light heroes', cost: 15, maxLevel: 3, level: 0, bonus: 'lightBonus', value: 10 },
-            { id: 'st07', name: 'Dark Mastery', icon: '🌑', desc: '+10% ATK to Dark heroes', cost: 15, maxLevel: 3, level: 0, bonus: 'darkBonus', value: 10 },
-            { id: 'st08', name: 'Gold Rush', icon: '💰', desc: '+10% Gold earned', cost: 20, maxLevel: 5, level: 0, bonus: 'goldBonus', value: 10 },
-            { id: 'st09', name: 'Critical Strike', icon: '💥', desc: '+5% Crit Chance', cost: 25, maxLevel: 4, level: 0, bonus: 'critChance', value: 5 },
-            { id: 'st10', name: 'Swift Assault', icon: '⚡', desc: '+10% SPD to all', cost: 15, maxLevel: 3, level: 0, bonus: 'allStatsPercent', value: 10 },
-            { id: 'st11', name: 'Tank Fortress', icon: '🛡️', desc: '+15% HP to Tanks', cost: 18, maxLevel: 3, level: 0, bonus: 'tankBonus', value: 15 },
-            { id: 'st12', name: 'Healer Blessing', icon: '🌿', desc: '+20% Healing Power', cost: 18, maxLevel: 3, level: 0, bonus: 'healerBonus', value: 20 },
-            { id: 'st13', name: 'DPS Excellence', icon: '🗡️', desc: '+10% ATK to DPS', cost: 18, maxLevel: 3, level: 0, bonus: 'dps(single)Bonus', value: 10 },
-            { id: 'st14', name: 'AoE Master', icon: '💫', desc: '+10% ATK to AoE DPS', cost: 18, maxLevel: 3, level: 0, bonus: 'dps(aoe)Bonus', value: 10 },
-            { id: 'st15', name: 'Support Expert', icon: '🎯', desc: '+15% Buff Duration', cost: 18, maxLevel: 3, level: 0, bonus: 'bufferBonus', value: 15 },
-            { id: 'st16', name: 'Veteran Fighter', icon: '🏆', desc: '+3% All Stats per level', cost: 30, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 3 },
-            { id: 'st17', name: 'Petal Finder', icon: '🌸', desc: '+5% Petal drops', cost: 25, maxLevel: 4, level: 0, bonus: 'petalBonus', value: 5 },
-            { id: 'st18', name: 'Spirit Connection', icon: '🔮', desc: '+10% Spirit Orb drops', cost: 25, maxLevel: 4, level: 0, bonus: 'orbBonus', value: 10 },
-            { id: 'st19', name: 'Ultimate Power', icon: '✨', desc: 'Start battles with 20 mana', cost: 35, maxLevel: 3, level: 0, bonus: 'startingMana', value: 20 },
-            { id: 'st20', name: 'Legendary Warrior', icon: '👑', desc: '+10% All Stats', cost: 50, maxLevel: 3, level: 0, bonus: 'allStatsPercent', value: 10 }
+            { id: 'st01', name: 'ATK Boost I', icon: '⚔️', desc: '+5% ATK', cost: 10, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 5 },
+            { id: 'st02', name: 'HP Boost I', icon: '❤️', desc: '+5% HP', cost: 10, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 5 },
+            { id: 'st03', name: 'Starting Mana', icon: '⚡', desc: '+20 Start Mana', cost: 25, maxLevel: 3, level: 0, bonus: 'startingMana', value: 20 },
+            { id: 'st04', name: 'Gold Rush', icon: '💰', desc: '+10% Gold', cost: 15, maxLevel: 5, level: 0, bonus: 'goldBonus', value: 10 },
+            { id: 'st05', name: 'Fire Mastery', icon: '🔥', desc: '+10% Fire ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'fireBonus', value: 10 },
+            { id: 'st06', name: 'Water Mastery', icon: '💧', desc: '+10% Water ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'waterBonus', value: 10 },
+            { id: 'st07', name: 'Wind Mastery', icon: '🌪️', desc: '+10% Wind ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'windBonus', value: 10 },
+            // Add more nodes as needed...
         ];
     }
     
-    // Generate daily quests
-    generateDailyQuests() {
-        const questTemplates = [
-            { id: 'q1', desc: 'Defeat 50 enemies', type: 'killEnemies', target: 50, current: 0, reward: { petals: 30 } },
-            { id: 'q2', desc: 'Complete 10 waves', type: 'completeWaves', target: 10, current: 0, reward: { petals: 25, gold: 500 } },
-            { id: 'q3', desc: 'Summon 3 heroes', type: 'summon', target: 3, current: 0, reward: { petals: 20, spiritOrbs: 5 } },
-            { id: 'q4', desc: 'Use 10 Ultimate abilities', type: 'useUltimates', target: 10, current: 0, reward: { gold: 800 } },
-            { id: 'q5', desc: 'Level up any hero 5 times', type: 'levelUp', target: 5, current: 0, reward: { petals: 15, spiritOrbs: 3 } }
-        ];
+    getSkillTreeBonuses() {
+        const bonuses = {};
+        this.skillTree.forEach(node => {
+            if (node.level > 0) {
+                bonuses[node.bonus] = (bonuses[node.bonus] || 0) + (node.value * node.level);
+            }
+        });
+        return bonuses;
+    }
+    
+    upgradeSkillNode(id) {
+        const node = this.skillTree.find(n => n.id === id);
+        if (!node || node.level >= node.maxLevel) return false;
         
-        // Return 3 random quests
-        return questTemplates.sort(() => Math.random() - 0.5).slice(0, 3).map((q, i) => ({...q, id: `daily_${i}`}));
+        const cost = node.cost * (node.level + 1);
+        if (this.spiritOrbs >= cost) {
+            this.spiritOrbs -= cost;
+            node.level++;
+            return true;
+        }
+        return false;
     }
     
-    // Check if quests need reset (daily at midnight)
+    // Quests
     checkQuestReset() {
         const now = Date.now();
-        const lastReset = new Date(this.lastQuestReset);
-        const currentDate = new Date(now);
-        
-        // Check if it's a new day
-        if (currentDate.getDate() !== lastReset.getDate() || 
-            currentDate.getMonth() !== lastReset.getMonth() ||
-            currentDate.getFullYear() !== lastReset.getFullYear()) {
-            this.quests = this.generateDailyQuests();
+        const oneDay = 24 * 60 * 60 * 1000;
+        // Simple 24h reset logic, ideally check midnight
+        if (now - this.lastQuestReset > oneDay || this.quests.length === 0) {
+            this.quests = [
+                { id: 'q1', desc: 'Defeat 20 Enemies', target: 20, current: 0, reward: { gold: 200 }, type: 'killEnemies', completed: false, claimed: false },
+                { id: 'q2', desc: 'Summon 1 Hero', target: 1, current: 0, reward: { petals: 10 }, type: 'summon', completed: false, claimed: false },
+                { id: 'q3', desc: 'Use 5 Ultimates', target: 5, current: 0, reward: { spiritOrbs: 2 }, type: 'useUltimates', completed: false, claimed: false },
+                { id: 'q4', desc: 'Level Up a Hero', target: 1, current: 0, reward: { gold: 500 }, type: 'levelUp', completed: false, claimed: false }
+            ];
             this.lastQuestReset = now;
         }
     }
     
-    // Update quest progress
-    updateQuest(type, amount = 1) {
-        this.quests.forEach(quest => {
-            if (quest.type === type && !quest.completed) {
-                quest.current = Math.min(quest.target, quest.current + amount);
-                if (quest.current >= quest.target) {
-                    quest.completed = true;
-                }
+    updateQuest(type, amt=1) {
+        this.quests.forEach(q => {
+            if (q.type === type && !q.completed) {
+                q.current += amt;
+                if (q.current >= q.target) q.completed = true;
             }
         });
     }
     
-    // Claim quest rewards
-    claimQuest(questId) {
-        const quest = this.quests.find(q => q.id === questId);
-        if (quest && quest.completed && !quest.claimed) {
-            if (quest.reward.gold) this.gold += quest.reward.gold;
-            if (quest.reward.petals) this.petals += quest.reward.petals;
-            if (quest.reward.spiritOrbs) this.spiritOrbs += quest.reward.spiritOrbs;
-            quest.claimed = true;
-            return quest.reward;
+    claimQuest(id) {
+        const q = this.quests.find(q => q.id === id);
+        if (q && q.completed && !q.claimed) {
+            q.claimed = true;
+            if (q.reward.gold) this.gold += q.reward.gold;
+            if (q.reward.petals) this.petals += q.reward.petals;
+            if (q.reward.spiritOrbs) this.spiritOrbs += q.reward.spiritOrbs;
+            return q.reward;
         }
         return null;
     }
     
-    // Give starter heroes
-    giveStarterHeroes() {
-        // Give 3 starter heroes (N rarity)
-        const starterIds = ['h001', 'h002', 'h003'];
-        starterIds.forEach(id => {
-            const heroData = HEROES_DATABASE.find(h => h.id === id);
-            if (heroData) {
-                const hero = new Hero(heroData);
-                this.roster.push(hero);
-            }
-        });
-    }
-    
-    // Add hero to roster
-    addHero(heroId) {
-        // Check if hero already exists
-        const existingHero = this.roster.find(h => h.id === heroId);
-        
-        if (existingHero) {
-            // Give awakening shards for duplicate
-            const shardsToAdd = this.getShardsByRarity(existingHero.rarity);
-            existingHero.addShards(shardsToAdd);
-            return { isDuplicate: true, hero: existingHero, shards: shardsToAdd };
-        } else {
-            // Add new hero
-            const heroData = HEROES_DATABASE.find(h => h.id === heroId);
-            if (heroData) {
-                const hero = new Hero(heroData);
-                this.roster.push(hero);
-                return { isDuplicate: false, hero: hero };
-            }
-        }
-        
-        return null;
-    }
-    
-    // Get shards by rarity
-    getShardsByRarity(rarity) {
-        const shardMap = { 'N': 5, 'R': 10, 'SR': 15, 'SSR': 25, 'UR': 50 };
-        return shardMap[rarity] || 5;
-    }
-    
-    // Set team member
-    setTeamMember(slotIndex, heroId) {
-        if (slotIndex >= 0 && slotIndex < 5) {
-            this.team[slotIndex] = heroId;
-        }
-    }
-    
-    // Get team heroes
-    getTeamHeroes() {
-        return this.team
-            .filter(heroId => heroId !== null)
-            .map(heroId => this.roster.find(h => h.id === heroId))
-            .filter(hero => hero !== undefined);
-    }
-    
-    // Get skill tree bonuses
-    getSkillTreeBonuses() {
-        const bonuses = {};
-        
-        this.skillTree.forEach(node => {
-            if (node.level > 0) {
-                const bonusKey = node.bonus;
-                const bonusValue = node.value * node.level;
-                
-                if (!bonuses[bonusKey]) {
-                    bonuses[bonusKey] = 0;
-                }
-                bonuses[bonusKey] += bonusValue;
-            }
-        });
-        
-        return bonuses;
-    }
-    
-    // Upgrade skill tree node
-    upgradeSkillNode(nodeId) {
-        const node = this.skillTree.find(n => n.id === nodeId);
-        
-        if (node && node.level < node.maxLevel) {
-            const cost = node.cost * (node.level + 1);
-            
-            if (this.spiritOrbs >= cost) {
-                this.spiritOrbs -= cost;
-                node.level++;
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    // Calculate expedition rewards
+    // Expedition
     calculateExpeditionRewards() {
-        if (!this.expedition.isActive || !this.expedition.startTime) {
-            return null;
-        }
-        
         const now = Date.now();
-        const timeElapsed = now - this.expedition.lastClaimTime;
-        const hoursElapsed = timeElapsed / (1000 * 60 * 60);
-        
-        // Base rewards per hour
-        const goldPerHour = 50;
-        const petalsPerHour = 2;
-        
-        const totalGold = Math.floor(goldPerHour * hoursElapsed);
-        const totalPetals = Math.floor(petalsPerHour * hoursElapsed);
+        const hours = (now - this.expedition.lastClaimTime) / (1000 * 60 * 60);
+        if (hours < 0.1) return { gold: 0, petals: 0, hours: hours.toFixed(2) };
         
         return {
-            gold: totalGold,
-            petals: totalPetals,
-            hours: hoursElapsed.toFixed(1)
+            gold: Math.floor(hours * 100),
+            petals: Math.floor(hours * 5),
+            hours: hours.toFixed(2)
         };
     }
     
-    // Claim expedition rewards
     claimExpeditionRewards() {
-        const rewards = this.calculateExpeditionRewards();
-        
-        if (rewards && rewards.gold > 0) {
-            this.gold += rewards.gold;
-            this.petals += rewards.petals;
+        const r = this.calculateExpeditionRewards();
+        if (r.gold > 0) {
+            this.gold += r.gold;
+            this.petals += r.petals;
             this.expedition.lastClaimTime = Date.now();
-            return rewards;
+            return r;
         }
-        
         return null;
     }
     
-    // Start expedition
-    startExpedition() {
-        this.expedition.isActive = true;
-        this.expedition.startTime = Date.now();
-        this.expedition.lastClaimTime = Date.now();
-    }
-    
-    // Export for save
+    // Serialization
     toJSON() {
         return {
-            username: this.username, // NEW: Save username
+            username: this.username,
             gold: this.gold,
             petals: this.petals,
             spiritOrbs: this.spiritOrbs,
             roster: this.roster.map(h => h.toJSON()),
             team: this.team,
-            currentWave: this.currentWave,
-            highestWave: this.highestWave,
-            enemiesDefeated: this.enemiesDefeated,
+            inventory: this.inventory,
+            garden: this.garden.toJSON(),
+            skillTree: this.skillTree, // Save levels
+            stats: this.stats,
             pityCounter: this.pityCounter,
-            totalPulls: this.totalPulls,
-            skillTree: this.skillTree,
+            highestWave: this.highestWave,
             expedition: this.expedition,
             quests: this.quests,
-            lastQuestReset: this.lastQuestReset,
-            stats: this.stats,
-            inventory: this.inventory, 
-            garden: this.garden.toJSON() 
+            lastQuestReset: this.lastQuestReset
         };
     }
     
-    // Load from save
-    static fromJSON(savedState) {
-        const state = new GameState();
+    static fromJSON(data) {
+        const s = new GameState();
+        s.username = data.username || "Traveler";
+        s.gold = data.gold || 0;
+        s.petals = data.petals || 0;
+        s.spiritOrbs = data.spiritOrbs || 0;
         
-        state.username = savedState.username || "Player"; // NEW: Load username
-
-        // Load currencies
-        state.gold = savedState.gold || 0;
-        state.petals = savedState.petals || 0;
-        state.spiritOrbs = savedState.spiritOrbs || 0;
+        if (data.roster) s.roster = data.roster.map(h => Hero.fromJSON(h)).filter(h => h);
+        if (data.team) s.team = data.team;
+        if (data.inventory) s.inventory = data.inventory;
+        if (data.garden) s.garden = Garden.fromJSON(data.garden);
         
-        // Load roster
-        state.roster = [];
-        if (savedState.roster) {
-            savedState.roster.forEach(savedHero => {
-                const hero = Hero.fromJSON(savedHero);
-                if (hero) state.roster.push(hero);
+        // Skill Tree: Restore levels
+        if (data.skillTree) {
+            data.skillTree.forEach(savedNode => {
+                const node = s.skillTree.find(n => n.id === savedNode.id);
+                if (node) node.level = savedNode.level;
             });
         }
         
-        // Load team
-        state.team = savedState.team || [null, null, null, null, null];
+        if (data.stats) s.stats = data.stats;
+        s.pityCounter = data.pityCounter || 0;
+        s.highestWave = data.highestWave || 0;
         
-        // Load battle progress
-        state.currentWave = savedState.currentWave || 0;
-        state.highestWave = savedState.highestWave || 0;
-        state.enemiesDefeated = savedState.enemiesDefeated || 0;
-        
-        // Load gacha state
-        state.pityCounter = savedState.pityCounter || 0;
-        state.totalPulls = savedState.totalPulls || 0;
-        
-        // Load skill tree
-        if (savedState.skillTree) {
-            state.skillTree = savedState.skillTree;
+        if (data.expedition) s.expedition = data.expedition;
+        if (data.quests) {
+            s.quests = data.quests;
+            s.lastQuestReset = data.lastQuestReset;
         }
         
-        // Load expedition
-        if (savedState.expedition) {
-            state.expedition = savedState.expedition;
-        }
-        
-        // Load quests
-        if (savedState.quests) {
-            state.quests = savedState.quests;
-            state.lastQuestReset = savedState.lastQuestReset;
-        }
-        
-        // Load stats
-        if (savedState.stats) {
-            state.stats = savedState.stats;
-        }
-        
-        // Load inventory
-        if (savedState.inventory) {
-            state.inventory = savedState.inventory;
-        }
-        
-        // Load garden
-        if (savedState.garden) {
-            state.garden = Garden.fromJSON(savedState.garden);
-        }
-        
-        // Start expedition if not active
-        if (!state.expedition.isActive) {
-            state.startExpedition();
-        }
-        
-        return state;
+        return s;
     }
 }

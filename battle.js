@@ -1,19 +1,19 @@
-/* ===========================
-   SAKURA CHRONICLES - BATTLE
-   Roguelike Auto-Battle System
-   =========================== */
+/* =========================================
+   SAKURA CHRONICLES - BATTLE ENGINE
+   Roguelike Combat System & UI
+   ========================================= */
 
 let battleInterval = null;
 let currentBattleState = null;
 
 // ===========================
-// BATTLE STATE
+// BATTLE STATE MODEL
 // ===========================
 
 class BattleState {
     constructor(heroes, waveNumber, skillTreeBonuses) {
         this.heroes = heroes.map(h => {
-            h.calculateStats(skillTreeBonuses);
+            h.resetForBattle(skillTreeBonuses);
             return h;
         });
         
@@ -22,127 +22,97 @@ class BattleState {
         this.isActive = true;
         this.turnCounter = 0;
         this.skillTreeBonuses = skillTreeBonuses;
-        
-        // Track temporary battle buffs
-        this.activeBuffs = []; 
+        this.combatLog = []; // New: Track combat events
         
         this.spawnEnemies();
     }
     
     spawnEnemies() {
-        // Roguelike Scaling: Harder as waves progress
+        // Roguelike Scaling Logic
         let baseCount = 1;
         if (this.waveNumber >= 3) baseCount = 2;
         if (this.waveNumber >= 8) baseCount = 3;
         if (this.waveNumber >= 15) baseCount = 4;
-        if (this.waveNumber >= 25) baseCount = 5;
         
-        // Random variation
-        const variation = Math.floor(Math.random() * 3) - 1;
-        const enemyCount = Math.max(1, Math.min(5, baseCount + variation));
+        const variation = Math.floor(Math.random() * 2);
+        const enemyCount = Math.min(5, baseCount + variation);
         
         this.enemies = [];
         
         for (let i = 0; i < enemyCount; i++) {
-            // Enemy pool based on wave depth
-            let enemyPool;
-            if (this.waveNumber <= 10) {
-                enemyPool = ENEMIES_DATABASE.slice(0, 5);
-            } else if (this.waveNumber <= 25) {
-                enemyPool = ENEMIES_DATABASE.slice(5, 10);
-            } else if (this.waveNumber <= 40) {
-                enemyPool = ENEMIES_DATABASE.slice(10, 15);
-            } else {
-                enemyPool = ENEMIES_DATABASE.slice(15);
-            }
+            // Determine Enemy Pool based on Wave
+            let poolRange = [0, 5]; // Default
+            if (this.waveNumber > 10) poolRange = [5, 10];
+            if (this.waveNumber > 25) poolRange = [10, 15];
+            if (this.waveNumber > 40) poolRange = [15, 20];
             
-            const randomEnemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
-            const enemy = new Enemy(randomEnemy, this.waveNumber);
+            const pool = ENEMIES_DATABASE.slice(poolRange[0], poolRange[1]);
+            const template = pool[Math.floor(Math.random() * pool.length)] || ENEMIES_DATABASE[0];
+            
+            const enemy = new Enemy(template, this.waveNumber);
             this.enemies.push(enemy);
         }
+    }
+    
+    addLog(message, type='neutral') {
+        this.combatLog.unshift({ message, type, id: Date.now() });
+        if (this.combatLog.length > 20) this.combatLog.pop();
     }
 }
 
 // ===========================
-// START NEW RUN
+// CORE LOOP CONTROLS
 // ===========================
 
 function startRun(gameState) {
     const team = gameState.getTeamHeroes();
-    
     if (team.length === 0) {
-        showNotification('Please select at least one hero for your team!', 'error');
+        showToast('Please select at least one hero in the Roster tab!', 'error');
         return;
     }
     
-    // Reset Run State
     gameState.currentWave = 1;
-    gameState.enemiesDefeated = 0; 
+    gameState.enemiesDefeated = 0;
+    gameState.isBattleActive = true;
     
-    // Fully Heal Team for new Run
-    team.forEach(hero => {
-        hero.resetForBattle(gameState.getSkillTreeBonuses());
-    });
-    
-    // UI Updates
-    document.getElementById('pre-run-controls').classList.add('hidden');
-    document.getElementById('active-run-controls').classList.remove('hidden');
-    document.getElementById('next-wave-btn').classList.add('hidden'); 
-    
+    // Switch UI to Active Mode
+    renderBattleDashboard(gameState);
     startWave(gameState);
 }
 
-// ===========================
-// START WAVE
-// ===========================
-
 function startWave(gameState) {
     const team = gameState.getTeamHeroes();
-    
-    // Check if team is alive
     const aliveCount = team.filter(h => h.isAlive).length;
+    
     if (aliveCount === 0) {
         handleRunDefeat(gameState);
         return;
     }
 
-    gameState.isBattleActive = true;
-    
-    const skillTreeBonuses = gameState.getSkillTreeBonuses();
-    currentBattleState = new BattleState(team, gameState.currentWave, skillTreeBonuses);
-    
-    // Update UI
-    const battleStatus = document.getElementById('battle-status');
-    if (battleStatus) {
-        battleStatus.textContent = `Wave ${gameState.currentWave} - Fighting`;
-        battleStatus.className = 'battle-status-light text-red-500';
-    }
+    const bonuses = gameState.getSkillTreeBonuses();
+    currentBattleState = new BattleState(team, gameState.currentWave, bonuses);
+    currentBattleState.addLog(`Wave ${gameState.currentWave} Started!`, 'info');
     
     updateBattleUI(gameState, currentBattleState);
     
-    // Start loop
+    // Start Game Loop (1 Turn per second)
+    if (battleInterval) clearInterval(battleInterval);
     battleInterval = setInterval(() => {
         processBattleTurn(gameState, currentBattleState);
     }, 1000);
-    
-    gameState.stats.totalBattles++;
 }
-
-// ===========================
-// STOP BATTLE (Retreat/Defeat)
-// ===========================
 
 function stopBattle(gameState) {
     if (battleInterval) {
         clearInterval(battleInterval);
         battleInterval = null;
     }
-    
     gameState.isBattleActive = false;
+    renderBattleDashboard(gameState); // Re-render to show "Start Run" screen
 }
 
 // ===========================
-// PROCESS BATTLE TURN
+// TURN LOGIC
 // ===========================
 
 function processBattleTurn(gameState, battleState) {
@@ -150,7 +120,7 @@ function processBattleTurn(gameState, battleState) {
     
     battleState.turnCounter++;
     
-    // Check Win/Loss conditions
+    // 1. Check Win/Loss
     const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
     const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
     
@@ -164,562 +134,391 @@ function processBattleTurn(gameState, battleState) {
         return;
     }
     
-    // Turn Order
-    const turnOrder = [
+    // 2. Determine Turn Order (Speed based)
+    const allUnits = [
         ...aliveHeroes.map(h => ({ unit: h, isHero: true })),
         ...aliveEnemies.map(e => ({ unit: e, isHero: false }))
     ].sort((a, b) => b.unit.spd - a.unit.spd);
     
-    // Execute Actions
-    turnOrder.forEach(({ unit, isHero }) => {
-        if (!unit.isAlive) return;
-        
-        if (isHero) {
-            processHeroAction(unit, battleState, gameState);
-        } else {
-            processEnemyAction(unit, battleState);
-        }
+    // 3. Execute Actions
+    // Highlight active unit visually
+    allUnits.forEach(({ unit, isHero }, index) => {
+        setTimeout(() => {
+            if (!unit.isAlive) return;
+            
+            // Visual Turn Indicator would go here (adding a class)
+            
+            if (isHero) {
+                // Auto-Cast Check
+                if (gameState.autoCast && unit.canUseUltimate()) {
+                    useHeroUltimate(unit, battleState, gameState);
+                } else {
+                    // Normal Attack
+                    const target = getRandomTarget(battleState.enemies);
+                    if (target) performAttack(unit, target, battleState, true);
+                }
+            } else {
+                // Enemy Attack
+                const target = getRandomTarget(battleState.heroes);
+                if (target) performAttack(unit, target, battleState, false);
+            }
+            
+            // Update UI after every specific action for smoothness
+            updateBattleUI(gameState, battleState);
+            
+        }, index * 200); // Stagger actions slightly for visual clarity
     });
-    
-    updateBattleUI(gameState, battleState);
 }
 
-// ===========================
-// PROCESS HERO ACTION
-// ===========================
+function getRandomTarget(units) {
+    const alive = units.filter(u => u.isAlive);
+    if (alive.length === 0) return null;
+    return alive[Math.floor(Math.random() * alive.length)];
+}
 
-function processHeroAction(hero, battleState, gameState) {
-    const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
-    if (aliveEnemies.length === 0) return;
+function performAttack(attacker, defender, battleState, isHero) {
+    let damage = Math.max(1, attacker.atk - (defender.def * 0.5));
     
-    // Auto-Cast Logic
-    if (hero.canUseUltimate() && gameState.autoCast) {
-        useHeroUltimate(hero, battleState, gameState);
-        return;
+    // Element Bonus
+    if (attacker.element && defender.element) {
+        const adv = ELEMENT_ADVANTAGE[attacker.element];
+        if (adv && adv.strong === defender.element) damage *= 1.5;
+        if (adv && adv.weak === defender.element) damage *= 0.75;
     }
     
-    // Attack
-    const target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
-    performAttack(hero, target, battleState, true);
+    // Crit
+    const isCrit = Math.random() < 0.15;
+    if (isCrit) damage *= 1.5;
+    
+    damage = Math.floor(damage);
+    defender.takeDamage(damage);
+    
+    // Mana Gen
+    if (isHero) attacker.gainMana(15);
+    else defender.gainMana(10); // Enemies gain less mana usually
+    
+    // Logs & Visuals
+    const critText = isCrit ? ' CRIT!' : '';
+    battleState.addLog(`${attacker.name} hit ${defender.name} for ${damage}${critText}`, isHero ? 'success' : 'warning');
+    
+    showFloatingText(defender, `-${damage}${critText}`, isCrit ? 'crit' : 'damage');
 }
 
 // ===========================
-// USE HERO ULTIMATE
+// ULTIMATE ABILITIES
 // ===========================
 
 function useHeroUltimate(hero, battleState, gameState) {
-    hero.useUltimate();
+    if (!hero.canUseUltimate()) return;
     
+    hero.useUltimate();
+    battleState.addLog(`${hero.name} cast ${hero.ultimate.name}!`, 'special');
+    showFloatingText(hero, 'ULTIMATE!', 'heal'); // Blue text
+    
+    // Simple Effect Logic
     const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
     const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
     
+    if (hero.class === 'Healer') {
+        aliveHeroes.forEach(h => {
+            const heal = Math.floor(hero.atk * 3);
+            h.heal(heal);
+            showFloatingText(h, `+${heal}`, 'heal');
+        });
+    } else if (hero.class === 'DPS (AoE)') {
+        aliveEnemies.forEach(e => {
+            const dmg = Math.floor(hero.atk * 1.5);
+            e.takeDamage(dmg);
+            showFloatingText(e, `-${dmg}`, 'damage');
+        });
+    } else {
+        // Single Target Nuke
+        const target = getRandomTarget(aliveEnemies);
+        if (target) {
+            const dmg = Math.floor(hero.atk * 3.5);
+            target.takeDamage(dmg);
+            showFloatingText(target, `-${dmg}`, 'crit');
+        }
+    }
+    
     gameState.updateQuest('useUltimates', 1);
-    
-    switch (hero.class) {
-        case 'Healer':
-            aliveHeroes.forEach(h => {
-                const healAmount = Math.floor(150 + hero.level * 5 + (hero.atk * 0.5)); 
-                h.heal(healAmount);
-            });
-            break;
-            
-        case 'Tank':
-            // Logic handled in damage calc or abstractly
-            break;
-            
-        case 'Buffer':
-            // Buff logic abstract
-            break;
-            
-        case 'DPS (AoE)':
-            aliveEnemies.forEach(enemy => {
-                const damage = calculateDamage(hero, enemy, 1.4);
-                enemy.takeDamage(damage);
-            });
-            break;
-            
-        case 'DPS (Single)':
-            const target = aliveEnemies[0]; 
-            const damage = calculateDamage(hero, target, 2.8);
-            target.takeDamage(damage);
-            break;
-    }
-    
-    playParticleEffect(document.querySelector(`[data-hero-id="${hero.id}"]`));
-}
-
-// ===========================
-// PROCESS ENEMY ACTION
-// ===========================
-
-function processEnemyAction(enemy, battleState) {
-    const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
-    if (aliveHeroes.length === 0) return;
-    
-    const target = aliveHeroes[Math.floor(Math.random() * aliveHeroes.length)];
-    performAttack(enemy, target, battleState, false);
-}
-
-// ===========================
-// PERFORM ATTACK
-// ===========================
-
-function performAttack(attacker, defender, battleState, isHeroAttacking) {
-    const damage = calculateDamage(attacker, defender, 1.0);
-    const isCrit = Math.random() < 0.15;
-    const isDodge = Math.random() < 0.10;
-    
-    if (isDodge) {
-        return;
-    }
-    
-    const finalDamage = isCrit ? Math.floor(damage * 1.5) : damage;
-    defender.takeDamage(finalDamage);
-    
-    if (isHeroAttacking) attacker.gainMana(15);
-    else defender.gainMana(10);
-}
-
-// ===========================
-// CALCULATE DAMAGE
-// ===========================
-
-function calculateDamage(attacker, defender, multiplier = 1.0) {
-    let baseDamage = attacker.atk * multiplier;
-    
-    if (attacker.element && defender.element) {
-        const adv = ELEMENT_ADVANTAGE[attacker.element];
-        if (adv && adv.strong === defender.element) baseDamage *= 1.5;
-        else if (adv && adv.weak === defender.element) baseDamage *= 0.75;
-    }
-    
-    const damage = Math.max(1, baseDamage - (defender.def * 0.5));
-    return Math.floor(damage);
-}
-
-// ===========================
-// HANDLE WAVE VICTORY
-// ===========================
-
-function handleWaveVictory(gameState, battleState) {
-    battleState.isActive = false;
-    stopBattle(gameState);
-    
-    const baseGold = 50 + (gameState.currentWave * 15);
-    gameState.gold += baseGold;
-    gameState.stats.totalGoldEarned += baseGold;
-    
-    // Seed Drop Chance
-    const dropChance = 0.2 + (gameState.currentWave * 0.02);
-    let foundSeed = null;
-    if (Math.random() < dropChance) {
-        const seeds = GARDEN_ITEMS_DATABASE.seeds;
-        const randomSeed = seeds[Math.floor(Math.random() * seeds.length)];
-        gameState.addItem('seeds', randomSeed.id, 1);
-        foundSeed = randomSeed;
-    }
-    
-    // Petals & Orbs
-    let petals = 0;
-    let orbs = 0;
-    const isBoss = (gameState.currentWave % 10 === 0);
-    
-    if (isBoss) {
-        petals = Math.floor(5 + gameState.currentWave/2);
-        orbs = Math.floor(2 + gameState.currentWave/5);
-    } else if (Math.random() < 0.15) { // 15% Chance on normal waves
-        petals = 1;
-        if (Math.random() < 0.05) orbs = 1; // Very rare orb on normal wave
-    }
-    gameState.petals += petals;
-    gameState.spiritOrbs += orbs;
-    
-    if (gameState.currentWave > gameState.highestWave) {
-        gameState.highestWave = gameState.currentWave;
-    }
-    gameState.updateQuest('completeWaves', 1);
-    gameState.updateQuest('killEnemies', battleState.enemies.length);
-    
-    let msg = `Cleared Wave ${gameState.currentWave}! +${baseGold} Gold.`;
-    if (petals > 0) msg += ` +${petals} 🌸`;
-    if (orbs > 0) msg += ` +${orbs} 🔮`;
-    if (foundSeed) msg += ` Found ${foundSeed.name} 🌱!`;
-    
-    showNotification(msg, 'success');
-    
-    const nextBtn = document.getElementById('next-wave-btn');
-    if (nextBtn) {
-        nextBtn.classList.remove('hidden');
-        nextBtn.onclick = () => {
-            nextBtn.classList.add('hidden');
-            gameState.currentWave++;
-            startWave(gameState);
-        };
-    }
-    
-    saveGame(gameState);
     updateBattleUI(gameState, battleState);
 }
 
 // ===========================
-// HANDLE RUN DEFEAT
+// RENDERING & UI
 // ===========================
 
-function handleRunDefeat(gameState, battleState) {
-    if (battleState) battleState.isActive = false;
-    stopBattle(gameState);
-    
-    showNotification(`Run Over! Reached Wave ${gameState.currentWave}`, 'error');
-    
-    const battleStatus = document.getElementById('battle-status');
-    if (battleStatus) {
-        battleStatus.textContent = 'Run Ended';
-        battleStatus.className = 'battle-status-light text-slate-500';
+function renderBattleDashboard(gameState) {
+    const container = document.getElementById('battle-tab');
+    if (!container) return;
+
+    // SCENE 1: PRE-BATTLE (Team Selection)
+    if (!gameState.isBattleActive) {
+        renderPreBattleScreen(container, gameState);
+        return;
+    }
+
+    // SCENE 2: ACTIVE BATTLE DASHBOARD
+    // Only render the grid structure ONCE, then update contents
+    if (!document.getElementById('battle-dashboard-grid')) {
+        container.innerHTML = `
+            <div id="battle-dashboard-grid" class="battle-dashboard animate-entry h-[calc(100vh-140px)] min-h-[500px]">
+                
+                <div class="flex flex-col gap-4">
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-700 text-sm mb-3 uppercase tracking-wider">Run Stats</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-slate-50 p-2 rounded text-center">
+                                <div class="text-xs text-slate-400">Wave</div>
+                                <div class="font-heading font-bold text-xl text-primary" id="dash-wave">1</div>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded text-center">
+                                <div class="text-xs text-slate-400">Kills</div>
+                                <div class="font-heading font-bold text-xl text-slate-700" id="dash-kills">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex-1 flex flex-col overflow-hidden">
+                        <h3 class="font-bold text-slate-700 text-sm mb-2 uppercase tracking-wider">Combat Log</h3>
+                        <div id="combat-log" class="flex-1 overflow-y-auto text-xs space-y-1.5 font-mono bg-slate-50 p-2 rounded inner-shadow"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4 relative">
+                    <div class="flex-1 bg-white/60 rounded-xl border border-red-100 flex items-center justify-center p-4 relative">
+                        <div class="absolute top-2 left-3 text-xs font-bold text-red-400 uppercase tracking-widest">Enemies</div>
+                        <div id="arena-enemies" class="flex gap-4 justify-center flex-wrap w-full"></div>
+                    </div>
+                    
+                    <div class="h-8 flex items-center justify-center">
+                        <span class="bg-slate-200 text-slate-500 text-xs font-bold px-3 py-1 rounded-full">VS</span>
+                    </div>
+
+                    <div class="flex-1 bg-white/80 rounded-xl border border-blue-100 flex items-center justify-center p-4 relative">
+                        <div class="absolute top-2 left-3 text-xs font-bold text-blue-400 uppercase tracking-widest">Heroes</div>
+                        <div id="arena-heroes" class="flex gap-4 justify-center flex-wrap w-full"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4 battle-dashboard-right">
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex-1 overflow-y-auto">
+                        <h3 class="font-bold text-slate-700 text-sm mb-3 uppercase tracking-wider">Ultimates</h3>
+                        <div id="ultimates-list" class="space-y-2"></div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                        <button id="auto-btn" class="btn w-full mb-2 ${gameState.autoCast ? 'btn-primary' : 'btn-secondary'}" onclick="toggleAutoCast()">
+                            <i class="fa-solid fa-robot"></i> ${gameState.autoCast ? 'Auto: ON' : 'Auto: OFF'}
+                        </button>
+                        <button class="btn btn-secondary w-full text-red-500 border-red-100 hover:bg-red-50" onclick="handleRunDefeat(gameState)">
+                            <i class="fa-solid fa-flag"></i> Retreat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
     
-    document.getElementById('pre-run-controls').classList.remove('hidden');
-    document.getElementById('active-run-controls').classList.add('hidden');
+    // If grid exists, we just update via updateBattleUI
+    if (currentBattleState) updateBattleUI(gameState, currentBattleState);
+}
+
+function renderPreBattleScreen(container, gameState) {
+    container.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full max-w-2xl mx-auto text-center animate-entry py-12">
+            <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center text-red-400 text-4xl mb-6 shadow-sm">
+                <i class="fa-solid fa-dungeon"></i>
+            </div>
+            <h2 class="text-3xl font-heading font-bold text-slate-800 mb-2">Battle Arena</h2>
+            <p class="text-slate-500 mb-8">
+                Enter the Roguelike dungeon. Your team will fight through endless waves of enemies. 
+                Health does not regenerate between waves!
+            </p>
+            
+            <div class="bg-white p-6 rounded-xl border border-slate-100 w-full mb-8 text-left">
+                <h3 class="font-bold text-slate-700 mb-4 flex justify-between">
+                    <span>Current Team</span>
+                    <button class="text-sm text-primary hover:underline" onclick="switchView('roster')">Edit Team</button>
+                </h3>
+                <div class="flex justify-between gap-2" id="pre-battle-team">
+                    ${renderTeamPreview(gameState)}
+                </div>
+            </div>
+            
+            <button class="btn btn-primary text-lg px-8 py-3 shadow-lg shadow-primary/30" onclick="startRun(gameState)">
+                <i class="fa-solid fa-swords"></i> Start Run
+            </button>
+        </div>
+    `;
+}
+
+function renderTeamPreview(gameState) {
+    let html = '';
+    for(let i=0; i<5; i++) {
+        const heroId = gameState.team[i];
+        const hero = heroId ? gameState.roster.find(h => h.id === heroId) : null;
+        
+        if (hero) {
+            html += `
+                <div class="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden border border-slate-200 relative">
+                    <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.style.display='none'">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[10px] text-center font-bold truncate px-1">
+                        Lv.${hero.level}
+                    </div>
+                </div>
+            `;
+        } else {
+            html += `<div class="w-16 h-16 rounded-lg bg-slate-50 border border-dashed border-slate-300 flex items-center justify-center text-slate-300"><i class="fa-solid fa-plus"></i></div>`;
+        }
+    }
+    return html;
+}
+
+function updateBattleUI(gameState, battleState) {
+    if (!document.getElementById('battle-dashboard-grid')) return;
+
+    // Update Stats
+    document.getElementById('dash-wave').textContent = gameState.currentWave;
+    document.getElementById('dash-kills').textContent = gameState.enemiesDefeated;
     
+    // Update Log
+    const logContainer = document.getElementById('combat-log');
+    logContainer.innerHTML = battleState.combatLog.map(log => 
+        `<div class="${log.type === 'info' ? 'text-blue-500 font-bold' : log.type === 'success' ? 'text-green-600' : log.type === 'warning' ? 'text-orange-500' : 'text-slate-500'}">
+            <span class="opacity-50 mr-1">[${new Date(log.id).toLocaleTimeString([], {hour12: false, second: '2-digit', minute:'2-digit'})}]</span> ${log.message}
+        </div>`
+    ).join('');
+
+    // Render Arenas
+    const heroContainer = document.getElementById('arena-heroes');
+    const enemyContainer = document.getElementById('arena-enemies');
+    
+    renderUnits(heroContainer, battleState.heroes, true);
+    renderUnits(enemyContainer, battleState.enemies, false);
+    
+    // Render Ultimates
+    const ultContainer = document.getElementById('ultimates-list');
+    ultContainer.innerHTML = battleState.heroes.map(hero => {
+        if (!hero.isAlive) return ''; // Hide dead
+        const canCast = hero.canUseUltimate();
+        const pct = hero.getManaPercent();
+        
+        return `
+            <div class="bg-slate-50 border ${canCast ? 'border-primary cursor-pointer ring-2 ring-primary/20' : 'border-slate-200 opacity-70'} p-2 rounded-lg transition-all"
+                 onclick="${canCast ? `useHeroUltimate(gameState.roster.find(h=>h.id=='${hero.id}'), currentBattleState, gameState)` : ''}">
+                <div class="flex justify-between text-xs font-bold mb-1">
+                    <span class="text-slate-700">${hero.name}</span>
+                    <span class="${canCast ? 'text-primary animate-pulse' : 'text-slate-400'}">${canCast ? 'READY' : pct + '%'}</span>
+                </div>
+                <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-blue-500 h-full transition-all duration-300" style="width: ${pct}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderUnits(container, units, isHero) {
+    // We diff the DOM to avoid destroying animations (simple id check)
+    // For this prototype, full re-render is fine but we keep the element IDs stable if possible
+    
+    container.innerHTML = '';
+    
+    units.forEach(unit => {
+        const div = document.createElement('div');
+        div.id = `unit-${isHero ? unit.id : unit.name}-${isHero ? 'h' : 'e'}`; // pseudo-stable ID
+        div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy'} ${!unit.isAlive ? 'dead' : ''} w-24 flex-shrink-0 flex flex-col items-center`;
+        div.innerHTML = `
+            <div class="w-16 h-16 rounded-lg shadow-sm border border-slate-200 relative overflow-hidden bg-white mb-2">
+                <img src="${isHero ? `/images/${unit.id}.jpg` : '/images/enemies/e001.jpg'}" class="w-full h-full object-cover" 
+                     onerror="this.style.display='none'; this.parentElement.classList.add('flex','items-center','justify-center','bg-slate-100'); this.parentElement.innerHTML='${isHero ? unit.name[0] : '💀'}'">
+                ${!unit.isAlive ? '<div class="absolute inset-0 bg-slate-500/50 flex items-center justify-center text-white font-bold text-xs">DEAD</div>' : ''}
+            </div>
+            
+            <div class="w-full space-y-1">
+                <div class="bar-container bg-slate-100">
+                    <div class="bar-fill hp ${unit.getHPPercent() < 30 ? 'low' : ''}" style="width: ${unit.getHPPercent()}%"></div>
+                </div>
+                ${isHero ? `
+                <div class="bar-container bg-slate-100">
+                    <div class="bar-fill mana" style="width: ${unit.getManaPercent()}%"></div>
+                </div>` : ''}
+            </div>
+            <div class="text-[10px] font-bold text-slate-600 mt-1 truncate w-full text-center">${unit.name}</div>
+        `;
+        
+        // Floating Text Container attachment point
+        div.style.position = 'relative';
+        container.appendChild(div);
+    });
+}
+
+function showFloatingText(unit, text, type) {
+    // Find the DOM element for this unit
+    // Since we re-render often, this is tricky. 
+    // Hack: We append to the dashboard container and position absolutely based on rects
+    
+    // For simplicity in this text-based env, we assume the unit was just rendered.
+    // In a real app, we'd use a stable ID system.
+    
+    // Finding the unit in the DOM based on name (Weak, but works for prototype)
+    const domUnits = document.querySelectorAll('.battle-unit');
+    let targetEl = null;
+    
+    domUnits.forEach(el => {
+        if (el.textContent.includes(unit.name)) targetEl = el;
+    });
+    
+    if (!targetEl) return;
+    
+    const floater = document.createElement('div');
+    floater.className = `damage-number ${type === 'crit' ? 'text-red-600 text-2xl' : type === 'heal' ? 'text-green-500' : 'text-slate-800'}`;
+    floater.textContent = text;
+    
+    targetEl.appendChild(floater);
+    
+    setTimeout(() => floater.remove(), 800);
+}
+
+// ===========================
+// WAVE MANAGEMENT
+// ===========================
+
+function handleWaveVictory(gameState, battleState) {
+    if (battleInterval) clearInterval(battleInterval);
+    battleState.isActive = false;
+    
+    // Rewards
+    const gold = 50 + (gameState.currentWave * 10);
+    gameState.gold += gold;
+    gameState.enemiesDefeated += battleState.enemies.length;
+    
+    // Next Wave
+    gameState.currentWave++;
+    if (gameState.currentWave > gameState.highestWave) gameState.highestWave = gameState.currentWave;
+    
+    showToast(`Wave Cleared! +${gold} Gold`, 'success');
+    saveGame(gameState);
+    
+    // Auto-continue after 2 seconds
+    setTimeout(() => {
+        startWave(gameState);
+    }, 2000);
+}
+
+function handleRunDefeat(gameState, battleState) {
+    stopBattle(gameState);
+    showToast(`Run Ended at Wave ${gameState.currentWave}`, 'error');
+    
+    // Reset HP
+    gameState.roster.forEach(h => h.resetForBattle());
     saveGame(gameState);
 }
 
-// ===========================
-// USE CONSUMABLE
-// ===========================
-
-function useConsumable(gameState, itemId) {
-    if (!currentBattleState || !currentBattleState.isActive) {
-        showNotification('Can only use items during active battle!', 'warning');
-        return;
-    }
-    
-    const count = gameState.getItemCount('teas', itemId);
-    if (count <= 0) return;
-    
-    const itemData = GARDEN_ITEMS_DATABASE.teas.find(t => t.id === itemId);
-    if (!itemData) return;
-    
-    let used = false;
-    const aliveHeroes = currentBattleState.heroes.filter(h => h.isAlive);
-    
-    switch (itemData.effectType) {
-        case 'heal':
-            aliveHeroes.forEach(h => {
-                const amount = Math.floor(h.maxHP * itemData.effectValue);
-                h.heal(amount);
-            });
-            used = true;
-            break;
-            
-        case 'mana':
-            aliveHeroes.forEach(h => {
-                h.gainMana(itemData.effectValue);
-            });
-            used = true;
-            break;
-            
-        case 'buff_atk':
-            aliveHeroes.forEach(h => {
-                h.atk = Math.floor(h.atk * (1 + itemData.effectValue));
-            });
-            used = true;
-            break;
-            
-        case 'execute':
-            const targets = currentBattleState.enemies.filter(e => e.isAlive && !e.isBoss && e.getHPPercent() < 30);
-            if (targets.length > 0) {
-                targets.forEach(e => {
-                    e.takeDamage(99999);
-                });
-                used = true;
-            } else {
-                showNotification('No valid targets (Non-boss < 30% HP)', 'warning');
-            }
-            break;
-    }
-    
-    if (used) {
-        gameState.removeItem('teas', itemId, 1);
-        playParticleEffect(document.getElementById('battle-heroes'));
-        updateBattleUI(gameState, currentBattleState);
-    }
-}
-
-// ===========================
-// SETUP BATTLE LISTENERS
-// ===========================
-
-function setupBattleListeners(gameState, updateUICallback) {
-    const startRunBtn = document.getElementById('start-run-btn');
-    if (startRunBtn) {
-        startRunBtn.onclick = () => startRun(gameState);
-    }
-    
-    const autoToggle = document.getElementById('auto-battle-toggle');
-    if (autoToggle) {
-        autoToggle.onclick = () => {
-            gameState.autoCast = !gameState.autoCast;
-            autoToggle.textContent = `Auto-Cast: ${gameState.autoCast ? 'ON' : 'OFF'}`;
-            autoToggle.className = gameState.autoCast ? 'btn btn-primary w-full mt-2' : 'btn btn-secondary w-full mt-2';
-        };
-    }
-    
-    const stopBtn = document.getElementById('stop-battle-btn');
-    if (stopBtn) {
-        stopBtn.onclick = () => handleRunDefeat(gameState, currentBattleState);
-    }
-}
-
-// ===========================
-// UPDATE BATTLE UI
-// ===========================
-
-function updateBattleUI(gameState, battleState) {
-    const waveDisplay = document.getElementById('wave-display');
-    if (waveDisplay) waveDisplay.textContent = gameState.currentWave;
-    
-    const waveHeader = document.getElementById('wave-display-header');
-    if (waveHeader) waveHeader.textContent = gameState.currentWave;
-    
-    const heroesCont = document.getElementById('battle-heroes');
-    if (heroesCont && battleState) {
-        heroesCont.innerHTML = '';
-        battleState.heroes.forEach(h => heroesCont.appendChild(createBattleCard(h, true, gameState)));
-    }
-    
-    const enemiesCont = document.getElementById('battle-enemies');
-    if (enemiesCont && battleState) {
-        enemiesCont.innerHTML = '';
-        battleState.enemies.forEach(e => enemiesCont.appendChild(createBattleCard(e, false)));
-    }
-    
-    renderBattleInventory(gameState);
-    if (battleState) renderUltimateAbilities(gameState, battleState);
-}
-
-// ===========================
-// RENDER BATTLE INVENTORY
-// ===========================
-
-function renderBattleInventory(gameState) {
-    const container = document.getElementById('battle-inventory');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const teas = gameState.inventory.teas || {};
-    Object.keys(teas).forEach(id => {
-        const count = teas[id];
-        const data = GARDEN_ITEMS_DATABASE.teas.find(t => t.id === id);
-        
-        if (data && count > 0) {
-            const el = document.createElement('div');
-            el.className = 'consumable-item active';
-            el.innerHTML = `<div class="text-xl">${data.emoji}</div><div class="text-xs font-bold">x${count}</div>`;
-            el.title = `Use ${data.name}: ${data.desc}`;
-            el.onclick = () => useConsumable(gameState, id);
-            container.appendChild(el);
-        }
-    });
-    
-    const filled = container.children.length;
-    for (let i = 0; i < (4 - filled); i++) {
-        const empty = document.createElement('div');
-        empty.className = 'consumable-item';
-        empty.innerHTML = '<div class="text-xl opacity-20">🍵</div>';
-        container.appendChild(empty);
-    }
-}
-
-// ===========================
-// RENDER FUNCTIONS
-// ===========================
-
-function renderUltimateAbilities(gameState, battleState) {
-    const container = document.getElementById('ultimate-abilities-grid');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    battleState.heroes.forEach(hero => {
-        const card = createUltimateAbilityCard(hero, gameState, battleState);
-        container.appendChild(card);
-    });
-}
-
-function createUltimateAbilityCard(hero, gameState, battleState) {
-    const card = document.createElement('div');
-    card.className = 'ultimate-ability-card';
-    
-    if (!hero.isAlive) {
-        card.classList.add('disabled');
-    } else if (hero.canUseUltimate()) {
-        card.classList.add('ready');
-    }
-    
-    const heroName = document.createElement('div');
-    heroName.className = 'ultimate-hero-name';
-    heroName.innerHTML = `<span>${hero.name}</span><span>${getElementEmoji(hero.element)}</span>`;
-    card.appendChild(heroName);
-    
-    const abilityName = document.createElement('div');
-    abilityName.className = 'ultimate-ability-name';
-    abilityName.innerHTML = `<span class="ultimate-ability-icon">${getClassIcon(hero.class)}</span><span>${hero.ultimate.name}</span>`;
-    card.appendChild(abilityName);
-    
-    const manaBar = document.createElement('div');
-    manaBar.className = 'ultimate-mana-bar';
-    const manaFill = document.createElement('div');
-    manaFill.className = 'ultimate-mana-fill';
-    manaFill.style.width = `${hero.getManaPercent()}%`;
-    manaBar.appendChild(manaFill);
-    card.appendChild(manaBar);
-    
-    if (hero.canUseUltimate() && hero.isAlive) {
-        const badge = document.createElement('div');
-        badge.className = 'ultimate-ready-badge';
-        badge.textContent = 'READY!';
-        card.appendChild(badge);
-    }
-    
-    const tooltip = document.createElement('div');
-    tooltip.className = 'ultimate-tooltip';
-    tooltip.innerHTML = `
-        <div style="font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">${hero.ultimate.name}</div>
-        <div style="margin-bottom: 0.5rem; font-style: italic;">${getFantasyDescription(hero)}</div>
-        <div style="color: #94a3b8; font-size: 0.75rem;">${hero.ultimate.desc}</div>
-    `;
-    card.appendChild(tooltip);
-    
-    if (hero.canUseUltimate() && hero.isAlive && !gameState.autoCast) {
-        card.style.cursor = 'pointer';
-        card.onclick = () => {
-            if (currentBattleState) {
-                useHeroUltimate(hero, currentBattleState, gameState);
-                updateBattleUI(gameState, currentBattleState);
-            }
-        };
-    }
-    
-    return card;
-}
-
-function getClassIcon(heroClass) {
-    const icons = { 'Tank': '🛡️', 'Healer': '💚', 'DPS (Single)': '⚔️', 'DPS (AoE)': '💥', 'Buffer': '✨' };
-    return icons[heroClass] || '⭐';
-}
-
-function getFantasyDescription(hero) {
-    const descriptions = {
-        'Tank': `${hero.name} becomes an unbreakable bulwark.`,
-        'Healer': `${hero.name} weaves restorative energy.`,
-        'DPS (Single)': `${hero.name} focuses killing intent.`,
-        'DPS (AoE)': `${hero.name} unleashes destructive power.`,
-        'Buffer': `${hero.name} empowers allies.`
-    };
-    return descriptions[hero.class] || `${hero.name} unleashes their ultimate!`;
-}
-
-function createBattleCard(unit, isHero, gameState = null) {
-    const card = document.createElement('div');
-    card.className = `battle-card ${unit.isAlive ? '' : 'dead'}`;
-    
-    if (isHero) {
-        card.setAttribute('data-hero-id', unit.id);
-        if (unit.canUseUltimate()) card.classList.add('ultimate-ready');
-    }
-    
-    const imageContainer = document.createElement('div');
-    imageContainer.className = 'battle-card-image-container';
-    
-    const img = document.createElement('img');
-    img.className = 'battle-card-image';
-    if (isHero) {
-        img.src = `/images/${unit.id}.jpg`;
-        img.onerror = () => {
-            const placeholder = createHeroPlaceholder(unit);
-            placeholder.className = 'battle-card-placeholder';
-            img.replaceWith(placeholder);
-        };
-    } else {
-        img.src = `/images/enemies/${unit.id}.jpg`;
-        img.onerror = () => {
-            const placeholder = createEnemyPlaceholder(unit);
-            placeholder.className = 'battle-card-placeholder';
-            img.replaceWith(placeholder);
-        };
-    }
-    imageContainer.appendChild(img);
-    
-    const nameOverlay = document.createElement('div');
-    nameOverlay.className = 'battle-card-name';
-    nameOverlay.textContent = unit.name;
-    imageContainer.appendChild(nameOverlay);
-    
-    if (isHero) {
-        const levelBadge = document.createElement('div');
-        levelBadge.className = 'battle-card-level-badge';
-        levelBadge.textContent = `Lv.${unit.level}`;
-        imageContainer.appendChild(levelBadge);
-    }
-    card.appendChild(imageContainer);
-    
-    const statsBelow = document.createElement('div');
-    statsBelow.className = 'battle-card-stats-below';
-    
-    const statsRow = document.createElement('div');
-    statsRow.className = 'battle-stats-row';
-    statsRow.innerHTML = `
-        <div class="battle-stat-item"><span class="battle-stat-icon">⚔️</span><div class="battle-stat-value">${unit.atk}</div></div>
-        <div class="battle-stat-item"><span class="battle-stat-icon">🛡️</span><div class="battle-stat-value">${unit.def}</div></div>
-        <div class="battle-stat-item"><span class="battle-stat-icon">⚡</span><div class="battle-stat-value">${unit.spd}</div></div>
-    `;
-    statsBelow.appendChild(statsRow);
-    
-    const barsBelow = document.createElement('div');
-    barsBelow.className = 'battle-bars-below';
-    
-    const hpLabel = document.createElement('div');
-    hpLabel.className = 'battle-bar-label';
-    hpLabel.innerHTML = `<span>HP</span><span>${unit.currentHP}/${unit.maxHP}</span>`;
-    barsBelow.appendChild(hpLabel);
-    
-    const hpBar = document.createElement('div');
-    hpBar.className = 'hp-bar';
-    const hpFill = document.createElement('div');
-    hpFill.className = 'hp-bar-fill';
-    hpFill.style.width = `${unit.getHPPercent()}%`;
-    if (unit.getHPPercent() <= 25) hpFill.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
-    else if (unit.getHPPercent() <= 50) hpFill.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
-    hpBar.appendChild(hpFill);
-    barsBelow.appendChild(hpBar);
-    
-    if (isHero) {
-        const manaLabel = document.createElement('div');
-        manaLabel.className = 'battle-bar-label';
-        manaLabel.innerHTML = `<span>Mana</span><span>${unit.mana}/${unit.maxMana}</span>`;
-        barsBelow.appendChild(manaLabel);
-        
-        const manaBar = document.createElement('div');
-        manaBar.className = 'mana-bar';
-        const manaFill = document.createElement('div');
-        manaFill.className = 'mana-bar-fill';
-        manaFill.style.width = `${unit.getManaPercent()}%`;
-        manaBar.appendChild(manaFill);
-        barsBelow.appendChild(manaBar);
-        
-        if (!gameState?.autoCast && unit.canUseUltimate()) {
-            card.style.cursor = 'pointer';
-            card.onclick = () => {
-                if (currentBattleState && unit.canUseUltimate()) {
-                    useHeroUltimate(unit, currentBattleState, gameState);
-                    updateBattleUI(gameState, currentBattleState);
-                }
-            };
-        }
-    }
-    statsBelow.appendChild(barsBelow);
-    card.appendChild(statsBelow);
-    
-    return card;
+function toggleAutoCast() {
+    if (!gameState) return;
+    gameState.autoCast = !gameState.autoCast;
+    renderBattleDashboard(gameState);
 }

@@ -2,421 +2,161 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sakura Chronicles - Gacha RPG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sakura Chronicles | Anime Gacha RPG</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#FF9EB5',    /* Sakura Pink */
+                        primaryDark: '#FF7597',
+                        secondary: '#6366F1',  /* Indigo */
+                        accent: '#F59E0B',     /* Gold */
+                        surface: '#FFFFFF',
+                        background: '#F8FAFC', /* Slate 50 */
+                        dark: '#1E293B',       /* Slate 800 */
+                    }
+                }
+            }
+        }
+    </script>
     
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-gradient-to-br from-pink-50 via-white to-pink-100 min-h-screen overflow-x-hidden">
-    
-    <div id="petals-container" class="petals-container"></div>
-    
-    <div id="app" class="relative z-10">
+<body class="bg-background text-dark font-sans h-screen overflow-hidden selection:bg-primary selection:text-white">
+
+    <div id="petals-container" class="petals-container pointer-events-none fixed inset-0 z-0"></div>
+    <div class="bg-gradient-overlay fixed inset-0 z-0 opacity-40 pointer-events-none"></div>
+
+    <div id="app" class="relative z-10 flex h-full w-full">
         
-        <header class="glass-panel fixed top-0 left-0 right-0 z-50 border-b border-pink-200">
-            <div class="container mx-auto px-4 py-4">
-                <div class="flex items-center justify-between flex-wrap gap-4">
-                    <div class="flex items-center gap-3">
-                        <div class="text-4xl">🌸</div>
-                        <div class="flex flex-col">
-                            <h1 class="text-2xl md:text-3xl font-bold gradient-text">Sakura Chronicles</h1>
-                            <span id="header-username" class="text-xs text-slate-500 font-semibold">Player</span>
-                        </div>
+        <aside class="hidden md:flex flex-col w-64 bg-surface border-r border-slate-200 h-full shadow-lg z-20 transition-all duration-300">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-white text-xl shadow-lg shadow-pink-200">
+                    <i class="fa-solid fa-sakura"></i>
+                </div>
+                <div>
+                    <h1 class="font-heading font-bold text-xl tracking-tight text-slate-800">Sakura<span class="text-primary">RPG</span></h1>
+                    <div class="text-xs text-slate-400 font-medium tracking-wide">CHRONICLES</div>
+                </div>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1" id="desktop-nav">
+                </nav>
+
+            <div class="p-4 border-t border-slate-100">
+                <div class="bg-slate-50 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-slate-100 transition-colors" id="sidebar-profile-btn">
+                    <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+                        <i class="fa-solid fa-user"></i>
                     </div>
-                    
-                    <div class="flex gap-4 flex-wrap">
-                        <div class="currency-display" title="Gold - Used for leveling heroes">
-                            <span class="text-xl">💰</span>
-                            <span id="gold-display" class="font-semibold">0</span>
-                        </div>
-                        <div class="currency-display" title="Petals - Premium currency for summoning">
-                            <span class="text-xl">🌸</span>
-                            <span id="petals-display" class="font-semibold">0</span>
-                        </div>
-                        <div class="currency-display" title="Spirit Orbs - Used for skill tree">
-                            <span class="text-xl">🔮</span>
-                            <span id="orbs-display" class="font-semibold">0</span>
-                        </div>
+                    <div class="overflow-hidden">
+                        <div class="font-bold text-sm truncate" id="sidebar-username">Player</div>
+                        <div class="text-xs text-slate-500">Lv. <span id="sidebar-level">1</span></div>
                     </div>
                 </div>
             </div>
-        </header>
-        
-        <nav class="fixed top-20 left-0 right-0 z-40 glass-panel border-b border-pink-200">
-            <div class="container mx-auto px-4">
-                <div class="flex gap-2 overflow-x-auto py-3">
-                    <button class="nav-tab active" data-tab="battle">⚔️ Battle</button>
-                    <button class="nav-tab" data-tab="garden">🍵 Garden</button>
-                    <button class="nav-tab" data-tab="roster">👥 Roster</button>
-                    <button class="nav-tab" data-tab="gacha">🎲 Gacha</button>
-                    <button class="nav-tab" data-tab="skill-tree">🌳 Yggdrasil</button>
-                    <button class="nav-tab" data-tab="expedition">🗺️ Expedition</button>
-                    <button class="nav-tab" data-tab="quests">📜 Quests</button>
-                    <button class="nav-tab" data-tab="profile">👤 Profile</button> </div>
-            </div>
-        </nav>
-        
-        <main class="container mx-auto px-4 pt-40 pb-8">
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full relative overflow-hidden">
             
-            <div id="battle-tab" class="tab-content active">
-                <div class="battle-page-header-compact">
-                    <h1 class="battle-main-title-compact">⚔️ Battle Arena (Roguelike Mode)</h1>
+            <header class="h-16 bg-surface/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-20 shadow-sm">
+                <button class="md:hidden p-2 text-slate-600 hover:text-primary transition-colors" id="mobile-menu-btn">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+
+                <div class="flex items-center gap-2 md:gap-6 overflow-x-auto no-scrollbar ml-auto">
+                    <div class="resource-pill group">
+                        <div class="icon bg-yellow-100 text-yellow-600"><i class="fa-solid fa-coins"></i></div>
+                        <div class="flex flex-col leading-none">
+                            <span class="label">Gold</span>
+                            <span class="value" id="gold-display">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="resource-pill group">
+                        <div class="icon bg-pink-100 text-pink-600"><i class="fa-solid fa-spa"></i></div>
+                        <div class="flex flex-col leading-none">
+                            <span class="label">Petals</span>
+                            <span class="value" id="petals-display">0</span>
+                        </div>
+                        <button class="plus-btn" onclick="debug.addPetals(100)">+</button>
+                    </div>
+                    
+                    <div class="resource-pill group">
+                        <div class="icon bg-purple-100 text-purple-600"><i class="fa-solid fa-gem"></i></div>
+                        <div class="flex flex-col leading-none">
+                            <span class="label">Orbs</span>
+                            <span class="value" id="orbs-display">0</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="content-area" class="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50 p-4 md:p-6 pb-24 md:pb-6 relative scroll-smooth">
+                
+                <div id="battle-tab" class="view-content active opacity-100 transition-opacity duration-300">
+                    </div>
+
+                <div id="garden-tab" class="view-content hidden opacity-0 transition-opacity duration-300">
+                    </div>
+                
+                <div id="roster-tab" class="view-content hidden opacity-0 transition-opacity duration-300">
+                    </div>
+
+                <div id="gacha-tab" class="view-content hidden opacity-0 transition-opacity duration-300">
+                    </div>
+
+                <div id="forge-tab" class="view-content hidden opacity-0 transition-opacity duration-300">
+                    <div class="empty-state-placeholder">
+                        <i class="fa-solid fa-hammer text-6xl text-slate-300 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-slate-700">The Forge</h2>
+                        <p class="text-slate-500">Craft legendary gear coming soon...</p>
+                    </div>
                 </div>
 
-                <div class="battle-main-layout-new">
-                    
-                    <div class="battle-stats-sidebar">
-                        <div class="battle-panel">
-                            <div class="panel-header">
-                                <span class="panel-icon">📊</span>
-                                <h2 class="panel-title">Run Stats</h2>
-                            </div>
-                            <div class="panel-content">
-                                <div class="stat-card-vertical">
-                                    <div class="stat-icon-large">🌊</div>
-                                    <div class="stat-label">Current Run</div>
-                                    <div class="stat-value-large" id="wave-display-header">1</div>
-                                </div>
-                                <div class="stat-card-vertical">
-                                    <div class="stat-icon-large">🏆</div>
-                                    <div class="stat-label">Best Record</div>
-                                    <div class="stat-value-large" id="highest-wave-display">0</div>
-                                </div>
-                                <div class="stat-card-vertical">
-                                    <div class="stat-icon-large">💀</div>
-                                    <div class="stat-label">Enemies Slain</div>
-                                    <div class="stat-value-large" id="enemies-defeated-display">0</div>
-                                </div>
-                            </div>
-                        </div>
+                <div id="skill-tree-tab" class="view-content hidden opacity-0 transition-opacity duration-300">
+                    </div>
 
-                        <div class="battle-panel mt-4">
-                            <div class="panel-header">
-                                <span class="panel-icon">🍵</span>
-                                <h2 class="panel-title">Battle Items</h2>
-                            </div>
-                            <div class="panel-content">
-                                <div id="battle-inventory" class="grid grid-cols-4 gap-2">
-                                    </div>
-                                <p class="text-xs text-slate-500 mt-2 text-center">Use items from your Garden to survive longer!</p>
-                            </div>
-                        </div>
+                <div id="expedition-tab" class="view-content hidden opacity-0 transition-opacity duration-300">
                     </div>
-                    
-                    <div class="battle-sidebar">
-                        <div class="battle-panel">
-                            <div class="panel-header">
-                                <span class="panel-icon">👥</span>
-                                <h2 class="panel-title">Your Team</h2>
-                            </div>
-                            <div class="panel-content">
-                                <div id="team-selection" class="space-y-2"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="battle-panel">
-                            <div class="panel-header">
-                                <span class="panel-icon">🎮</span>
-                                <h2 class="panel-title">Battle Controls</h2>
-                            </div>
-                            <div class="panel-content">
-                                <div id="pre-run-controls">
-                                    <button id="start-run-btn" class="btn btn-primary w-full mb-2">Start New Run (Wave 1)</button>
-                                </div>
-                                <div id="active-run-controls" class="hidden">
-                                    <button id="next-wave-btn" class="btn btn-gold w-full mb-2 hidden">Next Wave</button>
-                                    <button id="stop-battle-btn" class="btn btn-secondary w-full mb-2 hidden">Retreat (End Run)</button>
-                                </div>
-                                
-                                <button id="auto-battle-toggle" class="btn btn-secondary w-full mt-2">Auto-Cast: OFF</button>
-                            </div>
-                        </div>
+
+                <div id="quests-tab" class="view-content hidden opacity-0 transition-opacity duration-300">
                     </div>
-                    
-                    <div class="battle-center">
-                        <div class="battle-arena-container-light">
-                            <div class="battle-wave-header-light">
-                                <div class="wave-title-light">
-                                    <span class="wave-icon-light">⚔️</span>
-                                    <span>Wave <span id="wave-display">1</span></span>
-                                </div>
-                                <div class="battle-status-light" id="battle-status">Ready to Start</div>
-                            </div>
-                            
-                            <div class="battle-field-light">
-                                <div class="battle-section-light hero-section-light">
-                                    <div class="section-label-light">
-                                        <span class="label-icon-light">🛡️</span>
-                                        <span>Your Heroes</span>
-                                    </div>
-                                    <div id="battle-heroes" class="battle-units-grid"></div>
-                                </div>
-                                
-                                <div class="battle-divider-light">
-                                    <div class="vs-circle-light">
-                                        <span class="vs-text-light">VS</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="battle-section-light enemy-section-light">
-                                    <div class="section-label-light enemy-label-light">
-                                        <span class="label-icon-light">💀</span>
-                                        <span>Enemies</span>
-                                    </div>
-                                    <div id="battle-enemies" class="battle-units-grid"></div>
-                                </div>
-                            </div>
-                        </div>
+                
+                <div id="settings-tab" class="view-content hidden opacity-0 transition-opacity duration-300">
                     </div>
-                    
-                    <div class="battle-sidebar">
-                        <div class="battle-panel">
-                            <div class="panel-header">
-                                <span class="panel-icon">✨</span>
-                                <h2 class="panel-title">Ultimate Abilities</h2>
-                            </div>
-                            <div class="panel-content">
-                                <p class="panel-description">Click on glowing abilities to cast them manually, or enable Auto-Cast.</p>
-                                <div id="ultimate-abilities-grid" class="ultimate-abilities-stack"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                </div>
             </div>
 
-            <div id="garden-tab" class="tab-content">
-                <div class="max-w-6xl mx-auto">
-                    <div class="battle-page-header-compact bg-green-50 border-green-200">
-                        <h1 class="battle-main-title-compact text-green-700">🍵 Sakura Spirit Garden</h1>
-                        <p class="text-slate-600">Plant seeds found in battle to brew powerful teas for your next run!</p>
-                    </div>
+            <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-slate-200 h-16 flex justify-around items-center z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]" id="mobile-nav">
+                </nav>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-1 space-y-4">
-                            <div class="glass-panel p-4">
-                                <h3 class="font-bold text-lg mb-3 flex items-center gap-2">
-                                    <span>🌱</span> Seed Pouch
-                                </h3>
-                                <div id="seed-inventory" class="grid grid-cols-4 gap-2">
-                                    </div>
-                            </div>
-
-                            <div class="glass-panel p-4">
-                                <h3 class="font-bold text-lg mb-3 flex items-center gap-2">
-                                    <span>🍵</span> Brewed Teas
-                                </h3>
-                                <div id="tea-inventory" class="grid grid-cols-4 gap-2">
-                                    </div>
-                            </div>
-                        </div>
-
-                        <div class="lg:col-span-2">
-                            <div class="glass-panel p-6">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="font-bold text-xl">Garden Plots</h3>
-                                    <button id="buy-plot-btn" class="btn btn-secondary text-sm">
-                                        Unlock Plot (5000 Gold)
-                                    </button>
-                                </div>
-                                
-                                <div id="garden-plots" class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="roster-tab" class="tab-content">
-                <div class="glass-panel p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="section-title">Hero Roster</h2>
-                        <div class="flex gap-2">
-                            <select id="roster-sort" class="filter-select">
-                                <option value="rarity">Sort: Rarity</option>
-                                <option value="level">Sort: Level</option>
-                                <option value="team">Sort: Team First ⭐</option>
-                            </select>
-                            <select id="roster-filter-rarity" class="filter-select">
-                                <option value="all">All Rarities</option>
-                                <option value="N">Normal</option>
-                                <option value="R">Rare</option>
-                                <option value="SR">Super Rare</option>
-                                <option value="SSR">SSR</option>
-                                <option value="UR">Ultra Rare</option>
-                            </select>
-                            <select id="roster-filter-element" class="filter-select">
-                                <option value="all">All Elements</option>
-                                <option value="Fire">🔥 Fire</option>
-                                <option value="Water">💧 Water</option>
-                                <option value="Wind">🌪️ Wind</option>
-                                <option value="Light">✨ Light</option>
-                                <option value="Dark">🌑 Dark</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="roster-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
-                </div>
-            </div>
-            
-            <div id="gacha-tab" class="tab-content">
-                <div class="max-w-4xl mx-auto space-y-6">
-                    
-                    <div class="glass-panel p-6">
-                        <h2 class="section-title mb-4">🌸 Summoning Shrine</h2>
-                        <div class="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-4">
-                            <h3 class="font-semibold mb-2">How Gacha Works:</h3>
-                            <ul class="text-sm space-y-1 text-slate-700">
-                                <li>• Spend <strong>Petals (🌸)</strong> to summon heroes</li>
-                                <li>• <strong>1-Pull</strong>: 10 Petals | <strong>10-Pull</strong>: 100 Petals</li>
-                                <li>• Rarities: N (60%), R (25%), SR (10%), SSR (4.5%), UR (0.5%)</li>
-                                <li>• <strong>Pity System:</strong> Guaranteed SSR after 50 pulls without one</li>
-                                <li>• <strong>Duplicates</strong> convert to Awakening Shards for that hero</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="text-center mb-4">
-                            <div class="text-sm text-slate-600 mb-2">Pulls until Pity:</div>
-                            <div id="pity-counter" class="text-3xl font-bold gradient-text">50</div>
-                        </div>
-                        
-                        <div class="flex gap-4 justify-center">
-                            <button id="pull-1-btn" class="btn btn-primary">
-                                <span class="text-lg">🌸</span>
-                                <span>1-Pull</span>
-                                <span class="text-xs">(10 Petals)</span>
-                            </button>
-                            <button id="pull-10-btn" class="btn btn-gold">
-                                <span class="text-lg">🌸</span>
-                                <span>10-Pull</span>
-                                <span class="text-xs">(100 Petals)</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="gacha-animation" class="hidden"></div>
-                    
-                    <div id="gacha-results" class="hidden"></div>
-                    
-                </div>
-            </div>
-            
-            <div id="skill-tree-tab" class="tab-content">
-                <div class="glass-panel p-6">
-                    <h2 class="section-title mb-4">🌳 Yggdrasil - The World Tree</h2>
-                    <div class="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-6">
-                        <p class="text-sm text-slate-700">
-                            Spend <strong>Spirit Orbs (🔮)</strong> to unlock permanent passive bonuses for all your heroes. 
-                            These upgrades persist forever and make your entire team stronger!
-                        </p>
-                    </div>
-                    <div id="skill-tree-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                </div>
-            </div>
-            
-            <div id="expedition-tab" class="tab-content">
-                <div class="max-w-2xl mx-auto glass-panel p-6">
-                    <h2 class="section-title mb-4">🗺️ Expedition</h2>
-                    <div class="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-6">
-                        <p class="text-sm text-slate-700">
-                            Send your heroes on expeditions! They will gather resources while you're away. 
-                            Rewards accumulate even when the game is closed.
-                        </p>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div class="border border-pink-200 rounded-lg p-4">
-                            <h3 class="font-semibold mb-2">Current Expedition</h3>
-                            <div id="expedition-status" class="text-sm text-slate-700"></div>
-                            <div class="mt-4">
-                                <button id="claim-expedition-btn" class="btn btn-primary w-full" disabled>
-                                    Claim Rewards
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div id="expedition-rewards" class="hidden"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="quests-tab" class="tab-content">
-                <div class="max-w-3xl mx-auto glass-panel p-6">
-                    <h2 class="section-title mb-4">📜 Daily Quests</h2>
-                    <div class="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-6">
-                        <p class="text-sm text-slate-700">
-                            Complete daily quests to earn <strong>Petals</strong> and other rewards! 
-                            Quests reset every day at midnight.
-                        </p>
-                    </div>
-                    <div id="quests-list" class="space-y-3"></div>
-                </div>
-            </div>
-
-            <div id="profile-tab" class="tab-content">
-                <div class="max-w-xl mx-auto glass-panel p-6">
-                    <h2 class="section-title mb-6 text-center">👤 Player Profile</h2>
-                    
-                    <div class="space-y-6">
-                        <div class="bg-white p-4 rounded-xl border border-pink-200 shadow-sm">
-                            <label for="username-input" class="block text-sm font-bold text-slate-700 mb-2">Username</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="username-input" class="flex-1 p-2 border border-slate-300 rounded-lg focus:outline-none focus:border-pink-400" placeholder="Enter username...">
-                                <button id="save-username-btn" class="btn btn-primary text-sm px-4">Save</button>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            <h3 class="font-semibold text-slate-700 mb-3">Account Statistics</h3>
-                            <div class="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <div class="text-slate-500">Play Time</div>
-                                    <div id="profile-playtime" class="font-bold text-slate-800">0h 0m</div>
-                                </div>
-                                <div>
-                                    <div class="text-slate-500">Total Battles</div>
-                                    <div id="profile-battles" class="font-bold text-slate-800">0</div>
-                                </div>
-                                <div>
-                                    <div class="text-slate-500">Total Pulls</div>
-                                    <div id="profile-pulls" class="font-bold text-slate-800">0</div>
-                                </div>
-                                <div>
-                                    <div class="text-slate-500">Highest Wave</div>
-                                    <div id="profile-wave" class="font-bold text-slate-800">0</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="border border-red-200 bg-red-50 p-4 rounded-xl">
-                            <h3 class="font-semibold text-red-700 mb-2">Danger Zone</h3>
-                            <p class="text-xs text-red-600 mb-4">Resetting your game will permanently delete all progress, heroes, items, and stats. This cannot be undone.</p>
-                            <button id="reset-game-btn" class="btn bg-red-500 hover:bg-red-600 text-white w-full">
-                                ⚠️ Reset All Progress
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
         </main>
-        
     </div>
-    
-    <div id="hero-modal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close">&times;</button>
-            <div id="hero-detail"></div>
+
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-surface w-full max-w-lg rounded-2xl shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh] overflow-hidden relative">
+            <button class="modal-close-btn absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors z-10">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modal-body" class="overflow-y-auto p-0"></div>
         </div>
     </div>
-    
+
+    <div id="toast-container" class="fixed top-20 right-4 z-[60] flex flex-col gap-2 pointer-events-none"></div>
+
     <script src="utils.js"></script>
     <script src="data.js"></script>
     <script src="classes.js"></script>
@@ -427,6 +167,5 @@
     <script src="skillTree.js"></script>
     <script src="ui.js"></script>
     <script src="main.js"></script>
-    
 </body>
 </html>

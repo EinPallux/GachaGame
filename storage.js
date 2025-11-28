@@ -1,189 +1,189 @@
-/* ===========================
-   SAKURA CHRONICLES - STORAGE
-   LocalStorage Management
-   =========================== */
+/* =========================================
+   SAKURA CHRONICLES - STORAGE MANAGER
+   Save/Load & Persistence Logic
+   ========================================= */
 
-const STORAGE_KEY = 'sakuraChronicles_saveData';
-const AUTO_SAVE_INTERVAL = 30000; // Auto-save every 30 seconds
+const STORAGE_KEY = 'sakuraChronicles_saveData_v1'; // Updated key for new version
+const AUTO_SAVE_INTERVAL = 30000; // 30 Seconds
 
 // ===========================
-// SAVE GAME
+// CORE SAVE/LOAD
 // ===========================
 
-function saveGame(gameState) {
+function saveGame(gameState, silent = true) {
     try {
+        if (!gameState) return false;
+
         const saveData = {
-            version: '1.0',
+            version: '1.2', // Matches our new "Forge" update versioning
             timestamp: Date.now(),
             state: gameState.toJSON()
         };
         
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
-        console.log('Game saved successfully!');
+        const json = JSON.stringify(saveData);
+        localStorage.setItem(STORAGE_KEY, json);
+        
+        if (!silent) {
+            // Use the utility function if available, otherwise console
+            if (typeof showNotification === 'function') {
+                showNotification('Game Saved Successfully', 'success');
+            } else {
+                console.log('Game saved.');
+            }
+        }
         return true;
     } catch (error) {
-        console.error('Failed to save game:', error);
+        console.error('Save failed:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('Failed to save game! Storage might be full.', 'error');
+        }
         return false;
     }
 }
 
-// ===========================
-// LOAD GAME
-// ===========================
-
 function loadGame() {
     try {
-        const savedData = localStorage.getItem(STORAGE_KEY);
+        const json = localStorage.getItem(STORAGE_KEY);
         
-        if (!savedData) {
-            console.log('No save data found. Starting new game.');
+        if (!json) {
+            console.log('No save data found. New game.');
             return null;
         }
         
-        const saveData = JSON.parse(savedData);
-        const gameState = GameState.fromJSON(saveData.state);
+        const saveData = JSON.parse(json);
         
-        console.log('Game loaded successfully!');
+        // Version Migration Logic could go here
+        // For now, we just load the state
+        
+        if (!saveData.state) return null;
+        
+        const gameState = GameState.fromJSON(saveData.state);
+        console.log(`Game loaded (v${saveData.version})`);
         return gameState;
+
     } catch (error) {
-        console.error('Failed to load game:', error);
+        console.error('Load failed:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('Corrupted save file detected.', 'error');
+        }
         return null;
     }
 }
 
-// ===========================
-// DELETE SAVE
-// ===========================
-
 function deleteSave() {
     try {
         localStorage.removeItem(STORAGE_KEY);
-        console.log('Save data deleted.');
+        console.log('Save deleted.');
+        if (typeof showNotification === 'function') {
+            showNotification('Save data deleted.', 'warning');
+        }
         return true;
-    } catch (error) {
-        console.error('Failed to delete save:', error);
+    } catch (e) {
         return false;
     }
 }
-
-// ===========================
-// CHECK IF SAVE EXISTS
-// ===========================
 
 function saveExists() {
     return localStorage.getItem(STORAGE_KEY) !== null;
 }
 
 // ===========================
-// GET SAVE INFO
-// ===========================
-
-function getSaveInfo() {
-    try {
-        const savedData = localStorage.getItem(STORAGE_KEY);
-        
-        if (!savedData) {
-            return null;
-        }
-        
-        const saveData = JSON.parse(savedData);
-        
-        return {
-            version: saveData.version,
-            timestamp: saveData.timestamp,
-            lastPlayed: new Date(saveData.timestamp).toLocaleString(),
-            heroCount: saveData.state.roster?.length || 0,
-            highestWave: saveData.state.highestWave || 0,
-            gold: saveData.state.gold || 0,
-            petals: saveData.state.petals || 0
-        };
-    } catch (error) {
-        console.error('Failed to get save info:', error);
-        return null;
-    }
-}
-
-// ===========================
 // AUTO-SAVE SYSTEM
 // ===========================
 
-let autoSaveInterval = null;
+let autoSaveIntervalId = null;
 
 function startAutoSave(gameState) {
-    // Clear any existing interval
     stopAutoSave();
     
-    // Start new auto-save interval
-    autoSaveInterval = setInterval(() => {
-        saveGame(gameState);
+    console.log('Auto-save enabled.');
+    autoSaveIntervalId = setInterval(() => {
+        saveGame(gameState, true); // Silent save
     }, AUTO_SAVE_INTERVAL);
-    
-    console.log('Auto-save enabled (every 30 seconds)');
 }
 
 function stopAutoSave() {
-    if (autoSaveInterval) {
-        clearInterval(autoSaveInterval);
-        autoSaveInterval = null;
-        console.log('Auto-save disabled');
+    if (autoSaveIntervalId) {
+        clearInterval(autoSaveIntervalId);
+        autoSaveIntervalId = null;
     }
 }
 
 // ===========================
-// EXPORT/IMPORT SAVE
+// EXPORT / IMPORT
 // ===========================
 
 function exportSave() {
     try {
-        const savedData = localStorage.getItem(STORAGE_KEY);
-        
-        if (!savedData) {
-            console.log('No save data to export.');
-            return null;
+        const json = localStorage.getItem(STORAGE_KEY);
+        if (!json) {
+            showNotification('No save data to export.', 'warning');
+            return;
         }
-        
-        // Create a downloadable file
-        const blob = new Blob([savedData], { type: 'application/json' });
+
+        const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `sakura_chronicles_save_${Date.now()}.json`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        console.log('Save exported successfully!');
-        return true;
+        showNotification('Save file downloaded!', 'success');
     } catch (error) {
-        console.error('Failed to export save:', error);
-        return false;
+        console.error('Export failed:', error);
+        showNotification('Failed to export save.', 'error');
     }
 }
 
-function importSave(fileContent) {
-    try {
-        // Validate JSON
-        const saveData = JSON.parse(fileContent);
-        
-        if (!saveData.version || !saveData.state) {
-            throw new Error('Invalid save file format');
+function importSave(fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const content = e.target.result;
+            const parsed = JSON.parse(content);
+            
+            // Basic validation
+            if (!parsed.version || !parsed.state) {
+                throw new Error('Invalid save format');
+            }
+
+            localStorage.setItem(STORAGE_KEY, content);
+            showNotification('Save imported! Reloading...', 'success');
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Import failed:', error);
+            showNotification('Invalid save file!', 'error');
         }
-        
-        // Save to localStorage
-        localStorage.setItem(STORAGE_KEY, fileContent);
-        console.log('Save imported successfully!');
-        return true;
-    } catch (error) {
-        console.error('Failed to import save:', error);
-        return false;
+    };
+    reader.readAsText(file);
+}
+
+// ===========================
+// SAFETY
+// ===========================
+
+window.addEventListener('beforeunload', () => {
+    // Attempt one final save before closing
+    // Note: Async operations are unreliable here, but localStorage is sync
+    if (window.gameState) {
+        saveGame(window.gameState, true);
     }
-}
+});
 
-// ===========================
-// SAVE BEFORE UNLOAD
-// ===========================
-
-function setupAutoSaveBeforeUnload(gameState) {
-    window.addEventListener('beforeunload', (event) => {
-        saveGame(gameState);
-    });
-}
+// Expose for debug/console use
+window.sakuraStorage = {
+    save: saveGame,
+    load: loadGame,
+    clear: deleteSave,
+    export: exportSave
+};
