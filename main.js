@@ -6,11 +6,10 @@
 let gameState = null;
 
 // Navigation Configuration
-// This single source of truth generates both Desktop Sidebar and Mobile Bottom Nav
 const APP_NAVIGATION = [
     { id: 'battle', label: 'Battle', icon: 'fa-solid fa-khanda', color: 'text-red-500' },
     { id: 'garden', label: 'Garden', icon: 'fa-solid fa-leaf', color: 'text-green-500' },
-    { id: 'forge', label: 'Forge', icon: 'fa-solid fa-hammer', color: 'text-indigo-500' }, // New Feature
+    { id: 'forge', label: 'Forge', icon: 'fa-solid fa-hammer', color: 'text-indigo-500' },
     { id: 'roster', label: 'Heroes', icon: 'fa-solid fa-users', color: 'text-blue-500' },
     { id: 'gacha', label: 'Summon', icon: 'fa-solid fa-gem', color: 'text-pink-500' },
     { id: 'skill-tree', label: 'Yggdrasil', icon: 'fa-solid fa-tree', color: 'text-emerald-600' },
@@ -42,16 +41,8 @@ function initializeGame() {
     renderNavigation();
     setupEventListeners();
     
-    // Initialize UI
-    // We wrap this in a try-catch because UI.js might not be fully updated yet during the migration
-    try {
-        updateUI(gameState);
-        if (typeof renderTeamSelection === 'function') {
-            renderTeamSelection(gameState);
-        }
-    } catch (e) {
-        console.warn("UI initialization deferred:", e);
-    }
+    // Initialize UI Wrapper
+    updateUI(gameState);
     
     // Start Loops
     startAutoSave(gameState);
@@ -89,8 +80,8 @@ function renderNavigation() {
         `;
         desktopNav.appendChild(dItem);
         
-        // Mobile Item (Limit to first 5 for bottom bar, rest in "More" - simplified for now)
-        if (['battle', 'garden', 'roster', 'gacha', 'forge'].includes(nav.id)) {
+        // Mobile Item (Limit items for space)
+        if (['battle', 'garden', 'forge', 'roster', 'gacha'].includes(nav.id)) {
             const mItem = document.createElement('div');
             mItem.className = 'mobile-nav-item';
             mItem.dataset.target = nav.id;
@@ -124,7 +115,6 @@ function switchView(viewId) {
     const targetView = document.getElementById(`${viewId}-tab`);
     if (targetView) {
         targetView.classList.remove('hidden');
-        // Small delay to allow display:block to apply before opacity transition
         requestAnimationFrame(() => {
             targetView.classList.remove('opacity-0');
             targetView.classList.add('active', 'animate-entry');
@@ -135,23 +125,32 @@ function switchView(viewId) {
     }
     
     // Mobile: Scroll to top
-    document.getElementById('content-area').scrollTop = 0;
+    const contentArea = document.getElementById('content-area');
+    if (contentArea) contentArea.scrollTop = 0;
 }
 
 function refreshViewContent(viewId) {
     if (!gameState) return;
     
-    // Call render functions from ui.js / garden.js / etc.
-    // Using safety checks in case files aren't updated yet
+    // Call render functions from their respective files
     switch(viewId) {
         case 'battle':
-            if (typeof renderTeamSelection === 'function') renderTeamSelection(gameState);
+            // FIX: Now calls renderBattleDashboard from battle.js
+            if (typeof renderBattleDashboard === 'function') renderBattleDashboard(gameState);
             break;
         case 'roster':
             if (typeof renderRoster === 'function') renderRoster(gameState);
             break;
         case 'garden':
             if (typeof renderGarden === 'function') renderGarden(gameState);
+            break;
+        case 'gacha':
+            // FIX: Added Gacha renderer from gacha.js
+            if (typeof renderGacha === 'function') renderGacha(gameState);
+            break;
+        case 'forge':
+            // FIX: Added Forge renderer (we will create forge.js next)
+            if (typeof renderForge === 'function') renderForge(gameState);
             break;
         case 'skill-tree':
             if (typeof renderSkillTree === 'function') renderSkillTree(gameState);
@@ -165,9 +164,6 @@ function refreshViewContent(viewId) {
         case 'settings':
             if (typeof renderProfile === 'function') renderProfile(gameState);
             break;
-        case 'forge':
-            // Future Forge rendering
-            break;
     }
 }
 
@@ -176,7 +172,7 @@ function refreshViewContent(viewId) {
 // ===========================
 
 function setupEventListeners() {
-    // Mobile Menu Toggle (if we implement a sidebar drawer for mobile later)
+    // Mobile Menu Toggle
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     if (mobileMenuBtn) {
         mobileMenuBtn.onclick = () => {
@@ -214,7 +210,6 @@ function startUIUpdateLoop(gameState) {
 }
 
 function showToast(message, type = 'info') {
-    // Wrapper for the utils.js notification to ensure styling compatibility
     if (typeof showNotification === 'function') {
         showNotification(message, type);
     }
