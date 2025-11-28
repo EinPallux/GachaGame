@@ -3,36 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aether Chronicles: Endless Gacha</title>
+    <title>Sakura Blade: Endless Gacha</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Zen+Maru+Gothic:wght@500;700&display=swap');
         
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: #0f172a;
-            color: #e2e8f0;
-            overflow: hidden; /* Prevent scrolling on mobile */
+            background-color: #1a0b2e; /* Dark Purple Background */
+            color: #fce7f3; /* Pinkish Text */
+            overflow: hidden;
+        }
+
+        h1, h2, h3, .anime-font {
+            font-family: 'Zen Maru Gothic', sans-serif;
         }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        ::-webkit-scrollbar-track { background: #2e1065; }
+        ::-webkit-scrollbar-thumb { background: #d946ef; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f0abfc; }
 
         /* Glassmorphism Utilities */
         .glass {
-            background: rgba(30, 41, 59, 0.7);
+            background: rgba(46, 16, 101, 0.7);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(244, 114, 182, 0.1);
         }
         .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(23, 10, 48, 0.85);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(236, 72, 153, 0.2);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
 
@@ -45,8 +49,8 @@
         .animate-float { animation: float 3s ease-in-out infinite; }
 
         @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
-            50% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.6); }
+            0%, 100% { box-shadow: 0 0 10px rgba(236, 72, 153, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(236, 72, 153, 0.6); }
         }
         .glow-effect { animation: pulse-glow 2s infinite; }
 
@@ -57,204 +61,194 @@
         .shiny-btn { position: relative; overflow: hidden; }
         .shiny-btn::after {
             content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
             transition: 0.5s;
         }
         .shiny-btn:hover::after { animation: shine 1s; }
 
         @keyframes summon-flash {
-            0% { opacity: 0; transform: scale(0.5); }
-            50% { opacity: 1; transform: scale(1.1); }
-            100% { opacity: 1; transform: scale(1); }
+            0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+            50% { opacity: 1; transform: scale(1.1) rotate(5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
         }
-        .summon-item { animation: summon-flash 0.4s ease-out forwards; }
+        .summon-item { animation: summon-flash 0.5s ease-out forwards; }
 
         /* Rarity Colors */
-        .rarity-3 { color: #94a3b8; border-color: #94a3b8; box-shadow: 0 0 5px #94a3b8; } /* Common */
-        .rarity-4 { color: #a855f7; border-color: #a855f7; box-shadow: 0 0 10px #a855f7; } /* Epic */
-        .rarity-5 { color: #eab308; border-color: #eab308; box-shadow: 0 0 15px #eab308; } /* Legendary */
+        .rarity-3 { color: #bfdbfe; border-color: #60a5fa; box-shadow: 0 0 5px #60a5fa; } /* R - Blue */
+        .rarity-4 { color: #f0abfc; border-color: #d946ef; box-shadow: 0 0 10px #d946ef; } /* SR - Pink */
+        .rarity-5 { color: #fde047; border-color: #fbbf24; box-shadow: 0 0 15px #fbbf24; } /* SSR - Gold */
 
-        .bg-rarity-3 { background: linear-gradient(135deg, #334155, #1e293b); }
-        .bg-rarity-4 { background: linear-gradient(135deg, #6b21a8, #3b0764); }
-        .bg-rarity-5 { background: linear-gradient(135deg, #ca8a04, #713f12); }
+        .bg-rarity-3 { background: linear-gradient(135deg, #1e3a8a, #172554); }
+        .bg-rarity-4 { background: linear-gradient(135deg, #831843, #500724); }
+        .bg-rarity-5 { background: linear-gradient(135deg, #854d0e, #422006); }
 
-        /* Hide elements helper */
         .hidden { display: none !important; }
-        
-        /* HP Bar Transition */
         .hp-fill { transition: width 0.2s ease-out; }
+        
+        /* Nav Active State */
+        .nav-btn.active { color: #f472b6; transform: scale(1.1); }
+        .nav-btn.active i { text-shadow: 0 0 10px #f472b6; }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col">
 
-    <!-- TOP BAR: Currency & Stats -->
-    <header class="h-16 shrink-0 glass flex items-center justify-between px-6 z-20 relative">
+    <!-- TOP BAR -->
+    <header class="h-16 shrink-0 glass flex items-center justify-between px-6 z-20 relative border-b border-pink-500/20">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-xl shadow-lg">AC</div>
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center font-bold text-xl shadow-lg border-2 border-white/20">🌸</div>
             <div>
-                <h1 class="font-bold text-lg leading-tight tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">AETHER CHRONICLES</h1>
-                <div class="text-xs text-slate-400">Endless Gacha RPG</div>
+                <h1 class="font-bold text-lg leading-tight tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-300">SAKURA BLADE</h1>
+                <div class="text-[10px] text-pink-300/70 tracking-widest uppercase">Waifu Collection RPG</div>
             </div>
         </div>
         
-        <div class="flex gap-4">
+        <div class="flex gap-3">
             <!-- Gold -->
-            <div class="glass px-4 py-1.5 rounded-full flex items-center gap-2 border border-slate-700">
+            <div class="glass px-3 py-1 rounded-full flex items-center gap-2 border border-pink-500/30">
                 <i class="fa-solid fa-coins text-yellow-400"></i>
-                <span id="display-gold" class="font-mono font-bold text-sm">0</span>
+                <span id="display-gold" class="font-mono font-bold text-sm text-yellow-100">0</span>
             </div>
             <!-- Gems -->
-            <div class="glass px-4 py-1.5 rounded-full flex items-center gap-2 border border-slate-700">
-                <i class="fa-regular fa-gem text-cyan-400"></i>
-                <span id="display-gems" class="font-mono font-bold text-sm">0</span>
+            <div class="glass px-3 py-1 rounded-full flex items-center gap-2 border border-pink-500/30">
+                <i class="fa-regular fa-gem text-cyan-300"></i>
+                <span id="display-gems" class="font-mono font-bold text-sm text-cyan-100">0</span>
             </div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 relative overflow-hidden bg-[url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2568&auto=format&fit=crop')] bg-cover bg-center">
-        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 relative overflow-hidden bg-[url('https://images.unsplash.com/photo-1590252973641-135277488838?q=80&w=2605&auto=format&fit=crop')] bg-cover bg-center">
+        <!-- Overlay for darker/purple tint -->
+        <div class="absolute inset-0 bg-indigo-950/80 backdrop-blur-[2px]"></div>
 
-        <!-- VIEW: BATTLE (Default) -->
+        <!-- BATTLE VIEW -->
         <div id="view-battle" class="view-section absolute inset-0 flex flex-col p-4">
-            <!-- Stage Info -->
-            <div class="text-center mb-4">
-                <span class="bg-black/50 px-4 py-1 rounded text-xs tracking-widest text-slate-400 uppercase">Current Zone</span>
-                <h2 class="text-3xl font-black italic text-white drop-shadow-lg mt-1" id="stage-name">floor 1</h2>
-                <div class="text-sm text-slate-300 mt-1">Wave <span id="wave-num">1</span></div>
+            <div class="text-center mb-2 z-10">
+                <span class="bg-pink-900/80 border border-pink-500/50 px-6 py-1 rounded-full text-xs font-bold tracking-[0.2em] text-pink-200 uppercase shadow-lg shadow-pink-500/20">Current Zone</span>
+                <h2 class="text-4xl font-black text-white drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] mt-2" id="stage-name">Tokyo</h2>
+                <div class="text-sm text-pink-200 mt-1 font-bold">Wave <span id="wave-num" class="text-xl">1</span></div>
             </div>
 
-            <!-- Battle Arena -->
-            <div class="flex-1 flex items-center justify-center gap-4 lg:gap-12 relative">
+            <div class="flex-1 flex items-center justify-center gap-2 lg:gap-12 relative">
+                <!-- Heroes -->
+                <div class="flex flex-col gap-3 w-1/3 max-w-sm justify-center" id="battle-heroes-container"></div>
                 
-                <!-- Heroes Side -->
-                <div class="flex flex-col gap-4 w-1/3 max-w-sm" id="battle-heroes-container">
-                    <!-- Heroes injected here via JS -->
-                </div>
+                <!-- VS -->
+                <div class="text-7xl font-black text-white/10 absolute pointer-events-none select-none italic z-0">VS</div>
 
-                <!-- VS Divider -->
-                <div class="text-6xl font-black text-white/5 opacity-50 absolute pointer-events-none select-none italic">VS</div>
-
-                <!-- Enemy Side -->
-                <div class="flex flex-col gap-4 w-1/3 max-w-sm items-end" id="battle-enemies-container">
-                    <!-- Enemies injected here via JS -->
-                </div>
+                <!-- Enemies -->
+                <div class="flex flex-col gap-3 w-1/3 max-w-sm items-end justify-center" id="battle-enemies-container"></div>
             </div>
 
-            <!-- Battle Logs / Loot -->
-            <div class="h-32 glass-panel rounded-xl mt-4 p-3 overflow-hidden flex flex-col">
-                <div class="text-xs font-bold text-slate-500 uppercase mb-1">Battle Log</div>
-                <div id="battle-log" class="flex-1 overflow-y-auto font-mono text-xs text-slate-300 space-y-1">
-                    <div class="text-emerald-400">> Battle Initiated...</div>
+            <div class="h-32 glass-panel rounded-xl mt-4 p-3 overflow-hidden flex flex-col border-t-2 border-pink-500/30">
+                <div class="text-[10px] font-bold text-pink-400 uppercase mb-1 tracking-wider">Combat Log</div>
+                <div id="battle-log" class="flex-1 overflow-y-auto font-mono text-[10px] text-purple-200 space-y-1">
+                    <div class="text-pink-400">Battle Start...</div>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW: HEROES -->
+        <!-- HEROES VIEW -->
         <div id="view-heroes" class="view-section hidden absolute inset-0 p-6 overflow-y-auto pb-24">
             <div class="flex justify-between items-end mb-6">
                 <div>
-                    <h2 class="text-3xl font-bold text-white">Barracks</h2>
-                    <p class="text-slate-400 text-sm">Manage and upgrade your units. Max Team Size: 4</p>
+                    <h2 class="text-3xl font-bold text-white anime-font">My Waifus</h2>
+                    <p class="text-pink-300/60 text-sm">Manage your team of battle maidens.</p>
                 </div>
-                <button onclick="game.autoEquip()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg transition"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Auto Equip Best</button>
+                <button onclick="game.autoEquip()" class="bg-gradient-to-r from-pink-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-pink-500/30 hover:scale-105 transition"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Auto Team</button>
             </div>
 
-            <!-- Team Slots -->
-            <div class="mb-8">
-                <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-3">Active Squad</h3>
-                <div class="grid grid-cols-4 gap-4" id="team-slots">
-                    <!-- Slots generated by JS -->
-                </div>
+            <div class="mb-8 p-4 glass rounded-2xl border border-pink-500/30 bg-pink-900/20">
+                <h3 class="text-sm font-bold text-pink-300 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-crown"></i> Main Squad</h3>
+                <div class="grid grid-cols-4 gap-2 md:gap-4" id="team-slots"></div>
             </div>
 
-            <!-- Collection -->
-            <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Collection</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4" id="hero-collection">
-                <!-- Collection generated by JS -->
-            </div>
+            <h3 class="text-sm font-bold text-purple-300 uppercase tracking-wider mb-3">Dormitory (Collection)</h3>
+            <div class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3" id="hero-collection"></div>
         </div>
 
-        <!-- VIEW: SUMMON (Gacha) -->
-        <div id="view-summon" class="view-section hidden absolute inset-0 flex flex-col items-center justify-center p-6 bg-slate-900/95 z-30">
+        <!-- SUMMON VIEW -->
+        <div id="view-summon" class="view-section hidden absolute inset-0 flex flex-col items-center justify-center p-6 bg-indigo-950/95 z-30">
             <div class="w-full max-w-4xl text-center relative z-10">
-                <h2 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 mb-2 drop-shadow-sm filter">ETERNAL BANNER</h2>
-                <p class="text-slate-400 mb-12">Summon powerful heroes from other dimensions.</p>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-pink-500/20 rounded-full blur-[100px] -z-10"></div>
                 
-                <!-- Banner Image/Art Placeholder -->
-                <div class="w-full h-64 bg-gradient-to-r from-indigo-900 to-purple-900 rounded-2xl border border-white/10 shadow-2xl flex items-center justify-center mb-12 overflow-hidden relative group">
-                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542261777-4ad235f3fb40?q=80&w=2599&auto=format&fit=crop')] bg-cover opacity-30 mix-blend-overlay"></div>
+                <h2 class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-pink-200 to-pink-500 mb-2 drop-shadow-sm filter anime-font italic">DIVINE SUMMON</h2>
+                <p class="text-pink-300 mb-8 font-light tracking-wide">Call forth legendary maidens from the Spirit Realm</p>
+                
+                <!-- Banner Art -->
+                <div class="w-full h-56 md:h-72 bg-gradient-to-r from-pink-900 to-purple-900 rounded-2xl border-2 border-pink-400/30 shadow-[0_0_30px_rgba(236,72,153,0.3)] flex items-center justify-center mb-8 overflow-hidden relative group">
+                    <img src="https://images.unsplash.com/photo-1620559982460-752e1858c894?q=80&w=2670&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay group-hover:scale-110 transition duration-[2s]">
                     <div class="z-10 text-center">
-                        <div class="text-6xl text-white/20 font-black italic transform -rotate-6 group-hover:scale-110 transition duration-700">SSR RATE UP</div>
-                        <div class="text-xl text-yellow-300 font-bold mt-2">Legendary Hero Chance Increased!</div>
+                        <div class="text-5xl text-white font-black italic transform -rotate-3 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]">SSR RATE UP!</div>
+                        <div class="text-lg text-yellow-300 font-bold mt-2 bg-black/40 px-4 py-1 rounded-full backdrop-blur-sm border border-yellow-500/50">✨ Legendary Maidens Available ✨</div>
                     </div>
                 </div>
 
-                <div class="flex gap-6 justify-center">
-                    <button onclick="game.pullGacha(1)" class="shiny-btn glass-panel px-8 py-6 rounded-xl hover:bg-white/5 hover:scale-105 transition transform flex flex-col items-center gap-2 w-40 group border-slate-600">
-                        <span class="text-lg font-bold text-slate-200 group-hover:text-white">Summon x1</span>
-                        <div class="flex items-center gap-2 text-sm text-cyan-300 bg-black/30 px-3 py-1 rounded-full">
+                <div class="flex gap-4 justify-center">
+                    <button onclick="game.pullGacha(1)" class="shiny-btn glass-panel px-6 py-4 rounded-xl hover:bg-white/5 hover:scale-105 transition transform flex flex-col items-center gap-1 w-36 group border-pink-700/50">
+                        <span class="text-base font-bold text-pink-100">Summon x1</span>
+                        <div class="flex items-center gap-2 text-xs text-cyan-300 bg-black/40 px-3 py-1 rounded-full">
                             <i class="fa-regular fa-gem"></i> 160
                         </div>
                     </button>
 
-                    <button onclick="game.pullGacha(10)" class="shiny-btn relative overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 px-8 py-6 rounded-xl shadow-lg shadow-purple-900/50 hover:scale-105 transition transform flex flex-col items-center gap-2 w-48 border border-purple-400">
-                        <span class="text-xl font-bold text-white">Summon x10</span>
-                        <div class="flex items-center gap-2 text-sm text-yellow-100 bg-black/20 px-3 py-1 rounded-full">
+                    <button onclick="game.pullGacha(10)" class="shiny-btn relative overflow-hidden bg-gradient-to-br from-pink-600 to-purple-700 px-6 py-4 rounded-xl shadow-lg shadow-pink-900/50 hover:scale-105 transition transform flex flex-col items-center gap-1 w-44 border border-pink-400">
+                        <span class="text-lg font-bold text-white">Summon x10</span>
+                        <div class="flex items-center gap-2 text-xs text-yellow-100 bg-black/20 px-3 py-1 rounded-full">
                             <i class="fa-regular fa-gem"></i> 1600
                         </div>
-                        <div class="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">SR+ GUARANTEED</div>
+                        <div class="absolute top-0 right-0 bg-yellow-400 text-pink-900 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">SR+ GUARANTEED</div>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW: UPGRADE SHOP -->
+        <!-- SHOP VIEW -->
         <div id="view-shop" class="view-section hidden absolute inset-0 p-6 overflow-y-auto pb-24">
-            <h2 class="text-3xl font-bold text-white mb-6">Upgrade Station</h2>
+            <h2 class="text-3xl font-bold text-white mb-6 anime-font">Neko Shop</h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Shop Item 1 -->
-                <div class="glass-panel p-6 rounded-xl flex flex-col gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- ATK -->
+                <div class="glass-panel p-6 rounded-xl flex flex-col gap-4 border-t-4 border-red-500">
                     <div class="flex justify-between items-start">
-                        <div class="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 text-2xl"><i class="fa-solid fa-khanda"></i></div>
-                        <div class="text-xs text-slate-400">Lvl <span id="shop-atk-lvl">0</span></div>
+                        <div class="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 text-2xl"><i class="fa-solid fa-fire"></i></div>
+                        <div class="text-xs text-pink-200">Lvl <span id="shop-atk-lvl">0</span></div>
                     </div>
                     <div>
-                        <h3 class="font-bold text-lg">Combat Training</h3>
-                        <p class="text-sm text-slate-400">Increases Global ATK of all heroes.</p>
+                        <h3 class="font-bold text-lg text-white">Blade Sharpening</h3>
+                        <p class="text-sm text-pink-300/60">Increases Global ATK.</p>
                     </div>
-                    <button onclick="game.buyUpgrade('atk')" class="mt-auto bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition">
+                    <button onclick="game.buyUpgrade('atk')" class="mt-auto bg-slate-800 hover:bg-slate-700 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition border border-slate-600">
                         <i class="fa-solid fa-coins text-yellow-400"></i> <span id="shop-atk-cost">100</span>
                     </button>
                 </div>
 
-                <!-- Shop Item 2 -->
-                <div class="glass-panel p-6 rounded-xl flex flex-col gap-4">
+                <!-- HP -->
+                <div class="glass-panel p-6 rounded-xl flex flex-col gap-4 border-t-4 border-green-500">
                     <div class="flex justify-between items-start">
-                        <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 text-2xl"><i class="fa-solid fa-heart-pulse"></i></div>
-                        <div class="text-xs text-slate-400">Lvl <span id="shop-hp-lvl">0</span></div>
+                        <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 text-2xl"><i class="fa-solid fa-heart"></i></div>
+                        <div class="text-xs text-pink-200">Lvl <span id="shop-hp-lvl">0</span></div>
                     </div>
                     <div>
-                        <h3 class="font-bold text-lg">Vitality Boost</h3>
-                        <p class="text-sm text-slate-400">Increases Global HP of all heroes.</p>
+                        <h3 class="font-bold text-lg text-white">Spirit Blessing</h3>
+                        <p class="text-sm text-pink-300/60">Increases Global HP.</p>
                     </div>
-                    <button onclick="game.buyUpgrade('hp')" class="mt-auto bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition">
+                    <button onclick="game.buyUpgrade('hp')" class="mt-auto bg-slate-800 hover:bg-slate-700 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition border border-slate-600">
                         <i class="fa-solid fa-coins text-yellow-400"></i> <span id="shop-hp-cost">100</span>
                     </button>
                 </div>
 
-                 <!-- Shop Item 3 -->
-                 <div class="glass-panel p-6 rounded-xl flex flex-col gap-4">
+                 <!-- GOLD -->
+                 <div class="glass-panel p-6 rounded-xl flex flex-col gap-4 border-t-4 border-yellow-500">
                     <div class="flex justify-between items-start">
                         <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-2xl"><i class="fa-solid fa-sack-dollar"></i></div>
-                        <div class="text-xs text-slate-400">Lvl <span id="shop-gold-lvl">0</span></div>
+                        <div class="text-xs text-pink-200">Lvl <span id="shop-gold-lvl">0</span></div>
                     </div>
                     <div>
-                        <h3 class="font-bold text-lg">Greed</h3>
-                        <p class="text-sm text-slate-400">Increases Gold Gain per kill.</p>
+                        <h3 class="font-bold text-lg text-white">Fortune Cat</h3>
+                        <p class="text-sm text-pink-300/60">Increases Gold Gain.</p>
                     </div>
-                    <button onclick="game.buyUpgrade('gold')" class="mt-auto bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition">
+                    <button onclick="game.buyUpgrade('gold')" class="mt-auto bg-slate-800 hover:bg-slate-700 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition border border-slate-600">
                         <i class="fa-solid fa-coins text-yellow-400"></i> <span id="shop-gold-cost">200</span>
                     </button>
                 </div>
@@ -264,172 +258,169 @@
     </main>
 
     <!-- BOTTOM NAV -->
-    <nav class="h-20 shrink-0 glass border-t border-white/10 z-50">
-        <div class="max-w-md mx-auto h-full flex justify-between px-6">
-            <button onclick="ui.switchView('battle')" class="nav-btn active flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition w-16" data-target="view-battle">
+    <nav class="h-20 shrink-0 glass border-t border-pink-500/20 z-50 bg-indigo-950/90">
+        <div class="max-w-md mx-auto h-full flex justify-between px-6 relative">
+            <button onclick="ui.switchView('battle')" class="nav-btn active flex flex-col items-center justify-center gap-1 text-purple-300 hover:text-white transition w-16" data-target="view-battle">
                 <i class="fa-solid fa-dungeon text-xl mb-1"></i>
                 <span class="text-[10px] font-bold uppercase tracking-wider">Battle</span>
             </button>
-            <button onclick="ui.switchView('heroes')" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition w-16" data-target="view-heroes">
+            <button onclick="ui.switchView('heroes')" class="nav-btn flex flex-col items-center justify-center gap-1 text-purple-300 hover:text-white transition w-16" data-target="view-heroes">
                 <i class="fa-solid fa-users text-xl mb-1"></i>
-                <span class="text-[10px] font-bold uppercase tracking-wider">Heroes</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Waifus</span>
             </button>
             
-            <!-- Summon Button (Center, Larger) -->
-            <div class="relative -top-6">
-                <button onclick="ui.switchView('summon')" class="w-16 h-16 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 shadow-lg shadow-blue-500/50 flex items-center justify-center border-4 border-slate-900 transform hover:scale-110 transition duration-300">
-                    <i class="fa-solid fa-star text-white text-2xl animate-pulse"></i>
+            <!-- Summon Button -->
+            <div class="relative -top-8 group">
+                <button onclick="ui.switchView('summon')" class="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-purple-600 shadow-[0_0_20px_rgba(236,72,153,0.6)] flex items-center justify-center border-[6px] border-[#1a0b2e] transform group-hover:scale-110 transition duration-300 overflow-hidden relative">
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-50"></div>
+                    <i class="fa-solid fa-star text-white text-3xl animate-[spin_10s_linear_infinite]"></i>
                 </button>
+                <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-pink-400 bg-black/60 px-2 rounded-full whitespace-nowrap">SUMMON</div>
             </div>
 
-            <button onclick="ui.switchView('shop')" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition w-16" data-target="view-shop">
+            <button onclick="ui.switchView('shop')" class="nav-btn flex flex-col items-center justify-center gap-1 text-purple-300 hover:text-white transition w-16" data-target="view-shop">
                 <i class="fa-solid fa-shop text-xl mb-1"></i>
                 <span class="text-[10px] font-bold uppercase tracking-wider">Shop</span>
             </button>
-            <button onclick="game.resetData()" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-red-400 transition w-16">
-                <i class="fa-solid fa-gear text-xl mb-1"></i>
+            <button onclick="game.resetData()" class="nav-btn flex flex-col items-center justify-center gap-1 text-purple-300 hover:text-red-400 transition w-16">
+                <i class="fa-solid fa-trash-can text-xl mb-1"></i>
                 <span class="text-[10px] font-bold uppercase tracking-wider">Reset</span>
             </button>
         </div>
     </nav>
 
-    <!-- GACHA RESULTS MODAL -->
-    <div id="modal-gacha-results" class="hidden fixed inset-0 z-[60] bg-black/90 flex flex-col items-center justify-center p-4">
-        <h2 class="text-3xl font-bold text-white mb-8 tracking-widest uppercase">Summon Results</h2>
-        <div id="gacha-grid" class="flex flex-wrap justify-center gap-4 max-w-4xl">
-            <!-- Cards injected here -->
-        </div>
-        <button onclick="ui.closeGachaModal()" class="mt-12 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-slate-200 transition">Confirm</button>
+    <!-- MODALS -->
+    <!-- GACHA RESULTS -->
+    <div id="modal-gacha-results" class="hidden fixed inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-4">
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-10"></div>
+        <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-purple-300 mb-8 tracking-widest uppercase animate-bounce">Summon Successful!</h2>
+        <div id="gacha-grid" class="flex flex-wrap justify-center gap-4 max-w-4xl z-10"></div>
+        <button onclick="ui.closeGachaModal()" class="mt-12 bg-white text-black px-12 py-3 rounded-full font-bold hover:bg-pink-100 transition shadow-[0_0_20px_white]">CONFIRM</button>
     </div>
 
-    <!-- HERO DETAIL MODAL -->
+    <!-- HERO DETAIL -->
     <div id="modal-hero-detail" class="hidden fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-panel w-full max-w-lg rounded-2xl p-6 relative">
-            <button onclick="ui.closeHeroModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
+        <div class="glass-panel w-full max-w-lg rounded-2xl p-6 relative border-t border-pink-500/50 shadow-[0_0_50px_rgba(236,72,153,0.2)]">
+            <button onclick="ui.closeHeroModal()" class="absolute top-4 right-4 text-pink-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
             
             <div class="flex gap-6 items-start">
-                <div id="detail-img-container" class="w-24 h-24 rounded-xl shrink-0 overflow-hidden border-2 border-white/20">
-                    <!-- Image/Avatar -->
-                </div>
+                <div id="detail-img-container" class="w-28 h-28 rounded-xl shrink-0 overflow-hidden border-2 border-white/20 shadow-xl"></div>
                 <div>
-                    <h2 id="detail-name" class="text-2xl font-bold text-white">Hero Name</h2>
-                    <div id="detail-rarity" class="flex gap-1 text-xs my-1"></div>
-                    <div id="detail-class" class="text-xs text-slate-400 uppercase tracking-wider bg-white/5 inline-block px-2 py-0.5 rounded mt-1">Class</div>
+                    <h2 id="detail-name" class="text-3xl font-bold text-white anime-font">Name</h2>
+                    <div id="detail-rarity" class="flex gap-1 text-sm my-1 text-yellow-400"></div>
+                    <div id="detail-class" class="text-[10px] text-pink-200 uppercase tracking-wider bg-pink-500/20 inline-block px-3 py-1 rounded-full mt-1 border border-pink-500/30">Class</div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4 mt-6">
-                <div class="bg-black/30 p-3 rounded-lg">
-                    <div class="text-slate-500 text-xs uppercase">Attack</div>
-                    <div id="detail-atk" class="text-xl font-mono font-bold text-red-400">0</div>
+                <div class="bg-black/30 p-3 rounded-lg border border-pink-500/10">
+                    <div class="text-pink-400 text-xs uppercase font-bold">Attack Power</div>
+                    <div id="detail-atk" class="text-2xl font-mono font-bold text-white">0</div>
                 </div>
-                <div class="bg-black/30 p-3 rounded-lg">
-                    <div class="text-slate-500 text-xs uppercase">HP</div>
-                    <div id="detail-hp" class="text-xl font-mono font-bold text-green-400">0</div>
+                <div class="bg-black/30 p-3 rounded-lg border border-pink-500/10">
+                    <div class="text-green-400 text-xs uppercase font-bold">Hit Points</div>
+                    <div id="detail-hp" class="text-2xl font-mono font-bold text-white">0</div>
                 </div>
             </div>
 
-            <div class="mt-6">
-                <div class="flex justify-between text-sm mb-1">
-                    <span class="text-slate-400">Level <span id="detail-level">1</span></span>
+            <div class="mt-6 bg-white/5 p-4 rounded-xl">
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-pink-200">Current Level: <span id="detail-level" class="text-white font-bold">1</span></span>
                     <span class="text-yellow-400 font-bold" id="detail-stars"></span>
                 </div>
-                <button id="btn-upgrade-hero" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-white transition shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
-                    Upgrade (<span id="upgrade-cost">100</span> G)
+                <button id="btn-upgrade-hero" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 py-3 rounded-xl font-bold text-white transition shadow-lg flex items-center justify-center gap-2">
+                    Upgrade
                 </button>
-                <div class="mt-2 text-center text-xs text-slate-500">Upgrading increases base stats by 10%</div>
+                <div class="mt-2 text-center text-[10px] text-pink-300/50">Enhance stats by 10% per level</div>
             </div>
             
-            <div class="mt-4 flex gap-2">
-                <button id="btn-equip-hero" class="flex-1 border border-slate-600 hover:bg-white/5 py-2 rounded-lg font-bold text-sm transition">Equip to Team</button>
+            <div class="mt-4">
+                <button id="btn-equip-hero" class="w-full border-2 border-pink-500/30 hover:bg-pink-500/20 py-3 rounded-xl font-bold text-sm text-pink-200 transition">Equip to Team</button>
             </div>
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION -->
-    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-slate-800 border border-slate-600 text-white px-6 py-3 rounded-full shadow-2xl z-[70] transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-3">
+    <!-- TOAST -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-indigo-900 border border-pink-500 text-white px-6 py-3 rounded-full shadow-[0_0_20px_rgba(236,72,153,0.4)] z-[70] transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-3">
         <i id="toast-icon" class="fa-solid fa-circle-info"></i>
         <span id="toast-msg">Notification</span>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
         // --- DATA & CONFIG ---
         const ELEMENTS = {
-            FIRE: { color: 'text-red-500', bg: 'bg-red-500', icon: 'fa-fire' },
-            WATER: { color: 'text-blue-500', bg: 'bg-blue-500', icon: 'fa-droplet' },
-            WIND: { color: 'text-green-500', bg: 'bg-green-500', icon: 'fa-wind' },
-            LIGHT: { color: 'text-yellow-200', bg: 'bg-yellow-200', icon: 'fa-sun' },
-            DARK: { color: 'text-purple-400', bg: 'bg-purple-900', icon: 'fa-moon' }
+            FIRE: { color: 'text-red-400', bg: 'bg-red-900/50', border: 'border-red-500', icon: 'fa-fire' },
+            WATER: { color: 'text-blue-400', bg: 'bg-blue-900/50', border: 'border-blue-500', icon: 'fa-droplet' },
+            WIND: { color: 'text-green-400', bg: 'bg-green-900/50', border: 'border-green-500', icon: 'fa-wind' },
+            LIGHT: { color: 'text-yellow-200', bg: 'bg-yellow-900/50', border: 'border-yellow-500', icon: 'fa-sun' },
+            DARK: { color: 'text-purple-400', bg: 'bg-purple-900/50', border: 'border-purple-500', icon: 'fa-moon' }
         };
 
         const ROLES = {
-            TANK: { label: 'Tank', icon: 'fa-shield-halved' },
-            DPS: { label: 'Attacker', icon: 'fa-sword' },
-            HEALER: { label: 'Healer', icon: 'fa-heart' },
-            SUPPORT: { label: 'Support', icon: 'fa-wand-magic-sparkles' }
+            TANK: { label: 'Guardian', icon: 'fa-shield-heart' },
+            DPS: { label: 'Striker', icon: 'fa-khanda' },
+            HEALER: { label: 'Priestess', icon: 'fa-heart' },
+            SUPPORT: { label: 'Enchantress', icon: 'fa-wand-sparkles' }
         };
 
-        // 50+ Generated Characters
-        const CHARACTER_DB = [
-            { id: 1, name: "Aria Flameheart", rarity: 5, element: 'FIRE', role: 'DPS', baseAtk: 120, baseHp: 800 },
-            { id: 2, name: "Kaito Tsunami", rarity: 4, element: 'WATER', role: 'TANK', baseAtk: 80, baseHp: 1500 },
-            { id: 3, name: "Sylphie Zephyr", rarity: 3, element: 'WIND', role: 'SUPPORT', baseAtk: 70, baseHp: 900 },
-            { id: 4, name: "Lux Aurelius", rarity: 5, element: 'LIGHT', role: 'HEALER', baseAtk: 90, baseHp: 1000 },
-            { id: 5, name: "Nyx Shadowwhisper", rarity: 5, element: 'DARK', role: 'DPS', baseAtk: 150, baseHp: 600 },
-            { id: 6, name: "Ignis Steel", rarity: 3, element: 'FIRE', role: 'TANK', baseAtk: 60, baseHp: 1300 },
-            { id: 7, name: "Aqua Marine", rarity: 3, element: 'WATER', role: 'HEALER', baseAtk: 50, baseHp: 950 },
-            { id: 8, name: "Gale Strider", rarity: 4, element: 'WIND', role: 'DPS', baseAtk: 100, baseHp: 750 },
-            { id: 9, name: "Solara Dawn", rarity: 4, element: 'LIGHT', role: 'TANK', baseAtk: 85, baseHp: 1400 },
-            { id: 10, name: "Umbra Shade", rarity: 3, element: 'DARK', role: 'SUPPORT', baseAtk: 65, baseHp: 850 },
-            { id: 11, name: "Vulcan Forge", rarity: 4, element: 'FIRE', role: 'SUPPORT', baseAtk: 95, baseHp: 1100 },
-            { id: 12, name: "Tidal Wave", rarity: 5, element: 'WATER', role: 'DPS', baseAtk: 130, baseHp: 850 },
-            { id: 13, name: "Breeze Whisper", rarity: 3, element: 'WIND', role: 'HEALER', baseAtk: 55, baseHp: 800 },
-            { id: 14, name: "Radiance Shine", rarity: 3, element: 'LIGHT', role: 'DPS', baseAtk: 105, baseHp: 700 },
-            { id: 15, name: "Void Walker", rarity: 4, element: 'DARK', role: 'TANK', baseAtk: 90, baseHp: 1600 },
-            { id: 16, name: "Ember Spark", rarity: 3, element: 'FIRE', role: 'DPS', baseAtk: 110, baseHp: 700 },
-            { id: 17, name: "Coral Reef", rarity: 3, element: 'WATER', role: 'SUPPORT', baseAtk: 60, baseHp: 1000 },
-            { id: 18, name: "Gust Avian", rarity: 4, element: 'WIND', role: 'TANK', baseAtk: 75, baseHp: 1350 },
-            { id: 19, name: "Lumina Star", rarity: 5, element: 'LIGHT', role: 'SUPPORT', baseAtk: 100, baseHp: 1100 },
-            { id: 20, name: "Obsidian Night", rarity: 5, element: 'DARK', role: 'HEALER', baseAtk: 85, baseHp: 1200 },
-            { id: 21, name: "Blaze Fury", rarity: 4, element: 'FIRE', role: 'DPS', baseAtk: 125, baseHp: 780 },
-            { id: 22, name: "Mist Walker", rarity: 3, element: 'WATER', role: 'DPS', baseAtk: 95, baseHp: 820 },
-            { id: 23, name: "Zeus Storm", rarity: 5, element: 'WIND', role: 'DPS', baseAtk: 140, baseHp: 880 },
-            { id: 24, name: "Halo Saint", rarity: 4, element: 'LIGHT', role: 'HEALER', baseAtk: 80, baseHp: 1050 },
-            { id: 25, name: "Grim Reaper", rarity: 5, element: 'DARK', role: 'DPS', baseAtk: 160, baseHp: 650 },
-            { id: 26, name: "Ash Phoenix", rarity: 4, element: 'FIRE', role: 'HEALER', baseAtk: 85, baseHp: 950 },
-            { id: 27, name: "Brook Stream", rarity: 3, element: 'WATER', role: 'TANK', baseAtk: 70, baseHp: 1400 },
-            { id: 28, name: "Sky Dancer", rarity: 3, element: 'WIND', role: 'SUPPORT', baseAtk: 60, baseHp: 920 },
-            { id: 29, name: "Dawn Breaker", rarity: 4, element: 'LIGHT', role: 'DPS', baseAtk: 115, baseHp: 760 },
-            { id: 30, name: "Dusk Stalker", rarity: 3, element: 'DARK', role: 'DPS', baseAtk: 100, baseHp: 720 },
-            { id: 31, name: "Inferno King", rarity: 5, element: 'FIRE', role: 'TANK', baseAtk: 110, baseHp: 1800 },
-            { id: 32, name: "Frost Queen", rarity: 5, element: 'WATER', role: 'SUPPORT', baseAtk: 120, baseHp: 1000 },
-            { id: 33, name: "Aero Ace", rarity: 3, element: 'WIND', role: 'DPS', baseAtk: 90, baseHp: 780 },
-            { id: 34, name: "Holy Knight", rarity: 4, element: 'LIGHT', role: 'TANK', baseAtk: 95, baseHp: 1550 },
-            { id: 35, name: "Abyss Gazer", rarity: 4, element: 'DARK', role: 'SUPPORT', baseAtk: 105, baseHp: 900 },
-            { id: 36, name: "Cinder Ella", rarity: 3, element: 'FIRE', role: 'SUPPORT', baseAtk: 65, baseHp: 880 },
-            { id: 37, name: "River Flow", rarity: 3, element: 'WATER', role: 'DPS', baseAtk: 92, baseHp: 810 },
-            { id: 38, name: "Tempest Wrath", rarity: 5, element: 'WIND', role: 'TANK', baseAtk: 100, baseHp: 1700 },
-            { id: 39, name: "Solaris Ray", rarity: 3, element: 'LIGHT', role: 'HEALER', baseAtk: 55, baseHp: 850 },
-            { id: 40, name: "Nocturne Bat", rarity: 3, element: 'DARK', role: 'TANK', baseAtk: 75, baseHp: 1450 },
-            { id: 41, name: "Pyro Maniac", rarity: 4, element: 'FIRE', role: 'DPS', baseAtk: 118, baseHp: 740 },
-            { id: 42, name: "Hydro Pump", rarity: 4, element: 'WATER', role: 'HEALER', baseAtk: 88, baseHp: 1020 },
-            { id: 43, name: "Tornado Spin", rarity: 3, element: 'WIND', role: 'DPS', baseAtk: 98, baseHp: 730 },
-            { id: 44, name: "Glory Hallelujah", rarity: 5, element: 'LIGHT', role: 'DPS', baseAtk: 135, baseHp: 820 },
-            { id: 45, name: "Eclipse Moon", rarity: 4, element: 'DARK', role: 'HEALER', baseAtk: 92, baseHp: 1080 },
-            { id: 46, name: "Magma Rock", rarity: 3, element: 'FIRE', role: 'TANK', baseAtk: 80, baseHp: 1380 },
-            { id: 47, name: "Ice Sickle", rarity: 3, element: 'WATER', role: 'SUPPORT', baseAtk: 62, baseHp: 940 },
-            { id: 48, name: "Leaf Ranger", rarity: 3, element: 'WIND', role: 'DPS', baseAtk: 94, baseHp: 770 },
-            { id: 49, name: "Prism Beam", rarity: 4, element: 'LIGHT', role: 'SUPPORT', baseAtk: 98, baseHp: 960 },
-            { id: 50, name: "Shadow Fang", rarity: 4, element: 'DARK', role: 'DPS', baseAtk: 122, baseHp: 710 }
+        // 50+ Anime Girls Names
+        const ANIME_NAMES = [
+            "Sakura", "Aoi", "Rin", "Mio", "Yuki", "Hana", "Akane", "Hikari", "Rei", "Asuka", 
+            "Nami", "Mikasa", "Hinata", "Saber", "Kaguya", "Rem", "Ram", "Megumin", "Aqua", "Zero Two",
+            "Nezuko", "Shinobu", "Mitsuri", "Yor", "Makima", "Power", "Fubuki", "Tatsumaki", "Mai", "Kurisu",
+            "Touka", "Rias", "Akeno", "Erza", "Lucy", "Mirajane", "Yuno", "Esdeath", "Akame", "Raphtalia",
+            "Holo", "Senjougahara", "Chitoge", "Taiga", "Minori", "Ami", "Yui", "Azusa", "Mugi", "Ritsu",
+            "Satsuki", "Ryuko", "Mako", "Nui", "Ragyo", "Violet", "Cattleya", "Iris", "Erica", "Alice"
         ];
+
+        const TITLES = [
+            "Blade Dancer", "Spirit Caller", "Shrine Maiden", "Void Witch", "Dragon Tamer",
+            "Moon Princess", "Sun Goddess", "Shadow Assassin", "Frost Queen", "Flame Empress",
+            "Storm Bringer", "Divine Healer", "Chaos Walker", "Star Gazer", "Ocean Soul"
+        ];
+
+        // Generate Character DB
+        const generateDB = () => {
+            let db = [];
+            for (let i = 0; i < ANIME_NAMES.length; i++) {
+                const name = ANIME_NAMES[i];
+                const title = TITLES[i % TITLES.length];
+                // Determine stats based on index logic for variety
+                const rarityRoll = Math.random();
+                let rarity = 3;
+                if (rarityRoll > 0.9) rarity = 5;
+                else if (rarityRoll > 0.7) rarity = 4;
+
+                const elements = ['FIRE', 'WATER', 'WIND', 'LIGHT', 'DARK'];
+                const roles = ['DPS', 'TANK', 'HEALER', 'SUPPORT'];
+                const element = elements[i % 5];
+                const role = roles[i % 4];
+
+                let baseHp = 800 + (rarity * 200) + (role === 'TANK' ? 500 : 0);
+                let baseAtk = 50 + (rarity * 20) + (role === 'DPS' ? 40 : 0);
+
+                db.push({
+                    id: i + 1,
+                    name: `${name}, ${title}`,
+                    shortName: name,
+                    rarity: rarity,
+                    element: element,
+                    role: role,
+                    baseAtk: Math.floor(baseAtk),
+                    baseHp: Math.floor(baseHp)
+                });
+            }
+            return db;
+        };
+
+        const CHARACTER_DB = generateDB();
 
         // --- STATE MANAGEMENT ---
         const gameState = {
             gold: 0,
             gems: 1000,
-            inventory: {}, // Format: { heroId: { level: 1, stars: 0 } }
-            team: [null, null, null, null], // Array of 4 hero IDs
+            inventory: {}, 
+            team: [null, null, null, null],
             upgrades: { atk: 0, hp: 0, gold: 0 },
             stage: 1,
             wave: 1
@@ -437,37 +428,44 @@
 
         const battleState = {
             active: true,
-            heroes: [], // Instance of hero stats in battle
-            enemies: [], // Instance of enemy stats
-            lastTick: 0,
+            heroes: [],
+            enemies: [],
             enemySpawnTimer: 0
         };
 
         // --- UTILS ---
-        const saveGame = () => localStorage.setItem('ac_save_v1', JSON.stringify(gameState));
+        const saveGame = () => localStorage.setItem('sakura_blade_save', JSON.stringify(gameState));
         const loadGame = () => {
-            const save = localStorage.getItem('ac_save_v1');
+            const save = localStorage.getItem('sakura_blade_save');
             if (save) Object.assign(gameState, JSON.parse(save));
             ui.updateCurrency();
         };
         const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        
+        // Anime Avatar Generator
         const getAvatar = (hero, size="md") => {
-            const sizes = { sm: "w-8 h-8 text-xs", md: "w-12 h-12 text-sm", lg: "w-20 h-20 text-xl", xl: "w-full h-full text-4xl" };
-            const colors = { 
-                FIRE: 'bg-red-900 text-red-200 border-red-500', 
-                WATER: 'bg-blue-900 text-blue-200 border-blue-500', 
-                WIND: 'bg-green-900 text-green-200 border-green-500', 
-                LIGHT: 'bg-yellow-900 text-yellow-200 border-yellow-500', 
-                DARK: 'bg-purple-900 text-purple-200 border-purple-500' 
+            const sizes = { sm: "w-8 h-8 text-[10px]", md: "w-12 h-12 text-xs", lg: "w-20 h-20 text-xl", xl: "w-full h-full text-4xl" };
+            const elData = ELEMENTS[hero.element];
+            
+            // Soft gradient backgrounds based on element
+            const gradients = {
+                FIRE: 'from-red-400 to-pink-500',
+                WATER: 'from-blue-400 to-cyan-500',
+                WIND: 'from-green-400 to-emerald-500',
+                LIGHT: 'from-yellow-200 to-orange-300',
+                DARK: 'from-purple-500 to-indigo-700'
             };
-            // Fallback avatar logic
-            const initials = hero.name.split(" ").map(n => n[0]).join("");
+
+            const initials = hero.shortName.substring(0, 1);
             const imgPath = `./images/${hero.id}.png`;
             
             return `
-                <div class="${sizes[size]} rounded-lg border-2 ${colors[hero.element]} flex items-center justify-center font-bold relative overflow-hidden shrink-0">
-                    <img src="${imgPath}" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">
-                    <span class="z-0">${initials}</span>
+                <div class="${sizes[size]} rounded-lg bg-gradient-to-br ${gradients[hero.element]} p-[2px] shadow-lg relative shrink-0">
+                    <div class="w-full h-full bg-black/20 backdrop-blur-[1px] rounded-md flex items-center justify-center font-bold text-white overflow-hidden relative">
+                         <img src="${imgPath}" class="absolute inset-0 w-full h-full object-cover z-10" onerror="this.style.display='none'">
+                         <span class="z-0 drop-shadow-md anime-font">${initials}</span>
+                    </div>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white ${elData.bg} z-20"></div>
                 </div>
             `;
         };
@@ -477,19 +475,25 @@
             init: () => {
                 loadGame();
                 ui.init();
+                
+                // FIX: Ensure wave is 1 on load if empty, and spawn FIRST before loop starts
+                if(battleState.enemies.length === 0) {
+                    gameState.wave = 1;
+                    game.spawnEnemy(); 
+                }
+                
+                game.setupBattleTeam();
                 game.startBattleLoop();
-                // Start passive income or other timers here
-                setInterval(saveGame, 10000); // Autosave
+                setInterval(saveGame, 5000);
             },
 
             resetData: () => {
                 if(confirm("Reset all progress?")) {
-                    localStorage.removeItem('ac_save_v1');
+                    localStorage.removeItem('sakura_blade_save');
                     location.reload();
                 }
             },
 
-            // GACHA MECHANICS
             pullGacha: (amount) => {
                 const cost = amount * 160;
                 if (gameState.gems < cost) {
@@ -504,21 +508,17 @@
                 for (let i = 0; i < amount; i++) {
                     const roll = Math.random();
                     let rarity = 3;
-                    if (roll < 0.05) rarity = 5; // 5% SSR
-                    else if (roll < 0.20) rarity = 4; // 15% SR
+                    if (roll < 0.05) rarity = 5; 
+                    else if (roll < 0.20) rarity = 4;
                     
-                    // Filter pool by rarity
                     const pool = CHARACTER_DB.filter(c => c.rarity === rarity);
                     const hero = pool[Math.floor(Math.random() * pool.length)];
                     results.push(hero);
 
-                    // Add to inventory
                     if (!gameState.inventory[hero.id]) {
                         gameState.inventory[hero.id] = { level: 1, stars: 1, id: hero.id };
                     } else {
-                        // Dupe logic
                         gameState.inventory[hero.id].stars++;
-                        // Cap stars visually later, but keep tracking for power
                     }
                 }
 
@@ -526,7 +526,6 @@
                 saveGame();
             },
 
-            // UPGRADE LOGIC
             buyUpgrade: (type) => {
                 const costs = {
                     atk: 100 * Math.pow(1.5, gameState.upgrades.atk),
@@ -540,7 +539,7 @@
                     gameState.upgrades[type]++;
                     ui.updateCurrency();
                     ui.updateShop();
-                    game.recalcBattleStats(); // Update live battle stats
+                    game.setupBattleTeam(); // Updates stats live
                 } else {
                     ui.toast("Not enough Gold!", "error");
                 }
@@ -555,32 +554,28 @@
                     gameState.gold -= cost;
                     data.level++;
                     ui.updateCurrency();
-                    ui.openHeroModal(heroId); // Refresh modal
-                    game.recalcBattleStats();
+                    ui.openHeroModal(heroId);
+                    game.setupBattleTeam();
                 } else {
                     ui.toast("Need " + cost + " Gold", "error");
                 }
             },
 
-            // TEAM MANAGEMENT
             equipHero: (heroId) => {
-                // Find first empty slot or replace first slot
                 const emptyIdx = gameState.team.indexOf(null);
                 if (emptyIdx !== -1) {
                     gameState.team[emptyIdx] = heroId;
                 } else {
-                    // Simple replacement logic: shift array
                     gameState.team.shift();
                     gameState.team.push(heroId);
                 }
                 saveGame();
                 ui.renderHeroes();
-                ui.toast("Hero Equipped!");
+                ui.toast("Maiden equipped!");
                 game.setupBattleTeam();
             },
             
             autoEquip: () => {
-                // Find top 4 by rarity/level
                 const owned = Object.values(gameState.inventory);
                 if (owned.length === 0) return;
                 
@@ -596,56 +591,64 @@
                 }
                 saveGame();
                 ui.renderHeroes();
-                ui.toast("Best team equipped!");
+                ui.toast("Strongest waifus equipped!");
                 game.setupBattleTeam();
             },
 
-            // BATTLE LOGIC (The "Endless" part)
             setupBattleTeam: () => {
+                // Preserve current HP ratios if possible, otherwise full heal
+                // For simplicity in this fix, we just rebuild.
+                const oldHeroes = battleState.heroes;
                 battleState.heroes = [];
+
                 gameState.team.forEach(id => {
                     if (id && gameState.inventory[id]) {
                         const base = CHARACTER_DB.find(c => c.id === id);
                         const inv = gameState.inventory[id];
                         
-                        // Calculate Stats
-                        const starMult = 1 + (inv.stars - 1) * 0.2; // 20% per star
-                        const lvlMult = 1 + (inv.level - 1) * 0.1; // 10% per level
+                        const starMult = 1 + (inv.stars - 1) * 0.2;
+                        const lvlMult = 1 + (inv.level - 1) * 0.1;
                         const globalAtkMult = 1 + (gameState.upgrades.atk * 0.1);
                         const globalHpMult = 1 + (gameState.upgrades.hp * 0.1);
 
                         const maxHp = Math.floor(base.baseHp * lvlMult * starMult * globalHpMult);
+                        const atk = Math.floor(base.baseAtk * lvlMult * starMult * globalAtkMult);
+
+                        // Try to find existing instance to keep HP
+                        const existing = oldHeroes.find(h => h.id === id);
+                        let currentHp = maxHp;
+                        if (existing && existing.hp > 0) {
+                            currentHp = Math.min(maxHp, existing.hp); 
+                        }
 
                         battleState.heroes.push({
                             ...base,
                             instanceId: Math.random(),
                             level: inv.level,
                             maxHp: maxHp,
-                            hp: maxHp,
-                            atk: Math.floor(base.baseAtk * lvlMult * starMult * globalAtkMult),
-                            cd: 0,
-                            maxCd: 100 // Ticks until attack
+                            hp: currentHp,
+                            atk: atk,
+                            cd: existing ? existing.cd : 0,
+                            maxCd: 100
                         });
                     }
                 });
                 ui.renderBattleField();
             },
 
-            recalcBattleStats: () => {
-                // Heals heroes fully on upgrade? Maybe just update max stats
-                // For simplicity, we just re-init battle team if they aren't fighting boss
-                // But to be smooth, we'll just leave it until next wave
-            },
-
             spawnEnemy: () => {
-                if (battleState.enemies.length >= 3) return; // Max 3 enemies
+                if (battleState.enemies.length >= 3) return;
 
                 const stageMult = Math.pow(1.15, gameState.stage + (gameState.wave * 0.05));
                 const hp = Math.floor(500 * stageMult);
-                const atk = Math.floor(30 * stageMult);
+                const atk = Math.floor(20 * stageMult);
                 
+                // Anime Enemy Names
+                const mobs = ["Slime", "Goblin", "Orc", "Spirit", "Demon", "Mecha", "Ninja"];
+                const name = mobs[gameState.stage % mobs.length] + " Lv." + (gameState.stage * 10 + gameState.wave);
+
                 battleState.enemies.push({
-                    name: "Voidling Lvl." + (gameState.stage * 10 + gameState.wave),
+                    name: name,
                     maxHp: hp,
                     hp: hp,
                     atk: atk,
@@ -657,60 +660,68 @@
             },
 
             startBattleLoop: () => {
-                game.setupBattleTeam();
-                const tickRate = 50; // ms
+                const tickRate = 50; 
                 
                 setInterval(() => {
                     if (!battleState.active) return;
                     
-                    // Spawn logic
-                    if (battleState.enemies.length === 0 && battleState.enemySpawnTimer <= 0) {
-                        gameState.wave++;
-                        if (gameState.wave > 10) {
-                            gameState.stage++;
-                            gameState.wave = 1;
-                            ui.toast(`Stage ${gameState.stage} Reached!`);
+                    // Wave Logic
+                    if (battleState.enemies.length === 0) {
+                        if (battleState.enemySpawnTimer <= 0) {
+                            gameState.wave++;
+                            if (gameState.wave > 10) {
+                                gameState.stage++;
+                                gameState.wave = 1;
+                                ui.toast(`Zone ${gameState.stage} Reached!`);
+                            }
+                            ui.updateStageDisplay();
+                            
+                            // Spawn logic
+                            const count = randomInt(1, 3);
+                            for(let i=0; i<count; i++) game.spawnEnemy();
+                            
+                            // Reset timer
+                            battleState.enemySpawnTimer = 0; 
+                            
+                            // Revive dead heroes slightly on new wave?
+                            battleState.heroes.forEach(h => {
+                                if(h.hp <= 0) h.hp = Math.floor(h.maxHp * 0.5); // Revive with 50% HP
+                            });
+
+                        } else {
+                             // Wait a bit before next wave
+                             // Actually, simpler: spawn immediately if empty, don't use timer for now to keep it fast
                         }
-                        ui.updateStageDisplay();
-                        // Spawn 1-3 enemies
-                        const count = randomInt(1, 3);
-                        for(let i=0; i<count; i++) game.spawnEnemy();
-                    } else if (battleState.enemies.length === 0) {
-                        battleState.enemySpawnTimer -= tickRate;
                     }
 
-                    // Combat Logic: Heroes
+                    // Hero Logic
                     battleState.heroes.forEach(h => {
                         if (h.hp <= 0) return;
-                        h.cd += 5; // Speed
+                        h.cd += 5; 
                         if (h.cd >= h.maxCd) {
                             h.cd = 0;
-                            // Attack random enemy
                             const target = battleState.enemies[randomInt(0, battleState.enemies.length - 1)];
                             if (target) {
                                 target.hp -= h.atk;
                                 ui.showDamage(target.instanceId, h.atk, 'crit'); 
                                 ui.animateAttack(h.instanceId, 'hero');
                                 if (target.hp <= 0) {
-                                    // Kill reward
                                     const goldGain = Math.floor(10 * (1 + gameState.upgrades.gold * 0.2) * (1 + gameState.stage * 0.1));
                                     gameState.gold += goldGain;
                                     ui.updateCurrency();
-                                    // Remove enemy
                                     battleState.enemies = battleState.enemies.filter(e => e !== target);
-                                    ui.renderBattleField(); // Re-render to remove dead
+                                    ui.renderBattleField();
                                 }
                             }
                         }
                     });
 
-                    // Combat Logic: Enemies
+                    // Enemy Logic
                     battleState.enemies.forEach(e => {
                         if (e.hp <= 0) return;
                         e.cd += 3;
                         if (e.cd >= e.maxCd) {
                             e.cd = 0;
-                            // Attack random hero
                             const validHeroes = battleState.heroes.filter(h => h.hp > 0);
                             const target = validHeroes[randomInt(0, validHeroes.length - 1)];
                             if (target) {
@@ -718,24 +729,22 @@
                                 ui.showDamage(target.instanceId, e.atk, 'normal');
                                 ui.animateAttack(e.instanceId, 'enemy');
                                 if (target.hp <= 0) {
-                                    // Hero dies (revives next wave or slowly?)
-                                    // For idle game, simple revive timer or just stay dead until wave clear
-                                    // We will let them stay dead until all dead, then restart wave
+                                    // Hero dies
                                 }
                             }
                         }
                     });
 
                     // Check Wipe
-                    if (battleState.heroes.every(h => h.hp <= 0) && battleState.heroes.length > 0) {
-                        // Reset wave
-                        ui.log("Team wiped! Retrying wave...", "text-red-500");
+                    if (battleState.heroes.length > 0 && battleState.heroes.every(h => h.hp <= 0)) {
+                        ui.log("All waifus defeated! Retreating...", "text-red-400");
                         gameState.wave = Math.max(1, gameState.wave - 1);
-                        battleState.enemies = []; // Clear enemies
-                        game.setupBattleTeam(); // Revive/Reset team
+                        battleState.enemies = []; 
+                        // Full revive
+                        game.setupBattleTeam(); 
+                        battleState.heroes.forEach(h => h.hp = h.maxHp);
                     }
 
-                    // Update UI Bars (HP and CD)
                     ui.updateBattleBars();
 
                 }, tickRate);
@@ -749,24 +758,28 @@
                 ui.updateCurrency();
                 ui.updateShop();
                 ui.updateStageDisplay();
-                
-                // Tabs
-                document.querySelectorAll('.nav-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const target = e.currentTarget.dataset.target;
-                        if(!target) return;
-                        
-                        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-                        document.getElementById(target).classList.remove('hidden');
-                        
-                        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('text-white', 'scale-110'));
-                        e.currentTarget.classList.add('text-white', 'scale-110');
-                    });
-                });
             },
 
+            // FIX: Robust Switch View
             switchView: (viewName) => {
-                document.querySelector(`[data-target="view-${viewName}"]`).click();
+                // Hide all
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                // Show target
+                const targetEl = document.getElementById(`view-${viewName}`);
+                if(targetEl) targetEl.classList.remove('hidden');
+                
+                // Update Nav UI
+                document.querySelectorAll('.nav-btn').forEach(b => {
+                    b.classList.remove('active', 'text-pink-400');
+                    b.classList.add('text-purple-300');
+                });
+                
+                // Highlight button if exists
+                const navBtn = document.querySelector(`[data-target="view-${viewName}"]`);
+                if(navBtn) {
+                    navBtn.classList.add('active', 'text-pink-400');
+                    navBtn.classList.remove('text-purple-300');
+                }
             },
 
             toast: (msg, type="info") => {
@@ -798,7 +811,9 @@
             },
 
             updateStageDisplay: () => {
-                document.getElementById('stage-name').innerText = "Zone " + gameState.stage;
+                const zones = ["Tokyo", "Kyoto", "Osaka", "Hokkaido", "Okinawa", "Akihabara"];
+                const zoneName = zones[(gameState.stage - 1) % zones.length];
+                document.getElementById('stage-name').innerText = `${zoneName} (${gameState.stage})`;
                 document.getElementById('wave-num').innerText = gameState.wave + "/10";
             },
 
@@ -808,29 +823,29 @@
                 container.innerHTML = '';
                 teamSlots.innerHTML = '';
 
-                // Render Team Slots
+                // Team
                 for(let i=0; i<4; i++) {
                     const heroId = gameState.team[i];
                     if (heroId) {
                         const hero = CHARACTER_DB.find(c => c.id === heroId);
                         const inv = gameState.inventory[heroId];
                         teamSlots.innerHTML += `
-                            <div class="glass p-2 rounded-lg flex flex-col items-center relative group cursor-pointer" onclick="ui.openHeroModal(${hero.id})">
+                            <div class="glass p-2 rounded-lg flex flex-col items-center relative group cursor-pointer border border-pink-500/30 hover:bg-pink-500/10" onclick="ui.openHeroModal(${hero.id})">
                                 ${getAvatar(hero, 'md')}
-                                <div class="text-[10px] mt-1 font-bold truncate w-full text-center">${hero.name}</div>
-                                <div class="absolute top-0 right-0 bg-black/50 text-white text-[9px] px-1 rounded-bl">Lv.${inv.level}</div>
+                                <div class="text-[10px] mt-1 font-bold truncate w-full text-center text-pink-200">${hero.shortName}</div>
+                                <div class="absolute top-0 right-0 bg-pink-600 text-white text-[9px] px-1 rounded-bl shadow-sm">Lv.${inv.level}</div>
                             </div>
                         `;
                     } else {
                         teamSlots.innerHTML += `
-                            <div class="glass p-2 rounded-lg flex flex-col items-center justify-center border border-dashed border-slate-600 opacity-50">
-                                <i class="fa-solid fa-plus"></i>
+                            <div class="glass p-2 rounded-lg flex flex-col items-center justify-center border border-dashed border-pink-500/30 opacity-50">
+                                <i class="fa-solid fa-plus text-pink-300"></i>
                             </div>
                         `;
                     }
                 }
 
-                // Render Collection (sorted by rarity/level)
+                // Collection
                 const owned = Object.values(gameState.inventory);
                 owned.sort((a,b) => {
                     const ha = CHARACTER_DB.find(c=>c.id === a.id);
@@ -843,18 +858,16 @@
                     const isEquipped = gameState.team.includes(hero.id);
                     
                     const card = document.createElement('div');
-                    card.className = `glass p-3 rounded-xl flex flex-col items-center relative cursor-pointer hover:bg-white/5 transition ${isEquipped ? 'border-blue-500 border' : ''}`;
+                    card.className = `glass p-2 rounded-xl flex flex-col items-center relative cursor-pointer hover:scale-105 transition duration-200 ${isEquipped ? 'border-pink-500 border-2 shadow-[0_0_10px_pink]' : 'border-white/5'}`;
                     card.onclick = () => ui.openHeroModal(hero.id);
                     card.innerHTML = `
                         ${getAvatar(hero, 'lg')}
-                        <div class="mt-2 text-center w-full">
-                            <div class="font-bold text-xs truncate">${hero.name}</div>
-                            <div class="flex justify-center gap-1 text-[10px] text-yellow-500 mt-0.5">
+                        <div class="mt-1 text-center w-full">
+                            <div class="flex justify-center gap-0.5 text-[8px] text-yellow-400 mb-0.5">
                                 ${'<i class="fa-solid fa-star"></i>'.repeat(hero.rarity)}
                             </div>
                         </div>
-                        <div class="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-mono">Lv.${item.level}</div>
-                        ${isEquipped ? '<div class="absolute top-2 right-2 text-blue-400"><i class="fa-solid fa-shield-halved"></i></div>' : ''}
+                        <div class="absolute -top-1 -left-1 bg-black/60 px-1.5 rounded-full text-[9px] font-mono text-white border border-white/20">Lv.${item.level}</div>
                     `;
                     container.appendChild(card);
                 });
@@ -864,45 +877,40 @@
                 const hero = CHARACTER_DB.find(c => c.id === id);
                 const inv = gameState.inventory[id];
                 const modal = document.getElementById('modal-hero-detail');
-                const stats = ui.calcStats(id);
+                const btnUp = document.getElementById('btn-upgrade-hero');
+                
+                // Calculate Stats
+                const starMult = 1 + (inv.stars - 1) * 0.2;
+                const lvlMult = 1 + (inv.level - 1) * 0.1;
+                const globalAtkMult = 1 + (gameState.upgrades.atk * 0.1);
+                const globalHpMult = 1 + (gameState.upgrades.hp * 0.1);
+                const atk = Math.floor(hero.baseAtk * lvlMult * starMult * globalAtkMult);
+                const hp = Math.floor(hero.baseHp * lvlMult * starMult * globalHpMult);
                 const upgradeCost = Math.floor(50 * Math.pow(1.2, inv.level));
 
                 document.getElementById('detail-img-container').innerHTML = getAvatar(hero, 'xl');
                 document.getElementById('detail-name').innerText = hero.name;
                 document.getElementById('detail-rarity').innerHTML = '<i class="fa-solid fa-star"></i>'.repeat(hero.rarity);
                 document.getElementById('detail-class').innerText = ROLES[hero.role].label;
-                document.getElementById('detail-atk').innerText = stats.atk;
-                document.getElementById('detail-hp').innerText = stats.hp;
+                document.getElementById('detail-atk').innerText = atk;
+                document.getElementById('detail-hp').innerText = hp;
                 document.getElementById('detail-level').innerText = inv.level;
                 document.getElementById('detail-stars').innerHTML = `${inv.stars} <i class="fa-solid fa-star-half-stroke text-xs"></i>`;
                 
-                const btnUp = document.getElementById('btn-upgrade-hero');
-                btnUp.innerHTML = `Level Up (${upgradeCost} <i class="fa-solid fa-coins text-yellow-300"></i>)`;
+                btnUp.innerHTML = `<div>Level Up</div><div class="text-xs font-normal opacity-80">${upgradeCost} Gold</div>`;
                 btnUp.onclick = () => game.upgradeHero(id);
 
                 const btnEq = document.getElementById('btn-equip-hero');
                 btnEq.onclick = () => { game.equipHero(id); ui.closeHeroModal(); };
-                btnEq.innerText = gameState.team.includes(id) ? "Equipped" : "Equip to Team";
+                btnEq.innerText = gameState.team.includes(id) ? "Already in Squad" : "Add to Squad";
+                btnEq.disabled = gameState.team.includes(id);
+                btnEq.classList.toggle('opacity-50', gameState.team.includes(id));
 
                 modal.classList.remove('hidden');
             },
             
             closeHeroModal: () => {
                 document.getElementById('modal-hero-detail').classList.add('hidden');
-            },
-
-            calcStats: (id) => {
-                const base = CHARACTER_DB.find(c => c.id === id);
-                const inv = gameState.inventory[id];
-                const starMult = 1 + (inv.stars - 1) * 0.2;
-                const lvlMult = 1 + (inv.level - 1) * 0.1;
-                const globalAtkMult = 1 + (gameState.upgrades.atk * 0.1);
-                const globalHpMult = 1 + (gameState.upgrades.hp * 0.1);
-
-                return {
-                    atk: Math.floor(base.baseAtk * lvlMult * starMult * globalAtkMult),
-                    hp: Math.floor(base.baseHp * lvlMult * starMult * globalHpMult)
-                };
             },
 
             showGachaResults: (heroes) => {
@@ -912,20 +920,22 @@
                 
                 heroes.forEach((h, idx) => {
                     const div = document.createElement('div');
-                    div.className = `w-32 h-48 bg-rarity-${h.rarity} rounded-xl p-0.5 shadow-2xl summon-item opacity-0 transform scale-50`;
-                    div.style.animationDelay = `${idx * 100}ms`;
+                    div.className = `w-32 h-48 bg-rarity-${h.rarity} rounded-xl p-0.5 shadow-[0_0_20px_currentColor] summon-item opacity-0 transform scale-50`;
+                    div.style.animationDelay = `${idx * 150}ms`;
                     
                     div.innerHTML = `
-                        <div class="w-full h-full bg-slate-900 rounded-lg overflow-hidden flex flex-col relative">
-                            <div class="h-28 bg-black/20 flex items-center justify-center relative">
+                        <div class="w-full h-full bg-[#1a0b2e] rounded-lg overflow-hidden flex flex-col relative">
+                            <div class="h-32 bg-gradient-to-b from-transparent to-black/50 flex items-center justify-center relative">
                                 ${getAvatar(h, 'lg')}
-                                <div class="absolute top-1 right-1 text-white text-xs font-bold shadow-black drop-shadow-md">
-                                    ${h.element}
+                                <div class="absolute top-1 right-1 text-white text-[10px] font-bold bg-black/50 px-1 rounded">
+                                    ${h.element.substring(0,3)}
                                 </div>
                             </div>
-                            <div class="flex-1 p-2 flex flex-col items-center text-center">
-                                <div class="text-[10px] font-bold text-rarity-${h.rarity} uppercase">Rarity ${h.rarity}</div>
-                                <div class="text-xs font-bold text-white leading-tight mt-1">${h.name}</div>
+                            <div class="flex-1 p-1 flex flex-col items-center text-center justify-center bg-black/20">
+                                <div class="text-[9px] font-bold text-rarity-${h.rarity} uppercase tracking-wider">
+                                    ${h.rarity === 5 ? 'SSR' : h.rarity === 4 ? 'SR' : 'R'}
+                                </div>
+                                <div class="text-xs font-bold text-white leading-tight mt-1 truncate w-full px-1">${h.shortName}</div>
                             </div>
                         </div>
                     `;
@@ -962,41 +972,34 @@
                 const hCont = document.getElementById('battle-heroes-container');
                 const eCont = document.getElementById('battle-enemies-container');
 
-                // We only do full innerHTML rebuild if count changes to avoid flicker
-                // But for simplicity in this file, we rebuild DOM structure if lengths differ
-                // Ideally, we'd use a diffing algo or React, but manual DOM manip works for Vanilla.
-                
                 const syncUnits = (container, list, isHero) => {
-                    // This is a naive implementation that wipes and redraws. 
-                    // Good enough for <10 elements.
                     container.innerHTML = ''; 
                     list.forEach(unit => {
                         const el = document.createElement('div');
                         el.id = `unit-${unit.instanceId}`;
-                        el.className = `relative transition-all duration-300 transform ${isHero ? 'hover:scale-105' : 'hover:scale-105'} animate-float`;
+                        el.className = `relative transition-all duration-300 transform ${isHero ? 'hover:scale-105' : 'hover:scale-105'} animate-float flex flex-col items-center`;
                         el.style.animationDelay = `${Math.random()}s`;
 
                         el.innerHTML = `
-                            <div class="w-16 h-16 md:w-20 md:h-20 glass rounded-full border-2 ${isHero ? 'border-blue-400' : 'border-red-500'} flex items-center justify-center shadow-lg relative z-10 overflow-hidden">
-                                ${isHero ? getAvatar(unit, 'lg') : '<i class="fa-solid fa-ghost text-3xl text-red-400"></i>'}
+                            <div class="w-16 h-16 md:w-20 md:h-20 glass rounded-lg border-2 ${isHero ? 'border-pink-400' : 'border-red-500'} flex items-center justify-center shadow-lg relative z-10 overflow-hidden bg-black/40">
+                                ${isHero ? getAvatar(unit, 'lg') : '<i class="fa-solid fa-skull text-3xl text-red-500"></i>'}
                             </div>
                             <!-- Bars -->
-                            <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-20 space-y-1 z-20">
-                                <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                    <div id="hp-${unit.instanceId}" class="h-full ${isHero ? 'bg-green-500' : 'bg-red-500'} hp-fill" style="width: ${(unit.hp/unit.maxHp)*100}%"></div>
+                            <div class="w-20 space-y-1 z-20 mt-1">
+                                <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-white/10">
+                                    <div id="hp-${unit.instanceId}" class="h-full ${isHero ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-orange-500'} hp-fill" style="width: ${(unit.hp/unit.maxHp)*100}%"></div>
                                 </div>
-                                <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div class="w-full h-1 bg-slate-900 rounded-full overflow-hidden border border-white/10">
                                     <div id="cd-${unit.instanceId}" class="h-full bg-yellow-400" style="width: 0%"></div>
                                 </div>
                             </div>
                             <!-- Damage Numbers Container -->
-                            <div id="dmg-${unit.instanceId}" class="absolute -top-10 left-1/2 transform -translate-x-1/2 pointer-events-none w-24 text-center"></div>
+                            <div id="dmg-${unit.instanceId}" class="absolute -top-10 left-1/2 transform -translate-x-1/2 pointer-events-none w-24 text-center z-30"></div>
                         `;
                         container.appendChild(el);
                     });
                 };
 
-                // Only render if we detect length change or first run
                 if (hCont.children.length !== battleState.heroes.length) syncUnits(hCont, battleState.heroes, true);
                 if (eCont.children.length !== battleState.enemies.length) syncUnits(eCont, battleState.enemies, false);
             },
@@ -1009,9 +1012,9 @@
                         if(hpBar) hpBar.style.width = `${Math.max(0, (u.hp/u.maxHp)*100)}%`;
                         if(cdBar) cdBar.style.width = `${(u.cd/u.maxCd)*100}%`;
                         
-                        // Opacity if dead
                         const unitEl = document.getElementById(`unit-${u.instanceId}`);
                         if(unitEl) unitEl.style.opacity = u.hp <= 0 ? 0.3 : 1;
+                        if(unitEl) unitEl.style.filter = u.hp <= 0 ? 'grayscale(100%)' : 'none';
                     });
                 };
                 update(battleState.heroes);
@@ -1024,26 +1027,26 @@
                 
                 const el = document.createElement('div');
                 el.innerText = amount;
-                el.className = `text-xl font-black drop-shadow-md absolute w-full text-center ${type === 'crit' ? 'text-yellow-300 text-2xl scale-125' : 'text-white'}`;
-                el.style.animation = "float 1s ease-out forwards";
+                el.className = `text-lg font-black drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] absolute w-full text-center ${type === 'crit' ? 'text-yellow-300 text-2xl scale-125' : 'text-white'}`;
+                el.style.animation = "float 0.8s ease-out forwards";
                 container.appendChild(el);
                 
-                // Cleanup
-                setTimeout(() => el.remove(), 800);
+                setTimeout(() => el.remove(), 700);
             },
 
             animateAttack: (id, type) => {
                 const el = document.getElementById(`unit-${id}`);
                 if (!el) return;
                 
-                const moveClass = type === 'hero' ? 'translate-x-8' : '-translate-x-8';
-                el.classList.add('transform', moveClass);
+                const moveClass = type === 'hero' ? 'translate-x-12' : '-translate-x-12';
+                const rotateClass = type === 'hero' ? 'rotate-12' : '-rotate-12';
+                el.classList.add('transform', moveClass, rotateClass);
                 setTimeout(() => {
-                    el.classList.remove(moveClass);
+                    el.classList.remove(moveClass, rotateClass);
                 }, 150);
             },
 
-            log: (msg, color="text-slate-300") => {
+            log: (msg, color="text-pink-300") => {
                 const log = document.getElementById('battle-log');
                 const line = document.createElement('div');
                 line.className = color;
@@ -1053,9 +1056,7 @@
             }
         };
 
-        // Start
         window.onload = game.init;
-
     </script>
 </body>
 </html>
