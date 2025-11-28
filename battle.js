@@ -13,10 +13,6 @@ let currentBattleState = null;
 class BattleState {
     constructor(heroes, waveNumber, skillTreeBonuses) {
         this.heroes = heroes.map(h => {
-            // Only reset HP/Mana if it's the start of a run or if they need initialization
-            // In Roguelike mode, HP persists between waves, but we reset temp buffs
-            // For now, we rely on the game state to manage persistence, 
-            // but we ensure `isAlive` is correct.
             h.calculateStats(skillTreeBonuses);
             return h;
         });
@@ -28,7 +24,7 @@ class BattleState {
         this.turnCounter = 0;
         this.skillTreeBonuses = skillTreeBonuses;
         
-        // Track temporary battle buffs [ { unitId, stat, value, turns } ]
+        // Track temporary battle buffs
         this.activeBuffs = []; 
         
         this.spawnEnemies();
@@ -89,7 +85,7 @@ function startRun(gameState) {
     
     // Reset Run State
     gameState.currentWave = 1;
-    gameState.enemiesDefeated = 0; // Reset session kill count
+    gameState.enemiesDefeated = 0; 
     
     // Fully Heal Team for new Run
     team.forEach(hero => {
@@ -99,7 +95,7 @@ function startRun(gameState) {
     // UI Updates
     document.getElementById('pre-run-controls').classList.add('hidden');
     document.getElementById('active-run-controls').classList.remove('hidden');
-    document.getElementById('next-wave-btn').classList.add('hidden'); // Hidden until wave clear
+    document.getElementById('next-wave-btn').classList.add('hidden'); 
     
     startWave(gameState);
 }
@@ -111,7 +107,7 @@ function startRun(gameState) {
 function startWave(gameState) {
     const team = gameState.getTeamHeroes();
     
-    // Check if team is alive (should be if coming from Next Wave)
+    // Check if team is alive
     const aliveCount = team.filter(h => h.isAlive).length;
     if (aliveCount === 0) {
         handleRunDefeat(gameState);
@@ -153,7 +149,6 @@ function stopBattle(gameState) {
     }
     
     gameState.isBattleActive = false;
-    // Keep state for viewing logs/results until they click a button
 }
 
 // ===========================
@@ -165,10 +160,7 @@ function processBattleTurn(gameState, battleState) {
     
     battleState.turnCounter++;
     
-    // 1. Manage Buffs (Decrement duration)
-    manageBuffs(battleState);
-    
-    // 2. Check Win/Loss conditions
+    // Check Win/Loss conditions
     const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
     const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
     
@@ -182,13 +174,13 @@ function processBattleTurn(gameState, battleState) {
         return;
     }
     
-    // 3. Turn Order
+    // Turn Order
     const turnOrder = [
         ...aliveHeroes.map(h => ({ unit: h, isHero: true })),
         ...aliveEnemies.map(e => ({ unit: e, isHero: false }))
     ].sort((a, b) => b.unit.spd - a.unit.spd);
     
-    // 4. Execute Actions
+    // Execute Actions
     turnOrder.forEach(({ unit, isHero }) => {
         if (!unit.isAlive) return;
         
@@ -200,19 +192,6 @@ function processBattleTurn(gameState, battleState) {
     });
     
     updateBattleUI(gameState, battleState);
-}
-
-// ===========================
-// MANAGE BUFFS
-// ===========================
-
-function manageBuffs(battleState) {
-    // This is a simple implementation. In a complex game, you'd want a dedicated Buff class.
-    // Here we assume buffs modified stats directly, so we might need to revert them if we want to be precise,
-    // or we assume buffs are "next X turns" and just expire.
-    // For this version, we will just track duration for UI purposes mostly, 
-    // as implementing full stat reversion requires storing base stats snapshots.
-    // Given the complexity, we'll implement simple turn counting.
 }
 
 // ===========================
@@ -251,7 +230,7 @@ function useHeroUltimate(hero, battleState, gameState) {
         case 'Healer':
             let totalHealing = 0;
             aliveHeroes.forEach(h => {
-                const healAmount = Math.floor(150 + hero.level * 5 + (hero.atk * 0.5)); // Scaling heal
+                const healAmount = Math.floor(150 + hero.level * 5 + (hero.atk * 0.5)); 
                 const actualHeal = h.heal(healAmount);
                 totalHealing += actualHeal;
                 battleState.addLog(`  💚 ${h.name} healed +${actualHeal}`, 'heal');
@@ -260,12 +239,10 @@ function useHeroUltimate(hero, battleState, gameState) {
             
         case 'Tank':
             battleState.addLog(`  🛡️ Team DEF up! (Passive mitigation enabled)`, 'normal');
-            // Logic handled in damage calc or abstractly
             break;
             
         case 'Buffer':
             battleState.addLog(`  ⚔️ Team ATK up!`, 'normal');
-            aliveHeroes.forEach(h => h.buffs.push({ type: 'atk', turns: 3 }));
             break;
             
         case 'DPS (AoE)':
@@ -277,7 +254,7 @@ function useHeroUltimate(hero, battleState, gameState) {
             break;
             
         case 'DPS (Single)':
-            const target = aliveEnemies[0]; // Focus first
+            const target = aliveEnemies[0]; 
             const damage = calculateDamage(hero, target, 2.8);
             target.takeDamage(damage);
             battleState.addLog(`  💢 ${target.name} CRUSHED for ${damage}!`, 'critical');
@@ -320,16 +297,11 @@ function performAttack(attacker, defender, battleState, isHeroAttacking) {
     const style = isCrit ? 'critical' : 'damage';
     battleState.addLog(`${icon} ${attacker.name} hits ${defender.name} for ${actualDamage}`, style);
     
-    // Mana Gain
     if (isHeroAttacking) attacker.gainMana(15);
     else defender.gainMana(10);
     
-    // Check Death
     if (!defender.isAlive) {
         battleState.addLog(`☠️ ${defender.name} defeated!`, 'normal');
-        if (defender.constructor.name === 'Enemy') {
-             // Enemy death logic if needed
-        }
     }
 }
 
@@ -340,14 +312,12 @@ function performAttack(attacker, defender, battleState, isHeroAttacking) {
 function calculateDamage(attacker, defender, multiplier = 1.0) {
     let baseDamage = attacker.atk * multiplier;
     
-    // Element Advantage
     if (attacker.element && defender.element) {
         const adv = ELEMENT_ADVANTAGE[attacker.element];
         if (adv && adv.strong === defender.element) baseDamage *= 1.5;
         else if (adv && adv.weak === defender.element) baseDamage *= 0.75;
     }
     
-    // Defense mitigation (Simple linear reduction with floor)
     const damage = Math.max(1, baseDamage - (defender.def * 0.5));
     return Math.floor(damage);
 }
@@ -360,12 +330,11 @@ function handleWaveVictory(gameState, battleState) {
     battleState.isActive = false;
     stopBattle(gameState);
     
-    // 1. Rewards
     const baseGold = 50 + (gameState.currentWave * 15);
     gameState.gold += baseGold;
     gameState.stats.totalGoldEarned += baseGold;
     
-    // Seed Drop Chance (20% base, +2% per wave)
+    // Seed Drop Chance
     const dropChance = 0.2 + (gameState.currentWave * 0.02);
     let foundSeed = null;
     if (Math.random() < dropChance) {
@@ -375,21 +344,18 @@ function handleWaveVictory(gameState, battleState) {
         foundSeed = randomSeed;
     }
     
-    // 2. Stats
     if (gameState.currentWave > gameState.highestWave) {
         gameState.highestWave = gameState.currentWave;
     }
     gameState.updateQuest('completeWaves', 1);
     gameState.updateQuest('killEnemies', battleState.enemies.length);
     
-    // 3. Log & Notification
     let msg = `Cleared Wave ${gameState.currentWave}! +${baseGold} Gold.`;
     if (foundSeed) msg += ` Found ${foundSeed.name} 🌱!`;
     
     battleState.addLog(`🏆 VICTORY! ${msg}`, 'success');
     showNotification(msg, 'success');
     
-    // 4. Update UI Controls for "Next Wave"
     const nextBtn = document.getElementById('next-wave-btn');
     if (nextBtn) {
         nextBtn.classList.remove('hidden');
@@ -412,17 +378,17 @@ function handleRunDefeat(gameState, battleState) {
     if (battleState) battleState.isActive = false;
     stopBattle(gameState);
     
-    battleState.addLog(`💀 DEFEAT! The team fell at Wave ${gameState.currentWave}.`, 'error');
+    if (battleState) {
+        battleState.addLog(`💀 DEFEAT! The team fell at Wave ${gameState.currentWave}.`, 'error');
+    }
     showNotification(`Run Over! Reached Wave ${gameState.currentWave}`, 'error');
     
-    // Update Battle Status
     const battleStatus = document.getElementById('battle-status');
     if (battleStatus) {
         battleStatus.textContent = 'Run Ended';
         battleStatus.className = 'battle-status-light text-slate-500';
     }
     
-    // Reset UI to Pre-Run state
     document.getElementById('pre-run-controls').classList.remove('hidden');
     document.getElementById('active-run-controls').classList.add('hidden');
     
@@ -430,7 +396,7 @@ function handleRunDefeat(gameState, battleState) {
 }
 
 // ===========================
-// USE CONSUMABLE (New Feature)
+// USE CONSUMABLE
 // ===========================
 
 function useConsumable(gameState, itemId) {
@@ -445,7 +411,6 @@ function useConsumable(gameState, itemId) {
     const itemData = GARDEN_ITEMS_DATABASE.teas.find(t => t.id === itemId);
     if (!itemData) return;
     
-    // Apply Effect
     let used = false;
     const aliveHeroes = currentBattleState.heroes.filter(h => h.isAlive);
     
@@ -469,7 +434,6 @@ function useConsumable(gameState, itemId) {
             
         case 'buff_atk':
             aliveHeroes.forEach(h => {
-                // Permanent buff for this run/battle
                 h.atk = Math.floor(h.atk * (1 + itemData.effectValue));
                 currentBattleState.addLog(`🍵 ${itemData.name}: ${h.name} ATK up by ${(itemData.effectValue*100)}%!`, 'normal');
             });
@@ -502,13 +466,11 @@ function useConsumable(gameState, itemId) {
 // ===========================
 
 function setupBattleListeners(gameState, updateUICallback) {
-    // Start Run Button
     const startRunBtn = document.getElementById('start-run-btn');
     if (startRunBtn) {
         startRunBtn.onclick = () => startRun(gameState);
     }
     
-    // Auto Battle
     const autoToggle = document.getElementById('auto-battle-toggle');
     if (autoToggle) {
         autoToggle.onclick = () => {
@@ -518,7 +480,6 @@ function setupBattleListeners(gameState, updateUICallback) {
         };
     }
     
-    // Retreat Button (Optional)
     const stopBtn = document.getElementById('stop-battle-btn');
     if (stopBtn) {
         stopBtn.onclick = () => handleRunDefeat(gameState, currentBattleState);
@@ -526,18 +487,16 @@ function setupBattleListeners(gameState, updateUICallback) {
 }
 
 // ===========================
-// UPDATE BATTLE UI (Extended)
+// UPDATE BATTLE UI
 // ===========================
 
 function updateBattleUI(gameState, battleState) {
-    // Standard Updates
     const waveDisplay = document.getElementById('wave-display');
     if (waveDisplay) waveDisplay.textContent = gameState.currentWave;
     
     const waveHeader = document.getElementById('wave-display-header');
     if (waveHeader) waveHeader.textContent = gameState.currentWave;
     
-    // Render Heroes & Enemies
     const heroesCont = document.getElementById('battle-heroes');
     if (heroesCont && battleState) {
         heroesCont.innerHTML = '';
@@ -550,7 +509,6 @@ function updateBattleUI(gameState, battleState) {
         battleState.enemies.forEach(e => enemiesCont.appendChild(createBattleCard(e, false)));
     }
     
-    // Logs
     const logCont = document.getElementById('battle-log');
     if (logCont && battleState) {
         logCont.innerHTML = '';
@@ -563,10 +521,7 @@ function updateBattleUI(gameState, battleState) {
         logCont.scrollTop = logCont.scrollHeight;
     }
     
-    // Render Inventory
     renderBattleInventory(gameState);
-    
-    // Render Ultimates
     if (battleState) renderUltimateAbilities(gameState, battleState);
 }
 
@@ -608,7 +563,6 @@ function renderBattleInventory(gameState) {
         }
     });
     
-    // Fill empty slots
     const filled = container.children.length;
     for (let i = 0; i < (4 - filled); i++) {
         const empty = document.createElement('div');
@@ -616,4 +570,197 @@ function renderBattleInventory(gameState) {
         empty.innerHTML = '<div class="text-xl opacity-20">🍵</div>';
         container.appendChild(empty);
     }
+}
+
+// ===========================
+// MISSING RENDER FUNCTIONS (RESTORED)
+// ===========================
+
+function renderUltimateAbilities(gameState, battleState) {
+    const container = document.getElementById('ultimate-abilities-grid');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    battleState.heroes.forEach(hero => {
+        const card = createUltimateAbilityCard(hero, gameState, battleState);
+        container.appendChild(card);
+    });
+}
+
+function createUltimateAbilityCard(hero, gameState, battleState) {
+    const card = document.createElement('div');
+    card.className = 'ultimate-ability-card';
+    
+    if (!hero.isAlive) {
+        card.classList.add('disabled');
+    } else if (hero.canUseUltimate()) {
+        card.classList.add('ready');
+    }
+    
+    const heroName = document.createElement('div');
+    heroName.className = 'ultimate-hero-name';
+    heroName.innerHTML = `<span>${hero.name}</span><span>${getElementEmoji(hero.element)}</span>`;
+    card.appendChild(heroName);
+    
+    const abilityName = document.createElement('div');
+    abilityName.className = 'ultimate-ability-name';
+    abilityName.innerHTML = `<span class="ultimate-ability-icon">${getClassIcon(hero.class)}</span><span>${hero.ultimate.name}</span>`;
+    card.appendChild(abilityName);
+    
+    const manaBar = document.createElement('div');
+    manaBar.className = 'ultimate-mana-bar';
+    const manaFill = document.createElement('div');
+    manaFill.className = 'ultimate-mana-fill';
+    manaFill.style.width = `${hero.getManaPercent()}%`;
+    manaBar.appendChild(manaFill);
+    card.appendChild(manaBar);
+    
+    if (hero.canUseUltimate() && hero.isAlive) {
+        const badge = document.createElement('div');
+        badge.className = 'ultimate-ready-badge';
+        badge.textContent = 'READY!';
+        card.appendChild(badge);
+    }
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = 'ultimate-tooltip';
+    tooltip.innerHTML = `
+        <div style="font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">${hero.ultimate.name}</div>
+        <div style="margin-bottom: 0.5rem; font-style: italic;">${getFantasyDescription(hero)}</div>
+        <div style="color: #94a3b8; font-size: 0.75rem;">${hero.ultimate.desc}</div>
+    `;
+    card.appendChild(tooltip);
+    
+    if (hero.canUseUltimate() && hero.isAlive && !gameState.autoCast) {
+        card.style.cursor = 'pointer';
+        card.onclick = () => {
+            if (currentBattleState) {
+                useHeroUltimate(hero, currentBattleState, gameState);
+                updateBattleUI(gameState, currentBattleState);
+            }
+        };
+    }
+    
+    return card;
+}
+
+function getClassIcon(heroClass) {
+    const icons = { 'Tank': '🛡️', 'Healer': '💚', 'DPS (Single)': '⚔️', 'DPS (AoE)': '💥', 'Buffer': '✨' };
+    return icons[heroClass] || '⭐';
+}
+
+function getFantasyDescription(hero) {
+    const descriptions = {
+        'Tank': `${hero.name} becomes an unbreakable bulwark.`,
+        'Healer': `${hero.name} weaves restorative energy.`,
+        'DPS (Single)': `${hero.name} focuses killing intent.`,
+        'DPS (AoE)': `${hero.name} unleashes destructive power.`,
+        'Buffer': `${hero.name} empowers allies.`
+    };
+    return descriptions[hero.class] || `${hero.name} unleashes their ultimate!`;
+}
+
+function createBattleCard(unit, isHero, gameState = null) {
+    const card = document.createElement('div');
+    card.className = `battle-card ${unit.isAlive ? '' : 'dead'}`;
+    
+    if (isHero) {
+        card.setAttribute('data-hero-id', unit.id);
+        if (unit.canUseUltimate()) card.classList.add('ultimate-ready');
+    }
+    
+    const imageContainer = document.createElement('div');
+    imageContainer.className = 'battle-card-image-container';
+    
+    const img = document.createElement('img');
+    img.className = 'battle-card-image';
+    if (isHero) {
+        img.src = `/images/${unit.id}.jpg`;
+        img.onerror = () => {
+            const placeholder = createHeroPlaceholder(unit);
+            placeholder.className = 'battle-card-placeholder';
+            img.replaceWith(placeholder);
+        };
+    } else {
+        img.src = `/images/enemies/${unit.id}.jpg`;
+        img.onerror = () => {
+            const placeholder = createEnemyPlaceholder(unit);
+            placeholder.className = 'battle-card-placeholder';
+            img.replaceWith(placeholder);
+        };
+    }
+    imageContainer.appendChild(img);
+    
+    const nameOverlay = document.createElement('div');
+    nameOverlay.className = 'battle-card-name';
+    nameOverlay.textContent = unit.name;
+    imageContainer.appendChild(nameOverlay);
+    
+    if (isHero) {
+        const levelBadge = document.createElement('div');
+        levelBadge.className = 'battle-card-level-badge';
+        levelBadge.textContent = `Lv.${unit.level}`;
+        imageContainer.appendChild(levelBadge);
+    }
+    card.appendChild(imageContainer);
+    
+    const statsBelow = document.createElement('div');
+    statsBelow.className = 'battle-card-stats-below';
+    
+    const statsRow = document.createElement('div');
+    statsRow.className = 'battle-stats-row';
+    statsRow.innerHTML = `
+        <div class="battle-stat-item"><span class="battle-stat-icon">⚔️</span><div class="battle-stat-value">${unit.atk}</div></div>
+        <div class="battle-stat-item"><span class="battle-stat-icon">🛡️</span><div class="battle-stat-value">${unit.def}</div></div>
+        <div class="battle-stat-item"><span class="battle-stat-icon">⚡</span><div class="battle-stat-value">${unit.spd}</div></div>
+    `;
+    statsBelow.appendChild(statsRow);
+    
+    const barsBelow = document.createElement('div');
+    barsBelow.className = 'battle-bars-below';
+    
+    const hpLabel = document.createElement('div');
+    hpLabel.className = 'battle-bar-label';
+    hpLabel.innerHTML = `<span>HP</span><span>${unit.currentHP}/${unit.maxHP}</span>`;
+    barsBelow.appendChild(hpLabel);
+    
+    const hpBar = document.createElement('div');
+    hpBar.className = 'hp-bar';
+    const hpFill = document.createElement('div');
+    hpFill.className = 'hp-bar-fill';
+    hpFill.style.width = `${unit.getHPPercent()}%`;
+    if (unit.getHPPercent() <= 25) hpFill.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+    else if (unit.getHPPercent() <= 50) hpFill.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+    hpBar.appendChild(hpFill);
+    barsBelow.appendChild(hpBar);
+    
+    if (isHero) {
+        const manaLabel = document.createElement('div');
+        manaLabel.className = 'battle-bar-label';
+        manaLabel.innerHTML = `<span>Mana</span><span>${unit.mana}/${unit.maxMana}</span>`;
+        barsBelow.appendChild(manaLabel);
+        
+        const manaBar = document.createElement('div');
+        manaBar.className = 'mana-bar';
+        const manaFill = document.createElement('div');
+        manaFill.className = 'mana-bar-fill';
+        manaFill.style.width = `${unit.getManaPercent()}%`;
+        manaBar.appendChild(manaFill);
+        barsBelow.appendChild(manaBar);
+        
+        if (!gameState?.autoCast && unit.canUseUltimate()) {
+            card.style.cursor = 'pointer';
+            card.onclick = () => {
+                if (currentBattleState && unit.canUseUltimate()) {
+                    useHeroUltimate(unit, currentBattleState, gameState);
+                    updateBattleUI(gameState, currentBattleState);
+                }
+            };
+        }
+    }
+    statsBelow.appendChild(barsBelow);
+    card.appendChild(statsBelow);
+    
+    return card;
 }

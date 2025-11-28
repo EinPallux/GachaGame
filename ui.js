@@ -11,9 +11,8 @@ function updateUI(gameState) {
     updateCurrencyDisplay(gameState);
     updateBattleStats(gameState);
     updatePityDisplay(gameState);
-    updateBattleButtonState(gameState); // Kept for safety, though handled in battle.js mostly
+    updateBattleButtonState(gameState); 
     
-    // Update active tab content
     const activeTab = document.querySelector('.tab-content.active');
     if (activeTab) {
         const tabId = activeTab.id;
@@ -21,7 +20,7 @@ function updateUI(gameState) {
         if (tabId === 'skill-tree-tab') renderSkillTree(gameState);
         if (tabId === 'expedition-tab') updateExpeditionUI(gameState);
         if (tabId === 'quests-tab') renderQuests(gameState);
-        if (tabId === 'garden-tab') renderGarden(gameState); // NEW
+        if (tabId === 'garden-tab') renderGarden(gameState); 
     }
 }
 
@@ -40,14 +39,10 @@ function updateCurrencyDisplay(gameState) {
 }
 
 // ===========================
-// UPDATE BATTLE STATS (Roguelike Update)
+// UPDATE BATTLE STATS 
 // ===========================
 
 function updateBattleStats(gameState) {
-    // In Roguelike mode:
-    // Wave Display = Current Run Wave
-    // Highest Wave = Best Record
-    
     const waveDisplay = document.getElementById('wave-display');
     const waveDisplayHeader = document.getElementById('wave-display-header');
     const highestWaveDisplay = document.getElementById('highest-wave-display');
@@ -69,12 +64,10 @@ function renderRoster(gameState) {
     
     container.innerHTML = '';
     
-    // Get filter values
     const rarityFilter = document.getElementById('roster-filter-rarity')?.value || 'all';
     const elementFilter = document.getElementById('roster-filter-element')?.value || 'all';
     const sortFilter = document.getElementById('roster-sort')?.value || 'rarity';
     
-    // Filter heroes
     let heroes = [...gameState.roster];
     
     if (rarityFilter !== 'all') {
@@ -85,7 +78,6 @@ function renderRoster(gameState) {
         heroes = heroes.filter(h => h.element === elementFilter);
     }
     
-    // Sort heroes
     const rarityOrder = { 'UR': 5, 'SSR': 4, 'SR': 3, 'R': 2, 'N': 1 };
     heroes.sort((a, b) => {
         if (sortFilter === 'team') {
@@ -105,7 +97,6 @@ function renderRoster(gameState) {
         }
     });
     
-    // Render cards
     heroes.forEach(hero => {
         const card = createHeroCard(hero, gameState);
         container.appendChild(card);
@@ -132,7 +123,6 @@ function createHeroCard(hero, gameState) {
         card.classList.add('in-team');
     }
     
-    // Image
     const img = document.createElement('img');
     img.className = 'hero-card-image';
     img.src = `/images/${hero.id}.jpg`;
@@ -143,7 +133,6 @@ function createHeroCard(hero, gameState) {
     };
     card.appendChild(img);
     
-    // In Team Badge
     if (isInTeam) {
         const teamBadge = document.createElement('div');
         teamBadge.className = 'in-team-badge';
@@ -152,19 +141,16 @@ function createHeroCard(hero, gameState) {
         card.appendChild(teamBadge);
     }
     
-    // Level badge
     const levelBadge = document.createElement('div');
     levelBadge.className = 'hero-card-level';
     levelBadge.textContent = `Lv.${hero.level}`;
     card.appendChild(levelBadge);
     
-    // Rarity badge
     const rarityBadge = document.createElement('div');
     rarityBadge.className = `hero-card-rarity badge-${hero.rarity}`;
     rarityBadge.textContent = hero.rarity;
     card.appendChild(rarityBadge);
     
-    // Info
     const info = document.createElement('div');
     info.className = 'hero-card-info';
     
@@ -198,7 +184,6 @@ function createHeroCard(hero, gameState) {
     info.appendChild(stars);
     
     card.appendChild(info);
-    
     card.onclick = () => showHeroDetails(hero, gameState);
     
     return card;
@@ -264,6 +249,35 @@ function showHeroDetails(hero, gameState) {
         </div>
     `;
     detailContainer.appendChild(stats);
+    
+    // Awakening Section (RESTORED)
+    const awakening = document.createElement('div');
+    awakening.className = 'bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4';
+    const shardsNeeded = hero.stars * 10;
+    awakening.innerHTML = `
+        <div class="font-semibold mb-2">Awakening Progress</div>
+        <div class="text-sm mb-2">Shards: ${hero.awakeningShards} / ${shardsNeeded}</div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-amber-500 h-2 rounded-full" style="width: ${(hero.awakeningShards / shardsNeeded) * 100}%"></div>
+        </div>
+    `;
+    
+    if (hero.stars < 5 && hero.awakeningShards >= shardsNeeded) {
+        const awakenBtn = document.createElement('button');
+        awakenBtn.className = 'btn btn-gold w-full mt-3';
+        awakenBtn.textContent = `Awaken to ${hero.stars + 1} Stars`;
+        awakenBtn.onclick = () => {
+            if (hero.awaken()) {
+                showNotification(`✨ ${hero.name} awakened to ${hero.stars} stars!`, 'success');
+                showHeroDetails(hero, gameState);
+                saveGame(gameState);
+            }
+        };
+        awakening.appendChild(awakenBtn);
+    } else if (hero.stars >= 5) {
+        awakening.innerHTML += '<div class="text-center text-amber-600 font-semibold mt-2">★ MAX STARS ★</div>';
+    }
+    detailContainer.appendChild(awakening);
     
     // Level Up
     const upgradeCost = hero.getUpgradeCost();
@@ -364,7 +378,6 @@ function createTeamSlot(index, gameState) {
             `;
             slot.appendChild(info);
             
-            // Remove button
             const removeBtn = document.createElement('button');
             removeBtn.className = 'text-red-500 hover:text-red-700 font-bold';
             removeBtn.innerHTML = '✕';
@@ -450,7 +463,6 @@ function showHeroSelectionModal(slotIndex, gameState) {
     
     detailContainer.appendChild(grid);
     
-    // Close button
     const closeBtn = document.createElement('button');
     closeBtn.className = 'btn btn-secondary w-full mt-4';
     closeBtn.textContent = 'Cancel';
@@ -591,6 +603,6 @@ function switchTab(tabName, gameState = null) {
         if (tabName === 'skill-tree') renderSkillTree(gameState);
         if (tabName === 'expedition') updateExpeditionUI(gameState);
         if (tabName === 'quests') renderQuests(gameState);
-        if (tabName === 'garden') renderGarden(gameState); // NEW
+        if (tabName === 'garden') renderGarden(gameState); 
     }
 }
