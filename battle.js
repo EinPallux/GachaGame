@@ -28,7 +28,6 @@ class BattleState {
     }
     
     spawnEnemies() {
-        // Roguelike Scaling Logic
         let baseCount = 1;
         if (this.waveNumber >= 3) baseCount = 2;
         if (this.waveNumber >= 8) baseCount = 3;
@@ -187,10 +186,6 @@ function performAttack(attacker, defender, battleState, isHero) {
     showFloatingText(defender, `-${damage}${critText}`, isCrit ? 'crit' : 'damage');
 }
 
-// ===========================
-// ULTIMATE ABILITIES
-// ===========================
-
 function useHeroUltimate(hero, battleState, gameState) {
     if (!hero.canUseUltimate()) return;
     
@@ -227,18 +222,20 @@ function useHeroUltimate(hero, battleState, gameState) {
 }
 
 // ===========================
-// RENDERING & UI
+// RENDERING & UI (FIXED)
 // ===========================
 
 function renderBattleDashboard(gameState) {
     const container = document.getElementById('battle-tab');
     if (!container) return;
 
+    // SCENE 1: PRE-BATTLE (Team Selection)
     if (!gameState.isBattleActive) {
         renderPreBattleScreen(container, gameState);
         return;
     }
 
+    // SCENE 2: ACTIVE BATTLE
     if (!document.getElementById('battle-dashboard-grid')) {
         container.innerHTML = `
             <div id="battle-dashboard-grid" class="battle-dashboard animate-entry h-[calc(100vh-140px)] min-h-[500px]">
@@ -301,67 +298,100 @@ function renderBattleDashboard(gameState) {
     if (currentBattleState) updateBattleUI(gameState, currentBattleState);
 }
 
+// FIXED: No more string interpolation for attributes!
 function renderPreBattleScreen(container, gameState) {
-    container.innerHTML = `
-        <div class="flex flex-col items-center justify-center h-full max-w-2xl mx-auto text-center animate-entry py-12">
-            <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center text-red-400 text-4xl mb-6 shadow-sm">
-                <i class="fa-solid fa-dungeon"></i>
-            </div>
-            <h2 class="text-3xl font-heading font-bold text-slate-800 mb-2">Battle Arena</h2>
-            <p class="text-slate-500 mb-8">
-                Enter the Roguelike dungeon. Your team will fight through endless waves of enemies. 
-                Health does not regenerate between waves!
-            </p>
-            
-            <div class="bg-white p-6 rounded-xl border border-slate-100 w-full mb-8 text-left">
-                <h3 class="font-bold text-slate-700 mb-4 flex justify-between">
-                    <span>Current Team</span>
-                    <button class="text-sm text-primary hover:underline" onclick="switchView('roster')">View Roster</button>
-                </h3>
-                <div class="flex justify-between gap-2" id="pre-battle-team">
-                    ${renderTeamPreview(gameState)}
-                </div>
-                <div class="mt-4 text-xs text-slate-400 text-center">
-                    Click a slot to add or remove a hero.
-                </div>
-            </div>
-            
-            <button class="btn btn-primary text-lg px-8 py-3 shadow-lg shadow-primary/30" onclick="startRun(gameState)">
-                <i class="fa-solid fa-swords"></i> Start Run
-            </button>
+    container.innerHTML = '';
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex flex-col items-center justify-center h-full max-w-2xl mx-auto text-center animate-entry py-12';
+    
+    wrapper.innerHTML = `
+        <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center text-red-400 text-4xl mb-6 shadow-sm">
+            <i class="fa-solid fa-dungeon"></i>
         </div>
+        <h2 class="text-3xl font-heading font-bold text-slate-800 mb-2">Battle Arena</h2>
+        <p class="text-slate-500 mb-8">
+            Enter the Roguelike dungeon. Your team will fight through endless waves. 
+            Health does not regenerate between waves!
+        </p>
     `;
+    
+    // Team Section
+    const teamBox = document.createElement('div');
+    teamBox.className = 'bg-white p-6 rounded-xl border border-slate-100 w-full mb-8 text-left';
+    
+    const header = document.createElement('h3');
+    header.className = 'font-bold text-slate-700 mb-4 flex justify-between';
+    header.innerHTML = `<span>Current Team</span><button class="text-sm text-primary hover:underline" onclick="switchView('roster')">View Roster</button>`;
+    teamBox.appendChild(header);
+    
+    const slotsContainer = document.createElement('div');
+    slotsContainer.className = 'flex justify-between gap-2';
+    slotsContainer.id = 'pre-battle-team';
+    
+    // Generate Slots Programmatically
+    for(let i=0; i<5; i++) {
+        const slot = createTeamSlotElement(i, gameState);
+        slotsContainer.appendChild(slot);
+    }
+    teamBox.appendChild(slotsContainer);
+    
+    const hint = document.createElement('div');
+    hint.className = 'mt-4 text-xs text-slate-400 text-center';
+    hint.textContent = 'Click a slot to add or remove a hero.';
+    teamBox.appendChild(hint);
+    
+    wrapper.appendChild(teamBox);
+    
+    // Start Button
+    const startBtn = document.createElement('button');
+    startBtn.className = 'btn btn-primary text-lg px-8 py-3 shadow-lg shadow-primary/30';
+    startBtn.innerHTML = '<i class="fa-solid fa-swords"></i> Start Run';
+    startBtn.onclick = () => startRun(gameState);
+    wrapper.appendChild(startBtn);
+    
+    container.appendChild(wrapper);
 }
 
-function renderTeamPreview(gameState) {
-    let html = '';
-    for(let i=0; i<5; i++) {
-        const heroId = gameState.team[i];
-        const hero = heroId ? gameState.roster.find(h => h.id === heroId) : null;
+function createTeamSlotElement(index, gameState) {
+    const heroId = gameState.team[index];
+    const hero = heroId ? gameState.roster.find(h => h.id === heroId) : null;
+    
+    const slot = document.createElement('div');
+    const commonClasses = "w-16 h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-primary transition-colors relative shadow-sm";
+    
+    if (hero) {
+        slot.className = `${commonClasses} bg-slate-100 border-slate-200`;
+        slot.onclick = () => showHeroSelectionModal(index, window.gameState);
         
-        // Use createHeroPlaceholder from ui.js logic (simplified string)
-        const placeholder = hero ? createHeroPlaceholder(hero) : '';
+        // Image
+        const img = document.createElement('img');
+        img.src = `/images/${hero.id}.jpg`;
+        img.className = "w-full h-full object-cover";
+        img.onerror = () => {
+            // Helper from ui.js logic inline
+            const colors = { 'Fire':'from-red-400 to-orange-500', 'Water':'from-blue-400 to-cyan-500', 'Wind':'from-emerald-400 to-teal-500' };
+            const grad = colors[hero.element] || 'from-slate-400 to-slate-600';
+            const div = document.createElement('div');
+            div.className = `w-full h-full bg-gradient-to-br ${grad} flex items-center justify-center text-white font-bold text-lg`;
+            div.textContent = hero.name.substring(0,2).toUpperCase();
+            img.replaceWith(div);
+        };
+        slot.appendChild(img);
         
-        const commonClasses = "w-16 h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-primary transition-colors relative shadow-sm";
+        // Level Tag
+        const lvl = document.createElement('div');
+        lvl.className = "absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] text-center font-bold truncate px-1";
+        lvl.textContent = `Lv.${hero.level}`;
+        slot.appendChild(lvl);
         
-        if (hero) {
-            html += `
-                <div class="${commonClasses} bg-slate-100 border-slate-200" onclick="showHeroSelectionModal(${i}, window.gameState)">
-                    <img src="/images/${hero.id}.jpg" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='${placeholder}'">
-                    <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] text-center font-bold truncate px-1">
-                        Lv.${hero.level}
-                    </div>
-                </div>
-            `;
-        } else {
-            html += `
-                <div class="${commonClasses} bg-slate-50 border-dashed border-slate-300 flex items-center justify-center text-slate-300 hover:text-primary hover:bg-slate-100" onclick="showHeroSelectionModal(${i}, window.gameState)">
-                    <i class="fa-solid fa-plus"></i>
-                </div>
-            `;
-        }
+    } else {
+        slot.className = `${commonClasses} bg-slate-50 border-dashed border-slate-300 flex items-center justify-center text-slate-300 hover:text-primary hover:bg-slate-100`;
+        slot.onclick = () => showHeroSelectionModal(index, window.gameState);
+        slot.innerHTML = '<i class="fa-solid fa-plus"></i>';
     }
-    return html;
+    
+    return slot;
 }
 
 function updateBattleUI(gameState, battleState) {
@@ -402,7 +432,6 @@ function updateBattleUI(gameState, battleState) {
 
 function renderUnits(container, units, isHero) {
     container.innerHTML = '';
-    
     units.forEach(unit => {
         const div = document.createElement('div');
         div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy'} ${!unit.isAlive ? 'dead' : ''} w-24 flex-shrink-0 flex flex-col items-center`;

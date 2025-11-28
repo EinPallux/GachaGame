@@ -102,7 +102,7 @@ function performPullLogic(count) {
         
         // Pity Check
         if (gameState.pityCounter >= 50) {
-            rarity = Math.random() < 0.5 ? 'SSR' : 'UR'; // 50/50 SSR or UR on pity
+            rarity = Math.random() < 0.5 ? 'SSR' : 'UR';
             gameState.pityCounter = 0;
         } else {
             rarity = rollRarity();
@@ -110,7 +110,6 @@ function performPullLogic(count) {
             else gameState.pityCounter++;
         }
 
-        // Get Hero
         const heroTemplate = getRandomHeroByRarity(rarity);
         if (heroTemplate) {
             const addResult = gameState.addHero(heroTemplate.id);
@@ -133,7 +132,7 @@ function performPullLogic(count) {
 function rollRarity() {
     const roll = Math.random() * 100;
     let cumulative = 0;
-    const rates = { 'UR': 0.5, 'SSR': 4.5, 'SR': 10.0, 'R': 25.0, 'N': 60.0 }; // Total 100
+    const rates = { 'UR': 0.5, 'SSR': 4.5, 'SR': 10.0, 'R': 25.0, 'N': 60.0 };
     
     for (let [rarity, rate] of Object.entries(rates)) {
         cumulative += rate;
@@ -144,7 +143,7 @@ function rollRarity() {
 
 function getRandomHeroByRarity(rarity) {
     const pool = HEROES_DATABASE.filter(h => h.rarity === rarity);
-    if (pool.length === 0) return HEROES_DATABASE[0]; // Fallback
+    if (pool.length === 0) return HEROES_DATABASE[0]; 
     return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -159,46 +158,63 @@ function playSummonAnimation(results) {
     
     if (!modal || !modalBody) return;
 
-    // Determine highest rarity for light color
+    // Determine highest rarity for light color & Text
     const highestRarity = results.some(r => r.rarity === 'UR') ? 'UR' : 
-                          results.some(r => r.rarity === 'SSR') ? 'SSR' : 'N';
+                          results.some(r => r.rarity === 'SSR') ? 'SSR' : 
+                          results.some(r => r.rarity === 'SR') ? 'SR' : 'N';
     
-    const beamColor = highestRarity === 'UR' ? 'from-pink-500 via-purple-500 to-indigo-500' :
-                      highestRarity === 'SSR' ? 'from-amber-400 via-orange-500 to-yellow-300' :
-                      'from-blue-400 to-cyan-300';
+    let beamColor = 'from-blue-400 to-cyan-300';
+    let flavorText = "Summoning...";
+    let flavorColor = "text-white";
+
+    if (highestRarity === 'UR') {
+        beamColor = 'from-pink-500 via-purple-500 to-indigo-500';
+        flavorText = "🌈 LEGENDARY SIGNAL DETECTED!";
+        flavorColor = "text-pink-300";
+    } else if (highestRarity === 'SSR') {
+        beamColor = 'from-amber-400 via-orange-500 to-yellow-300';
+        flavorText = "✨ Golden Aura Felt!";
+        flavorColor = "text-amber-300";
+    } else if (highestRarity === 'SR') {
+        beamColor = 'from-purple-400 to-indigo-400';
+        flavorText = "Rare Energy Gathering...";
+        flavorColor = "text-purple-300";
+    }
 
     // 1. Play Animation
     modalBody.innerHTML = `
         <div class="h-[500px] flex items-center justify-center bg-slate-900 relative overflow-hidden">
             <div class="absolute inset-0 bg-[url('/images/summon-bg.jpg')] bg-cover opacity-20"></div>
             
-            <div class="gacha-shrine z-10">
+            <div class="gacha-shrine z-10 flex flex-col items-center gap-8">
                 <div class="shrine-door border-4 border-white/20 bg-slate-800 w-32 h-48 relative flex items-center justify-center overflow-hidden shadow-2xl">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                     <i class="fa-solid fa-torii-gate text-6xl text-white/30"></i>
                     
                     <div class="absolute inset-0 bg-gradient-to-t ${beamColor} opacity-0 animate-[lightBeam_2s_ease-out_forwards]"></div>
                 </div>
+                
+                <div class="text-center animate-bounce">
+                    <div class="${flavorColor} font-bold tracking-widest text-lg drop-shadow-lg">${flavorText}</div>
+                </div>
             </div>
-            
-            <div class="absolute bottom-10 text-white font-bold tracking-[0.5em] text-sm animate-pulse">SUMMONING...</div>
         </div>
     `;
 
     // Show Modal
     modal.classList.remove('hidden');
-    modalContent.classList.remove('scale-95'); // Reset scale if needed
+    modalContent.classList.remove('scale-95'); 
     requestAnimationFrame(() => modal.classList.remove('opacity-0', 'pointer-events-none'));
 
     // 2. Show Results after delay
     setTimeout(() => {
         showGachaResults(results);
-    }, 2200);
+    }, 2500);
 }
 
 function showGachaResults(results) {
     const modalBody = document.getElementById('modal-body');
-    modalBody.innerHTML = ''; // Clear existing content
+    modalBody.innerHTML = ''; 
 
     // Main Container
     const container = document.createElement('div');
@@ -215,26 +231,24 @@ function showGachaResults(results) {
     grid.className = 'grid grid-cols-2 md:grid-cols-5 gap-4 mb-8';
 
     results.forEach((r, index) => {
-        // Wrapper for animation
+        // Wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'flex flex-col items-center animate-entry';
         wrapper.style.animationDelay = `${index * 0.1}s`;
 
-        // Card Container
+        // Card
         const card = document.createElement('div');
-        card.className = 'hero-card w-full aspect-[3/4] mb-2 relative group rounded-xl overflow-hidden shadow-sm bg-white';
+        card.className = 'hero-card w-full aspect-[3/4] mb-2 relative group rounded-xl overflow-hidden shadow-sm bg-white border border-slate-200';
         card.setAttribute('data-rarity', r.rarity);
 
-        // Image Container with Error Handling
+        // Image
         const imgContainer = document.createElement('div');
         imgContainer.className = 'absolute inset-0';
-        
         const img = document.createElement('img');
         img.src = `/images/${r.hero.id}.jpg`;
         img.className = 'w-full h-full object-cover transition-transform duration-500 group-hover:scale-110';
-        
-        // Define Placeholder logic locally to avoid dependency race conditions
         img.onerror = () => {
+            // Placeholder logic logic from ui.js
             const div = document.createElement('div');
             const colors = {
                 'Fire': 'from-red-400 to-orange-500', 'Water': 'from-blue-400 to-cyan-500',
@@ -249,33 +263,40 @@ function showGachaResults(results) {
         imgContainer.appendChild(img);
         card.appendChild(imgContainer);
 
-        // "NEW" Badge
+        // Badges - NEW & SHARDS & RARITY
+        const topBadgeContainer = document.createElement('div');
+        topBadgeContainer.className = 'absolute top-1 left-1 right-1 flex justify-between';
+        
+        // New Badge
         if (r.isNew) {
-            const badge = document.createElement('div');
-            badge.className = 'absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm animate-bounce';
-            badge.textContent = 'NEW!';
-            card.appendChild(badge);
+            const newBadge = document.createElement('span');
+            newBadge.className = 'bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow animate-bounce';
+            newBadge.textContent = 'NEW';
+            topBadgeContainer.appendChild(newBadge);
+        } else {
+            const shardBadge = document.createElement('span');
+            shardBadge.className = 'bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow';
+            shardBadge.textContent = `+${r.shards}`;
+            topBadgeContainer.appendChild(shardBadge);
         }
 
-        // Info Overlay
+        // Rarity Badge (Requested)
+        const rarityBadge = document.createElement('span');
+        rarityBadge.className = `badge-${r.rarity} text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow ml-auto`;
+        rarityBadge.textContent = r.rarity;
+        topBadgeContainer.appendChild(rarityBadge);
+
+        card.appendChild(topBadgeContainer);
+
+        // Name Overlay
         const overlay = document.createElement('div');
-        overlay.className = 'absolute bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent p-2';
+        overlay.className = 'absolute bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent p-2 pt-6';
         overlay.innerHTML = `
-            <div class="text-white text-xs font-bold truncate">${r.hero.name}</div>
-            <div class="text-white/80 text-[10px]">${r.hero.class}</div>
+            <div class="text-white text-xs font-bold truncate text-center">${r.hero.name}</div>
         `;
         card.appendChild(overlay);
 
         wrapper.appendChild(card);
-
-        // Shards Label
-        if (!r.isNew) {
-            const shards = document.createElement('div');
-            shards.className = 'text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100';
-            shards.textContent = `+${r.shards} Shards`;
-            wrapper.appendChild(shards);
-        }
-
         grid.appendChild(wrapper);
     });
 
@@ -294,7 +315,7 @@ function showGachaResults(results) {
 
     modalBody.appendChild(container);
 
-    // Refresh Roster if needed
+    // Refresh Roster if in background
     if (!document.getElementById('roster-tab').classList.contains('hidden')) {
         renderRoster(gameState);
     }
