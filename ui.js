@@ -11,7 +11,7 @@ function updateUI(gameState) {
     updateCurrencyDisplay(gameState);
     updateBattleStats(gameState);
     updatePityDisplay(gameState);
-    updateBattleButtonState(gameState);
+    updateBattleButtonState(gameState); // Kept for safety, though handled in battle.js mostly
     
     // Update active tab content
     const activeTab = document.querySelector('.tab-content.active');
@@ -21,6 +21,7 @@ function updateUI(gameState) {
         if (tabId === 'skill-tree-tab') renderSkillTree(gameState);
         if (tabId === 'expedition-tab') updateExpeditionUI(gameState);
         if (tabId === 'quests-tab') renderQuests(gameState);
+        if (tabId === 'garden-tab') renderGarden(gameState); // NEW
     }
 }
 
@@ -39,15 +40,21 @@ function updateCurrencyDisplay(gameState) {
 }
 
 // ===========================
-// UPDATE BATTLE STATS
+// UPDATE BATTLE STATS (Roguelike Update)
 // ===========================
 
 function updateBattleStats(gameState) {
+    // In Roguelike mode:
+    // Wave Display = Current Run Wave
+    // Highest Wave = Best Record
+    
     const waveDisplay = document.getElementById('wave-display');
+    const waveDisplayHeader = document.getElementById('wave-display-header');
     const highestWaveDisplay = document.getElementById('highest-wave-display');
     const enemiesDefeatedDisplay = document.getElementById('enemies-defeated-display');
     
     if (waveDisplay) waveDisplay.textContent = gameState.currentWave;
+    if (waveDisplayHeader) waveDisplayHeader.textContent = gameState.currentWave;
     if (highestWaveDisplay) highestWaveDisplay.textContent = gameState.highestWave;
     if (enemiesDefeatedDisplay) enemiesDefeatedDisplay.textContent = formatNumber(gameState.enemiesDefeated);
 }
@@ -82,21 +89,15 @@ function renderRoster(gameState) {
     const rarityOrder = { 'UR': 5, 'SSR': 4, 'SR': 3, 'R': 2, 'N': 1 };
     heroes.sort((a, b) => {
         if (sortFilter === 'team') {
-            // Team members first
             const aInTeam = gameState.team.includes(a.id);
             const bInTeam = gameState.team.includes(b.id);
             if (aInTeam && !bInTeam) return -1;
             if (!aInTeam && bInTeam) return 1;
-            // Then by team slot order
-            if (aInTeam && bInTeam) {
-                return gameState.team.indexOf(a.id) - gameState.team.indexOf(b.id);
-            }
-            // Then by rarity
+            if (aInTeam && bInTeam) return gameState.team.indexOf(a.id) - gameState.team.indexOf(b.id);
             return rarityOrder[b.rarity] - rarityOrder[a.rarity];
         } else if (sortFilter === 'level') {
             return b.level - a.level;
         } else {
-            // Default: rarity then level
             if (rarityOrder[b.rarity] !== rarityOrder[a.rarity]) {
                 return rarityOrder[b.rarity] - rarityOrder[a.rarity];
             }
@@ -126,7 +127,6 @@ function createHeroCard(hero, gameState) {
     const card = document.createElement('div');
     card.className = `hero-card rarity-${hero.rarity}`;
     
-    // Check if hero is in team
     const isInTeam = gameState.team.includes(hero.id);
     if (isInTeam) {
         card.classList.add('in-team');
@@ -137,13 +137,10 @@ function createHeroCard(hero, gameState) {
     img.className = 'hero-card-image';
     img.src = `/images/${hero.id}.jpg`;
     img.alt = hero.name;
-    
-    // Fallback placeholder
     img.onerror = function() {
         const placeholder = createHeroPlaceholder(hero);
         img.replaceWith(placeholder);
     };
-    
     card.appendChild(img);
     
     // In Team Badge
@@ -167,7 +164,7 @@ function createHeroCard(hero, gameState) {
     rarityBadge.textContent = hero.rarity;
     card.appendChild(rarityBadge);
     
-    // Info section
+    // Info
     const info = document.createElement('div');
     info.className = 'hero-card-info';
     
@@ -187,7 +184,6 @@ function createHeroCard(hero, gameState) {
     details.appendChild(element);
     details.appendChild(classSpan);
     
-    // Stars
     const stars = document.createElement('div');
     stars.className = 'hero-card-stars';
     for (let i = 0; i < hero.stars; i++) {
@@ -203,7 +199,6 @@ function createHeroCard(hero, gameState) {
     
     card.appendChild(info);
     
-    // Click to view details
     card.onclick = () => showHeroDetails(hero, gameState);
     
     return card;
@@ -221,7 +216,7 @@ function showHeroDetails(hero, gameState) {
     
     detailContainer.innerHTML = '';
     
-    // Hero image
+    // Image
     const img = document.createElement('img');
     img.className = 'w-full rounded-lg mb-4';
     img.style.maxHeight = '300px';
@@ -234,7 +229,7 @@ function showHeroDetails(hero, gameState) {
     };
     detailContainer.appendChild(img);
     
-    // Name and rarity
+    // Header
     const header = document.createElement('div');
     header.className = 'mb-4';
     header.innerHTML = `
@@ -246,15 +241,6 @@ function showHeroDetails(hero, gameState) {
         </div>
     `;
     detailContainer.appendChild(header);
-    
-    // Stars
-    const starsDiv = document.createElement('div');
-    starsDiv.className = 'mb-4';
-    for (let i = 0; i < hero.stars; i++) {
-        starsDiv.innerHTML += '⭐';
-    }
-    starsDiv.innerHTML += ` <span class="text-slate-600">(${hero.stars}/5 Stars)</span>`;
-    detailContainer.appendChild(starsDiv);
     
     // Stats
     const stats = document.createElement('div');
@@ -276,89 +262,37 @@ function showHeroDetails(hero, gameState) {
             <div class="text-sm text-slate-600">DEF</div>
             <div class="text-xl font-bold">${hero.def}</div>
         </div>
-        <div class="bg-pink-50 p-3 rounded-lg">
-            <div class="text-sm text-slate-600">SPD</div>
-            <div class="text-xl font-bold">${hero.spd}</div>
-        </div>
-        <div class="bg-pink-50 p-3 rounded-lg">
-            <div class="text-sm text-slate-600">Bond</div>
-            <div class="text-xl font-bold">${hero.bond}/1000</div>
-        </div>
     `;
     detailContainer.appendChild(stats);
     
-    // Ultimate
-    const ultimate = document.createElement('div');
-    ultimate.className = 'bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4';
-    ultimate.innerHTML = `
-        <div class="font-semibold text-purple-900 mb-2">✨ ${hero.ultimate.name}</div>
-        <div class="text-sm text-slate-700">${hero.ultimate.desc}</div>
-    `;
-    detailContainer.appendChild(ultimate);
-    
-    // Awakening
-    const awakening = document.createElement('div');
-    awakening.className = 'bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4';
-    const shardsNeeded = hero.stars * 10;
-    awakening.innerHTML = `
-        <div class="font-semibold mb-2">Awakening Progress</div>
-        <div class="text-sm mb-2">Shards: ${hero.awakeningShards} / ${shardsNeeded}</div>
-        <div class="w-full bg-gray-200 rounded-full h-2">
-            <div class="bg-amber-500 h-2 rounded-full" style="width: ${(hero.awakeningShards / shardsNeeded) * 100}%"></div>
-        </div>
-    `;
-    
-    if (hero.stars < 5 && hero.awakeningShards >= shardsNeeded) {
-        const awakenBtn = document.createElement('button');
-        awakenBtn.className = 'btn btn-gold w-full mt-3';
-        awakenBtn.textContent = `Awaken to ${hero.stars + 1} Stars`;
-        awakenBtn.onclick = () => {
-            if (hero.awaken()) {
-                showNotification(`✨ ${hero.name} awakened to ${hero.stars} stars!`, 'success');
-                showHeroDetails(hero, gameState);
-                saveGame(gameState);
-            }
-        };
-        awakening.appendChild(awakenBtn);
-    } else if (hero.stars >= 5) {
-        const maxStars = document.createElement('div');
-        maxStars.className = 'text-center text-amber-600 font-semibold mt-2';
-        maxStars.textContent = '★ MAX STARS ★';
-        awakening.appendChild(maxStars);
-    }
-    
-    detailContainer.appendChild(awakening);
-    
-    // Level up
-    const levelUp = document.createElement('div');
-    levelUp.className = 'space-y-2';
-    
+    // Level Up
     const upgradeCost = hero.getUpgradeCost();
     const levelUpBtn = document.createElement('button');
-    levelUpBtn.className = 'btn btn-primary w-full';
+    levelUpBtn.className = 'btn btn-primary w-full mb-4';
     levelUpBtn.innerHTML = `Level Up (${upgradeCost} Gold)`;
     levelUpBtn.disabled = gameState.gold < upgradeCost;
-    
     levelUpBtn.onclick = () => {
         if (gameState.gold >= upgradeCost) {
             gameState.gold -= upgradeCost;
             hero.levelUp(upgradeCost);
-            showNotification(`${hero.name} leveled up to ${hero.level}!`, 'success');
+            showNotification(`${hero.name} leveled up!`, 'success');
             showHeroDetails(hero, gameState);
             updateCurrencyDisplay(gameState);
             gameState.updateQuest('levelUp', 1);
             saveGame(gameState);
         }
     };
+    detailContainer.appendChild(levelUpBtn);
     
-    levelUp.appendChild(levelUpBtn);
-    detailContainer.appendChild(levelUp);
-    
-    // Add to team button
+    // Add to Team Button
     const addToTeamBtn = document.createElement('button');
-    addToTeamBtn.className = 'btn btn-secondary w-full mt-2';
+    addToTeamBtn.className = 'btn btn-secondary w-full';
     addToTeamBtn.textContent = 'Add to Team';
     addToTeamBtn.onclick = () => {
+        if (gameState.isBattleActive) {
+            showNotification('Cannot change team during an active run!', 'error');
+            return;
+        }
         modal.classList.remove('active');
         switchTab('battle');
         showTeamSelectionForHero(hero, gameState);
@@ -373,7 +307,6 @@ function showHeroDetails(hero, gameState) {
 // ===========================
 
 function showTeamSelectionForHero(hero, gameState) {
-    // Find empty slot or ask user to replace
     const emptySlotIndex = gameState.team.indexOf(null);
     
     if (emptySlotIndex !== -1) {
@@ -414,43 +347,33 @@ function createTeamSlot(index, gameState) {
     
     if (heroId) {
         const hero = gameState.roster.find(h => h.id === heroId);
-        
         if (hero) {
             slot.classList.add('filled');
             
-            // Image
             const img = document.createElement('img');
             img.className = 'team-slot-image';
             img.src = `/images/${hero.id}.jpg`;
-            img.onerror = function() {
-                const placeholder = createHeroPlaceholder(hero);
-                placeholder.className = 'team-slot-placeholder';
-                img.replaceWith(placeholder);
-            };
+            img.onerror = () => img.replaceWith(createHeroPlaceholder(hero));
             slot.appendChild(img);
             
-            // Info
             const info = document.createElement('div');
             info.className = 'team-slot-info';
-            
-            const name = document.createElement('div');
-            name.className = 'team-slot-name';
-            name.textContent = hero.name;
-            
-            const level = document.createElement('div');
-            level.className = 'team-slot-level';
-            level.textContent = `Lv.${hero.level} • ${getElementEmoji(hero.element)}`;
-            
-            info.appendChild(name);
-            info.appendChild(level);
+            info.innerHTML = `
+                <div class="team-slot-name">${hero.name}</div>
+                <div class="team-slot-level">Lv.${hero.level}</div>
+            `;
             slot.appendChild(info);
             
             // Remove button
             const removeBtn = document.createElement('button');
-            removeBtn.className = 'text-red-500 hover:text-red-700';
+            removeBtn.className = 'text-red-500 hover:text-red-700 font-bold';
             removeBtn.innerHTML = '✕';
             removeBtn.onclick = (e) => {
                 e.stopPropagation();
+                if (gameState.isBattleActive) {
+                    showNotification('Cannot remove hero during a run!', 'error');
+                    return;
+                }
                 gameState.setTeamMember(index, null);
                 renderTeamSelection(gameState);
                 saveGame(gameState);
@@ -458,28 +381,15 @@ function createTeamSlot(index, gameState) {
             slot.appendChild(removeBtn);
         }
     } else {
-        // Empty slot
-        const placeholder = document.createElement('div');
-        placeholder.className = 'team-slot-placeholder bg-slate-200';
-        placeholder.textContent = '+';
-        placeholder.style.fontSize = '2rem';
-        slot.appendChild(placeholder);
-        
-        const info = document.createElement('div');
-        info.className = 'team-slot-info';
-        
-        const name = document.createElement('div');
-        name.className = 'team-slot-name text-slate-500';
-        name.textContent = 'Empty Slot';
-        
-        info.appendChild(name);
-        slot.appendChild(info);
+        slot.innerHTML = `
+            <div class="team-slot-placeholder bg-slate-200">+</div>
+            <div class="team-slot-info">
+                <div class="team-slot-name text-slate-500">Empty</div>
+            </div>
+        `;
     }
     
-    // Click to select hero
-    slot.onclick = () => {
-        showHeroSelectionModal(index, gameState);
-    };
+    slot.onclick = () => showHeroSelectionModal(index, gameState);
     
     return slot;
 }
@@ -489,6 +399,11 @@ function createTeamSlot(index, gameState) {
 // ===========================
 
 function showHeroSelectionModal(slotIndex, gameState) {
+    if (gameState.isBattleActive) {
+        showNotification('Cannot change team during a run!', 'error');
+        return;
+    }
+
     const modal = document.getElementById('hero-modal');
     const detailContainer = document.getElementById('hero-detail');
     
@@ -507,9 +422,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
     gameState.roster.forEach(hero => {
         const miniCard = document.createElement('div');
         miniCard.className = `hero-card rarity-${hero.rarity} cursor-pointer hover:scale-105 transition`;
-        miniCard.style.border = '2px solid transparent';
         
-        // Check if already in team
         if (gameState.team.includes(hero.id)) {
             miniCard.style.opacity = '0.5';
         }
@@ -517,10 +430,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
         const img = document.createElement('img');
         img.className = 'hero-card-image';
         img.src = `/images/${hero.id}.jpg`;
-        img.onerror = function() {
-            const placeholder = createHeroPlaceholder(hero);
-            img.replaceWith(placeholder);
-        };
+        img.onerror = () => img.replaceWith(createHeroPlaceholder(hero));
         miniCard.appendChild(img);
         
         const name = document.createElement('div');
@@ -532,7 +442,6 @@ function showHeroSelectionModal(slotIndex, gameState) {
             gameState.setTeamMember(slotIndex, hero.id);
             renderTeamSelection(gameState);
             modal.classList.remove('active');
-            showNotification(`${hero.name} added to team!`, 'success');
             saveGame(gameState);
         };
         
@@ -541,6 +450,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
     
     detailContainer.appendChild(grid);
     
+    // Close button
     const closeBtn = document.createElement('button');
     closeBtn.className = 'btn btn-secondary w-full mt-4';
     closeBtn.textContent = 'Cancel';
@@ -559,80 +469,42 @@ function renderQuests(gameState) {
     if (!container) return;
     
     gameState.checkQuestReset();
-    
     container.innerHTML = '';
     
     gameState.quests.forEach(quest => {
-        const questCard = createQuestCard(quest, gameState);
-        container.appendChild(questCard);
+        const card = createQuestCard(quest, gameState);
+        container.appendChild(card);
     });
 }
-
-// ===========================
-// CREATE QUEST CARD
-// ===========================
 
 function createQuestCard(quest, gameState) {
     const card = document.createElement('div');
     card.className = `quest-card ${quest.completed ? 'completed' : ''}`;
     
-    // Title and progress
-    const header = document.createElement('div');
-    header.className = 'flex justify-between items-center mb-2';
+    card.innerHTML = `
+        <div class="flex justify-between items-center mb-2">
+            <div class="font-semibold">${quest.desc}</div>
+            <div class="text-sm text-slate-600">${quest.current} / ${quest.target}</div>
+        </div>
+        <div class="quest-progress-bar">
+            <div class="quest-progress-fill" style="width: ${(quest.current / quest.target) * 100}%"></div>
+        </div>
+    `;
     
-    const title = document.createElement('div');
-    title.className = 'font-semibold';
-    title.textContent = quest.desc;
-    
-    const progress = document.createElement('div');
-    progress.className = 'text-sm text-slate-600';
-    progress.textContent = `${quest.current} / ${quest.target}`;
-    
-    header.appendChild(title);
-    header.appendChild(progress);
-    card.appendChild(header);
-    
-    // Progress bar
-    const progressBar = document.createElement('div');
-    progressBar.className = 'quest-progress-bar';
-    
-    const progressFill = document.createElement('div');
-    progressFill.className = 'quest-progress-fill';
-    progressFill.style.width = `${(quest.current / quest.target) * 100}%`;
-    
-    progressBar.appendChild(progressFill);
-    card.appendChild(progressBar);
-    
-    // Rewards
-    const rewards = document.createElement('div');
-    rewards.className = 'text-sm text-slate-700 mt-2';
-    let rewardText = 'Rewards: ';
-    if (quest.reward.gold) rewardText += `${quest.reward.gold} Gold `;
-    if (quest.reward.petals) rewardText += `${quest.reward.petals} Petals `;
-    if (quest.reward.spiritOrbs) rewardText += `${quest.reward.spiritOrbs} Orbs `;
-    rewards.textContent = rewardText;
-    card.appendChild(rewards);
-    
-    // Claim button
     if (quest.completed && !quest.claimed) {
-        const claimBtn = document.createElement('button');
-        claimBtn.className = 'btn btn-primary w-full mt-3';
-        claimBtn.textContent = 'Claim Rewards';
-        claimBtn.onclick = () => {
-            const reward = gameState.claimQuest(quest.id);
-            if (reward) {
-                showNotification('✨ Quest rewards claimed!', 'success');
-                renderQuests(gameState);
-                updateCurrencyDisplay(gameState);
-                saveGame(gameState);
-            }
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-primary w-full mt-3';
+        btn.textContent = 'Claim Rewards';
+        btn.onclick = () => {
+            gameState.claimQuest(quest.id);
+            showNotification('Rewards claimed!', 'success');
+            renderQuests(gameState);
+            updateCurrencyDisplay(gameState);
+            saveGame(gameState);
         };
-        card.appendChild(claimBtn);
+        card.appendChild(btn);
     } else if (quest.claimed) {
-        const claimedText = document.createElement('div');
-        claimedText.className = 'text-center text-green-600 font-semibold mt-2';
-        claimedText.textContent = '✓ Claimed';
-        card.appendChild(claimedText);
+        card.innerHTML += '<div class="text-center text-green-600 font-semibold mt-2">✓ Claimed</div>';
     }
     
     return card;
@@ -645,7 +517,6 @@ function createQuestCard(quest, gameState) {
 function updateExpeditionUI(gameState) {
     const statusContainer = document.getElementById('expedition-status');
     const claimBtn = document.getElementById('claim-expedition-btn');
-    const rewardsContainer = document.getElementById('expedition-rewards');
     
     if (!statusContainer || !claimBtn) return;
     
@@ -653,31 +524,23 @@ function updateExpeditionUI(gameState) {
     
     if (rewards && rewards.gold > 0) {
         statusContainer.innerHTML = `
-            <div class="mb-2">Your heroes have been on an expedition for <strong>${rewards.hours}</strong> hours.</div>
-            <div class="text-sm">
-                Accumulated Rewards:<br>
-                💰 ${rewards.gold} Gold<br>
-                🌸 ${rewards.petals} Petals
-            </div>
+            <div class="mb-2">Expedition Time: <strong>${rewards.hours}</strong> hours</div>
+            <div class="text-sm">Rewards: 💰 ${rewards.gold} Gold, 🌸 ${rewards.petals} Petals</div>
         `;
         claimBtn.disabled = false;
+        claimBtn.onclick = () => {
+            const claimed = gameState.claimExpeditionRewards();
+            if (claimed) {
+                showNotification(`Claimed ${claimed.gold} Gold & ${claimed.petals} Petals!`, 'success');
+                updateExpeditionUI(gameState);
+                updateCurrencyDisplay(gameState);
+                saveGame(gameState);
+            }
+        };
     } else {
-        statusContainer.innerHTML = `
-            <div>Your heroes are currently on an expedition!</div>
-            <div class="text-sm text-slate-600 mt-2">Come back later to claim rewards.</div>
-        `;
+        statusContainer.innerHTML = '<div>Heroes are exploring...</div><div class="text-sm text-slate-600 mt-2">Check back later!</div>';
         claimBtn.disabled = true;
     }
-    
-    claimBtn.onclick = () => {
-        const claimed = gameState.claimExpeditionRewards();
-        if (claimed) {
-            showNotification(`✨ Claimed ${claimed.gold} Gold and ${claimed.petals} Petals!`, 'success');
-            updateExpeditionUI(gameState);
-            updateCurrencyDisplay(gameState);
-            saveGame(gameState);
-        }
-    };
 }
 
 // ===========================
@@ -685,21 +548,10 @@ function updateExpeditionUI(gameState) {
 // ===========================
 
 function setupFilterListeners(gameState) {
-    const rarityFilter = document.getElementById('roster-filter-rarity');
-    const elementFilter = document.getElementById('roster-filter-element');
-    const sortFilter = document.getElementById('roster-sort');
-    
-    if (rarityFilter) {
-        rarityFilter.onchange = () => renderRoster(gameState);
-    }
-    
-    if (elementFilter) {
-        elementFilter.onchange = () => renderRoster(gameState);
-    }
-    
-    if (sortFilter) {
-        sortFilter.onchange = () => renderRoster(gameState);
-    }
+    ['roster-filter-rarity', 'roster-filter-element', 'roster-sort'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.onchange = () => renderRoster(gameState);
+    });
 }
 
 // ===========================
@@ -708,18 +560,10 @@ function setupFilterListeners(gameState) {
 
 function setupModalListeners() {
     const modal = document.getElementById('hero-modal');
-    const closeBtn = modal?.querySelector('.modal-close');
-    
-    if (closeBtn) {
-        closeBtn.onclick = () => modal.classList.remove('active');
-    }
-    
     if (modal) {
-        modal.onclick = (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-            }
-        };
+        const closeBtn = modal.querySelector('.modal-close');
+        if (closeBtn) closeBtn.onclick = () => modal.classList.remove('active');
+        modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
     }
 }
 
@@ -728,44 +572,25 @@ function setupModalListeners() {
 // ===========================
 
 function setupTabListeners(gameState) {
-    const tabs = document.querySelectorAll('.nav-tab');
-    
-    tabs.forEach(tab => {
-        tab.onclick = () => {
-            const tabName = tab.getAttribute('data-tab');
-            switchTab(tabName, gameState);
-        };
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.onclick = () => switchTab(tab.getAttribute('data-tab'), gameState);
     });
 }
 
-// ===========================
-// SWITCH TAB
-// ===========================
-
 function switchTab(tabName, gameState = null) {
-    // Update tab buttons
     document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.classList.remove('active');
-        if (tab.getAttribute('data-tab') === tabName) {
-            tab.classList.add('active');
-        }
+        tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
     });
     
-    // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
+        content.classList.toggle('active', content.id === `${tabName}-tab`);
     });
     
-    const activeContent = document.getElementById(`${tabName}-tab`);
-    if (activeContent) {
-        activeContent.classList.add('active');
-        
-        // Load content based on tab
-        if (gameState) {
-            if (tabName === 'roster') renderRoster(gameState);
-            if (tabName === 'skill-tree') renderSkillTree(gameState);
-            if (tabName === 'expedition') updateExpeditionUI(gameState);
-            if (tabName === 'quests') renderQuests(gameState);
-        }
+    if (gameState) {
+        if (tabName === 'roster') renderRoster(gameState);
+        if (tabName === 'skill-tree') renderSkillTree(gameState);
+        if (tabName === 'expedition') updateExpeditionUI(gameState);
+        if (tabName === 'quests') renderQuests(gameState);
+        if (tabName === 'garden') renderGarden(gameState); // NEW
     }
 }

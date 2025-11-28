@@ -5,36 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sakura Chronicles - Gacha RPG</title>
     
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gradient-to-br from-pink-50 via-white to-pink-100 min-h-screen overflow-x-hidden">
     
-    <!-- Cherry Blossom Petals Animation Background -->
     <div id="petals-container" class="petals-container"></div>
     
-    <!-- Main Game Container -->
     <div id="app" class="relative z-10">
         
-        <!-- Header -->
         <header class="glass-panel fixed top-0 left-0 right-0 z-50 border-b border-pink-200">
             <div class="container mx-auto px-4 py-4">
                 <div class="flex items-center justify-between flex-wrap gap-4">
-                    <!-- Logo -->
                     <div class="flex items-center gap-3">
                         <div class="text-4xl">🌸</div>
                         <h1 class="text-2xl md:text-3xl font-bold gradient-text">Sakura Chronicles</h1>
                     </div>
                     
-                    <!-- Currency Display -->
                     <div class="flex gap-4 flex-wrap">
                         <div class="currency-display" title="Gold - Used for leveling heroes">
                             <span class="text-xl">💰</span>
@@ -53,12 +45,11 @@
             </div>
         </header>
         
-        <!-- Navigation Tabs -->
         <nav class="fixed top-20 left-0 right-0 z-40 glass-panel border-b border-pink-200">
             <div class="container mx-auto px-4">
                 <div class="flex gap-2 overflow-x-auto py-3">
                     <button class="nav-tab active" data-tab="battle">⚔️ Battle</button>
-                    <button class="nav-tab" data-tab="roster">👥 Roster</button>
+                    <button class="nav-tab" data-tab="garden">🍵 Garden</button> <button class="nav-tab" data-tab="roster">👥 Roster</button>
                     <button class="nav-tab" data-tab="gacha">🎲 Gacha</button>
                     <button class="nav-tab" data-tab="skill-tree">🌳 Yggdrasil</button>
                     <button class="nav-tab" data-tab="expedition">🗺️ Expedition</button>
@@ -67,35 +58,30 @@
             </div>
         </nav>
         
-        <!-- Main Content Area -->
         <main class="container mx-auto px-4 pt-40 pb-8">
             
-            <!-- Battle Tab -->
             <div id="battle-tab" class="tab-content active">
-                <!-- Compact Battle Header -->
                 <div class="battle-page-header-compact">
-                    <h1 class="battle-main-title-compact">⚔️ Battle Arena</h1>
+                    <h1 class="battle-main-title-compact">⚔️ Battle Arena (Roguelike Mode)</h1>
                 </div>
 
-                <!-- Main Battle Layout with Stats on Left -->
                 <div class="battle-main-layout-new">
                     
-                    <!-- Far Left - Battle Stats -->
                     <div class="battle-stats-sidebar">
                         <div class="battle-panel">
                             <div class="panel-header">
                                 <span class="panel-icon">📊</span>
-                                <h2 class="panel-title">Battle Stats</h2>
+                                <h2 class="panel-title">Run Stats</h2>
                             </div>
                             <div class="panel-content">
                                 <div class="stat-card-vertical">
                                     <div class="stat-icon-large">🌊</div>
-                                    <div class="stat-label">Current Wave</div>
-                                    <div class="stat-value-large" id="wave-display-header">0</div>
+                                    <div class="stat-label">Current Run</div>
+                                    <div class="stat-value-large" id="wave-display-header">1</div>
                                 </div>
                                 <div class="stat-card-vertical">
                                     <div class="stat-icon-large">🏆</div>
-                                    <div class="stat-label">Highest Wave</div>
+                                    <div class="stat-label">Best Record</div>
                                     <div class="stat-value-large" id="highest-wave-display">0</div>
                                 </div>
                                 <div class="stat-card-vertical">
@@ -105,9 +91,20 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="battle-panel mt-4">
+                            <div class="panel-header">
+                                <span class="panel-icon">🍵</span>
+                                <h2 class="panel-title">Battle Items</h2>
+                            </div>
+                            <div class="panel-content">
+                                <div id="battle-inventory" class="grid grid-cols-4 gap-2">
+                                    </div>
+                                <p class="text-xs text-slate-500 mt-2 text-center">Use items from your Garden to survive longer!</p>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Left - Team Selection -->
                     <div class="battle-sidebar">
                         <div class="battle-panel">
                             <div class="panel-header">
@@ -125,27 +122,30 @@
                                 <h2 class="panel-title">Battle Controls</h2>
                             </div>
                             <div class="panel-content">
-                                <button id="start-battle-btn" class="btn btn-primary w-full mb-2">Start Battle</button>
-                                <button id="auto-battle-toggle" class="btn btn-secondary w-full">Auto-Cast: OFF</button>
+                                <div id="pre-run-controls">
+                                    <button id="start-run-btn" class="btn btn-primary w-full mb-2">Start New Run (Wave 1)</button>
+                                </div>
+                                <div id="active-run-controls" class="hidden">
+                                    <button id="next-wave-btn" class="btn btn-gold w-full mb-2 hidden">Next Wave</button>
+                                    <button id="stop-battle-btn" class="btn btn-secondary w-full mb-2 hidden">Retreat (End Run)</button>
+                                </div>
+                                
+                                <button id="auto-battle-toggle" class="btn btn-secondary w-full mt-2">Auto-Cast: OFF</button>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Center - Battle Arena -->
                     <div class="battle-center">
                         <div class="battle-arena-container-light">
-                            <!-- Wave Header -->
                             <div class="battle-wave-header-light">
                                 <div class="wave-title-light">
                                     <span class="wave-icon-light">⚔️</span>
-                                    <span>Wave <span id="wave-display">0</span></span>
+                                    <span>Wave <span id="wave-display">1</span></span>
                                 </div>
-                                <div class="battle-status-light" id="battle-status">Ready to Battle</div>
+                                <div class="battle-status-light" id="battle-status">Ready to Start</div>
                             </div>
                             
-                            <!-- Main Battle Field -->
                             <div class="battle-field-light">
-                                <!-- Heroes Section -->
                                 <div class="battle-section-light hero-section-light">
                                     <div class="section-label-light">
                                         <span class="label-icon-light">🛡️</span>
@@ -154,14 +154,12 @@
                                     <div id="battle-heroes" class="battle-units-grid"></div>
                                 </div>
                                 
-                                <!-- VS Divider -->
                                 <div class="battle-divider-light">
                                     <div class="vs-circle-light">
                                         <span class="vs-text-light">VS</span>
                                     </div>
                                 </div>
                                 
-                                <!-- Enemies Section -->
                                 <div class="battle-section-light enemy-section-light">
                                     <div class="section-label-light enemy-label-light">
                                         <span class="label-icon-light">💀</span>
@@ -171,7 +169,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Battle Log -->
                             <div class="battle-log-container-light">
                                 <div class="battle-log-header-light">
                                     <span class="text-lg">📜</span>
@@ -182,7 +179,6 @@
                         </div>
                     </div>
                     
-                    <!-- Right - Ultimate Abilities -->
                     <div class="battle-sidebar">
                         <div class="battle-panel">
                             <div class="panel-header">
@@ -190,7 +186,7 @@
                                 <h2 class="panel-title">Ultimate Abilities</h2>
                             </div>
                             <div class="panel-content">
-                                <p class="panel-description">Click on glowing abilities to cast them manually, or enable Auto-Cast to let heroes use them automatically.</p>
+                                <p class="panel-description">Click on glowing abilities to cast them manually, or enable Auto-Cast.</p>
                                 <div id="ultimate-abilities-grid" class="ultimate-abilities-stack"></div>
                             </div>
                         </div>
@@ -198,8 +194,50 @@
                     
                 </div>
             </div>
+
+            <div id="garden-tab" class="tab-content">
+                <div class="max-w-6xl mx-auto">
+                    <div class="battle-page-header-compact bg-green-50 border-green-200">
+                        <h1 class="battle-main-title-compact text-green-700">🍵 Sakura Spirit Garden</h1>
+                        <p class="text-slate-600">Plant seeds found in battle to brew powerful teas for your next run!</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-1 space-y-4">
+                            <div class="glass-panel p-4">
+                                <h3 class="font-bold text-lg mb-3 flex items-center gap-2">
+                                    <span>🌱</span> Seed Pouch
+                                </h3>
+                                <div id="seed-inventory" class="grid grid-cols-4 gap-2">
+                                    </div>
+                            </div>
+
+                            <div class="glass-panel p-4">
+                                <h3 class="font-bold text-lg mb-3 flex items-center gap-2">
+                                    <span>🍵</span> Brewed Teas
+                                </h3>
+                                <div id="tea-inventory" class="grid grid-cols-4 gap-2">
+                                    </div>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <div class="glass-panel p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-bold text-xl">Garden Plots</h3>
+                                    <button id="buy-plot-btn" class="btn btn-secondary text-sm">
+                                        Unlock Plot (5000 Gold)
+                                    </button>
+                                </div>
+                                
+                                <div id="garden-plots" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            <!-- Roster Tab -->
             <div id="roster-tab" class="tab-content">
                 <div class="glass-panel p-6">
                     <div class="flex justify-between items-center mb-6">
@@ -232,11 +270,9 @@
                 </div>
             </div>
             
-            <!-- Gacha Tab -->
             <div id="gacha-tab" class="tab-content">
                 <div class="max-w-4xl mx-auto space-y-6">
                     
-                    <!-- Gacha Info Panel -->
                     <div class="glass-panel p-6">
                         <h2 class="section-title mb-4">🌸 Summoning Shrine</h2>
                         <div class="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-4">
@@ -269,16 +305,13 @@
                         </div>
                     </div>
                     
-                    <!-- Gacha Animation Container -->
                     <div id="gacha-animation" class="hidden"></div>
                     
-                    <!-- Gacha Results -->
                     <div id="gacha-results" class="hidden"></div>
                     
                 </div>
             </div>
             
-            <!-- Skill Tree Tab -->
             <div id="skill-tree-tab" class="tab-content">
                 <div class="glass-panel p-6">
                     <h2 class="section-title mb-4">🌳 Yggdrasil - The World Tree</h2>
@@ -292,7 +325,6 @@
                 </div>
             </div>
             
-            <!-- Expedition Tab -->
             <div id="expedition-tab" class="tab-content">
                 <div class="max-w-2xl mx-auto glass-panel p-6">
                     <h2 class="section-title mb-4">🗺️ Expedition</h2>
@@ -319,7 +351,6 @@
                 </div>
             </div>
             
-            <!-- Quests Tab -->
             <div id="quests-tab" class="tab-content">
                 <div class="max-w-3xl mx-auto glass-panel p-6">
                     <h2 class="section-title mb-4">📜 Daily Quests</h2>
@@ -337,7 +368,6 @@
         
     </div>
     
-    <!-- Hero Detail Modal -->
     <div id="hero-modal" class="modal">
         <div class="modal-content">
             <button class="modal-close">&times;</button>
@@ -345,14 +375,13 @@
         </div>
     </div>
     
-    <!-- Scripts -->
     <script src="utils.js"></script>
     <script src="data.js"></script>
     <script src="classes.js"></script>
     <script src="storage.js"></script>
     <script src="gacha.js"></script>
     <script src="battle.js"></script>
-    <script src="skillTree.js"></script>
+    <script src="garden.js"></script> <script src="skillTree.js"></script>
     <script src="ui.js"></script>
     <script src="main.js"></script>
     

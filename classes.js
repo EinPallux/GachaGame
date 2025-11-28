@@ -255,9 +255,9 @@ class Enemy {
         this.name = enemyData.name;
         this.element = enemyData.element;
         
-        // Reduced scale stats based on wave number for better balance
-        const waveScale = 1 + (waveNumber - 1) * 0.035; // Reduced from 0.08 to 0.035
-        const bossMultiplier = (waveNumber % 10 === 0) ? 1.4 : 1; // Reduced from 1.8 to 1.4
+        // Scaling
+        const waveScale = 1 + (waveNumber - 1) * 0.05; 
+        const bossMultiplier = (waveNumber % 10 === 0) ? 1.5 : 1; 
         const totalScale = waveScale * bossMultiplier;
         
         this.maxHP = Math.floor(enemyData.baseStats.hp * totalScale);
@@ -289,6 +289,98 @@ class Enemy {
 }
 
 // ===========================
+// GARDEN CLASS (NEW)
+// ===========================
+
+class Garden {
+    constructor() {
+        // Initialize 6 plots
+        this.plots = [
+            { id: 0, unlocked: true, plant: null },  // First 2 free
+            { id: 1, unlocked: true, plant: null },
+            { id: 2, unlocked: false, plant: null }, // Unlockable
+            { id: 3, unlocked: false, plant: null },
+            { id: 4, unlocked: false, plant: null },
+            { id: 5, unlocked: false, plant: null }
+        ];
+    }
+
+    // Unlock a plot
+    unlockPlot(plotId) {
+        const plot = this.plots.find(p => p.id === plotId);
+        if (plot && !plot.unlocked) {
+            plot.unlocked = true;
+            return true;
+        }
+        return false;
+    }
+
+    // Plant a seed
+    plantSeed(plotId, seedId) {
+        const plot = this.plots.find(p => p.id === plotId);
+        const seedData = GARDEN_ITEMS_DATABASE.seeds.find(s => s.id === seedId);
+        
+        if (plot && plot.unlocked && !plot.plant && seedData) {
+            plot.plant = {
+                seedId: seedId,
+                plantedAt: Date.now(),
+                growthTime: seedData.growthTime,
+                ready: false
+            };
+            return true;
+        }
+        return false;
+    }
+
+    // Check growth progress
+    checkGrowth() {
+        const now = Date.now();
+        let changed = false;
+        
+        this.plots.forEach(plot => {
+            if (plot.plant && !plot.plant.ready) {
+                const elapsedTime = now - plot.plant.plantedAt;
+                if (elapsedTime >= plot.plant.growthTime) {
+                    plot.plant.ready = true;
+                    changed = true;
+                }
+            }
+        });
+        
+        return changed;
+    }
+
+    // Harvest a plant
+    harvest(plotId) {
+        const plot = this.plots.find(p => p.id === plotId);
+        if (plot && plot.plant && plot.plant.ready) {
+            const seedData = GARDEN_ITEMS_DATABASE.seeds.find(s => s.id === plot.plant.seedId);
+            const rewardId = seedData.resultId;
+            
+            // Reset plot
+            plot.plant = null;
+            
+            return rewardId;
+        }
+        return null;
+    }
+    
+    toJSON() {
+        return {
+            plots: this.plots
+        };
+    }
+    
+    static fromJSON(data) {
+        const garden = new Garden();
+        if (data && data.plots) {
+            garden.plots = data.plots;
+        }
+        return garden;
+    }
+}
+
+// ===========================
 // GAME STATE CLASS
 // ===========================
 
@@ -296,19 +388,28 @@ class GameState {
     constructor() {
         // Currencies
         this.gold = 100;
-        this.petals = 150; // Start with enough for 1 10-pull
+        this.petals = 150; 
         this.spiritOrbs = 0;
         
         // Hero collection
         this.roster = [];
-        this.team = [null, null, null, null, null]; // 5 team slots
+        this.team = [null, null, null, null, null]; 
         
-        // Battle state
-        this.currentWave = 0;
-        this.highestWave = 0;
+        // Roguelike Battle state (UPDATED)
+        this.currentWave = 0; // Current run wave
+        this.highestWave = 0; // Best record
         this.enemiesDefeated = 0;
         this.isBattleActive = false;
         this.autoCast = false;
+        
+        // Inventory (NEW)
+        this.inventory = {
+            seeds: {}, // { 's001': 5, ... }
+            teas: {}   // { 't001': 2, ... }
+        };
+        
+        // Garden (NEW)
+        this.garden = new Garden();
         
         // Gacha state
         this.pityCounter = 0;
@@ -338,8 +439,34 @@ class GameState {
         
         // Give starter heroes
         this.giveStarterHeroes();
+        
+        // Give starter seeds (NEW)
+        this.addItem('seeds', 's001', 2);
     }
     
+    // Inventory Management (NEW)
+    addItem(type, id, amount = 1) {
+        if (!this.inventory[type]) this.inventory[type] = {};
+        if (!this.inventory[type][id]) this.inventory[type][id] = 0;
+        this.inventory[type][id] += amount;
+    }
+    
+    removeItem(type, id, amount = 1) {
+        if (this.inventory[type] && this.inventory[type][id] >= amount) {
+            this.inventory[type][id] -= amount;
+            // Clean up empty entries
+            if (this.inventory[type][id] === 0) {
+                delete this.inventory[type][id];
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    getItemCount(type, id) {
+        return (this.inventory[type] && this.inventory[type][id]) || 0;
+    }
+
     // Initialize skill tree
     initializeSkillTree() {
         return [
@@ -575,7 +702,9 @@ class GameState {
             expedition: this.expedition,
             quests: this.quests,
             lastQuestReset: this.lastQuestReset,
-            stats: this.stats
+            stats: this.stats,
+            inventory: this.inventory, // NEW
+            garden: this.garden.toJSON() // NEW
         };
     }
     
@@ -628,6 +757,16 @@ class GameState {
         // Load stats
         if (savedState.stats) {
             state.stats = savedState.stats;
+        }
+        
+        // Load inventory (NEW)
+        if (savedState.inventory) {
+            state.inventory = savedState.inventory;
+        }
+        
+        // Load garden (NEW)
+        if (savedState.garden) {
+            state.garden = Garden.fromJSON(savedState.garden);
         }
         
         // Start expedition if not active

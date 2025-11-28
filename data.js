@@ -1,6 +1,6 @@
 /* ===========================
    SAKURA CHRONICLES - DATA
-   Hero and Enemy Databases
+   Hero, Enemy, and Item Databases
    =========================== */
 
 // ===========================
@@ -331,6 +331,54 @@ const ENEMIES_DATABASE = [
       baseStats: { hp: 1550, atk: 155, def: 92, spd: 88 }
     }
 ];
+
+// ===========================
+// GARDEN ITEMS DATABASE (NEW)
+// ===========================
+
+const GARDEN_ITEMS_DATABASE = {
+    seeds: [
+        { id: 's001', name: 'Sakura Seed', emoji: '🌸', growthTime: 15000, resultId: 't001', desc: 'Grows into a healing tea.' },
+        { id: 's002', name: 'Matcha Seed', emoji: '🍵', growthTime: 30000, resultId: 't002', desc: 'Grows into an energy boosting tea.' },
+        { id: 's003', name: 'Dragon Root Seed', emoji: '🐉', growthTime: 60000, resultId: 't003', desc: 'Grows into a power boosting brew.' },
+        { id: 's004', name: 'Spirit Herb Seed', emoji: '🌿', growthTime: 45000, resultId: 't004', desc: 'Grows into a mana restoring potion.' }
+    ],
+    teas: [
+        { 
+            id: 't001', 
+            name: 'Sakura Tea', 
+            emoji: '🌸', 
+            desc: 'Restores 30% HP to all heroes.',
+            effectType: 'heal',
+            effectValue: 0.3
+        },
+        { 
+            id: 't002', 
+            name: 'Matcha Brew', 
+            emoji: '🍵', 
+            desc: 'Increases ATK by 20% for the next 3 turns.',
+            effectType: 'buff_atk',
+            effectValue: 0.2,
+            duration: 3
+        },
+        { 
+            id: 't003', 
+            name: 'Dragon Extract', 
+            emoji: '🧪', 
+            desc: 'Instantly kills non-boss enemies below 30% HP.',
+            effectType: 'execute',
+            effectValue: 0.3
+        },
+        { 
+            id: 't004', 
+            name: 'Spirit Elixir', 
+            emoji: '⚗️', 
+            desc: 'Instantly fills 50% Mana for all heroes.',
+            effectType: 'mana',
+            effectValue: 50
+        }
+    ]
+};
 
 // ===========================
 // ELEMENT ADVANTAGE SYSTEM
