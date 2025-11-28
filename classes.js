@@ -304,11 +304,11 @@ class GameState {
         
         // Currencies
         this.gold = 500;
-        this.petals = 100; // UPDATED: Start with 100 petals (10-pull)
+        this.petals = 100; // Start with 100 Petals (1x 10-Pull)
         this.spiritOrbs = 0;
         
         // Progression
-        this.roster = []; // UPDATED: Start empty
+        this.roster = []; // Start with 0 Heroes
         this.team = [null, null, null, null, null];
         
         this.inventory = {

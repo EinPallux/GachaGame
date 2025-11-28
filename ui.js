@@ -130,7 +130,6 @@ function createHeroCard(hero) {
     img.className = 'hero-card-image transition-transform duration-500 group-hover:scale-110';
     img.alt = hero.name;
     
-    // Fix: Attach error handler programmatically
     img.onerror = function() {
         const placeholder = createHeroPlaceholderElement(hero);
         this.replaceWith(placeholder);
@@ -190,8 +189,8 @@ function createHeroPlaceholderElement(hero) {
     return div;
 }
 
-// Retaining string version for other non-critical uses if needed
 function createHeroPlaceholder(hero) {
+    // String version for gacha result grid
     const colors = {
         'Fire': 'from-red-400 to-orange-500',
         'Water': 'from-blue-400 to-cyan-500',
@@ -305,8 +304,6 @@ function showHeroDetails(hero, gameState) {
     if (awakenBtn) {
         awakenBtn.onclick = () => {
             if (hero.awakeningShards >= hero.stars * 10) {
-                // Logic should ideally be in Hero class, but handling here for now
-                // Assuming Hero class has method or just modifying props:
                 hero.awakeningShards -= hero.stars * 10;
                 hero.stars++;
                 hero.calculateStats(gameState.getSkillTreeBonuses());
@@ -487,15 +484,4 @@ function renderProfile(gameState) {
             showNotification('Username Updated!', 'success');
         }
     };
-}
-
-// ===========================
-// FORGE UI 
-// ===========================
-// (Moved to forge.js, but keeping placeholder logic just in case)
-function renderForge(gameState) {
-    // If forge.js is loaded, this function is overridden there.
-    // If not, this is a fallback.
-    const container = document.getElementById('forge-tab');
-    if (container) container.innerHTML = '<div class="text-center p-10">Forge loading...</div>';
 }
