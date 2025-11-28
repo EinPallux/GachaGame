@@ -167,7 +167,7 @@ window.selectHeroForSlot = function(slotIndex, heroId) {
 };
 
 // ===========================
-// ROSTER TAB (Unchanged but included for completeness)
+// ROSTER TAB
 // ===========================
 
 function renderRoster(gameState) {
@@ -337,9 +337,24 @@ function showHeroDetails(hero, gameState) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
     
+    // Level Up Calculations
     const xpNeeded = hero.getUpgradeCost();
     const canAfford = gameState.gold >= xpNeeded;
     
+    // Awakening Calculations
+    const maxStars = 5; // Hard cap for stars to prevent infinite stats
+    const isMaxStars = hero.stars >= maxStars;
+    const shardsRequired = hero.stars * 10;
+    const canAwaken = !isMaxStars && hero.awakeningShards >= shardsRequired;
+    
+    // Calculate progress percentage for the bar
+    let shardProgress = 0;
+    if (!isMaxStars) {
+        shardProgress = Math.min(100, (hero.awakeningShards / shardsRequired) * 100);
+    } else {
+        shardProgress = 100;
+    }
+
     const html = `
         <div class="relative">
             <div class="h-32 bg-gradient-to-r from-slate-800 to-slate-900 relative overflow-hidden">
@@ -379,7 +394,7 @@ function showHeroDetails(hero, gameState) {
                     </div>
                 </div>
 
-                <div class="space-y-3">
+                <div class="space-y-4">
                     <button id="modal-levelup-btn" class="w-full btn ${canAfford ? 'btn-primary' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}" ${!canAfford ? 'disabled' : ''}>
                         <div class="flex flex-col items-center leading-tight">
                             <span>Level Up</span>
@@ -387,13 +402,31 @@ function showHeroDetails(hero, gameState) {
                         </div>
                     </button>
                     
-                    ${hero.awakeningShards >= hero.stars * 10 ? `
-                    <button id="modal-awaken-btn" class="w-full btn bg-amber-500 text-white hover:bg-amber-600">
-                        Awaken Hero (Requires ${hero.stars * 10} Shards)
-                    </button>` : ''}
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                        <div class="flex justify-between items-end mb-2">
+                            <h4 class="font-bold text-slate-700 text-sm flex items-center gap-1">
+                                <span class="text-yellow-400 text-xs">⭐</span> Ascension
+                            </h4>
+                            ${isMaxStars 
+                                ? '<span class="text-xs font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded">MAX STARS</span>' 
+                                : `<span class="text-xs font-bold ${canAwaken ? 'text-green-600' : 'text-slate-400'}">${hero.awakeningShards} / ${shardsRequired} Shards</span>`
+                            }
+                        </div>
+                        
+                        ${!isMaxStars ? `
+                        <div class="w-full bg-slate-200 rounded-full h-1.5 mb-3 overflow-hidden">
+                            <div class="bg-amber-400 h-full transition-all duration-500" style="width: ${shardProgress}%"></div>
+                        </div>` : ''}
+                        
+                        <button id="modal-awaken-btn" 
+                                class="w-full btn ${canAwaken ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-200' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}" 
+                                ${!canAwaken ? 'disabled' : ''}>
+                            ${isMaxStars ? 'Max Ascension Reached' : canAwaken ? 'Awaken Hero' : 'Collect More Duplicate Heroes'}
+                        </button>
+                    </div>
                 </div>
                 
-                <div class="mt-6 border-t border-slate-100 pt-4">
+                <div class="mt-4 pt-2">
                     <h4 class="font-bold text-slate-700 mb-2 text-sm">Ultimate Ability</h4>
                     <div class="bg-purple-50 border border-purple-100 rounded-lg p-3">
                         <div class="flex justify-between items-center mb-1">
@@ -427,14 +460,20 @@ function showHeroDetails(hero, gameState) {
     
     // Bind Awaken
     const awakenBtn = document.getElementById('modal-awaken-btn');
-    if (awakenBtn) {
+    if (awakenBtn && !isMaxStars) {
         awakenBtn.onclick = () => {
-            if (hero.awakeningShards >= hero.stars * 10) {
-                hero.awakeningShards -= hero.stars * 10;
+            if (hero.awakeningShards >= shardsRequired) {
+                hero.awakeningShards -= shardsRequired;
                 hero.stars++;
                 hero.calculateStats(gameState.getSkillTreeBonuses());
                 
                 showNotification(`Awakened! ${hero.name} is now ${hero.stars} Stars!`, 'success');
+                
+                // Play particle effect on the star area if possible
+                if(typeof playParticleEffect === 'function') {
+                    playParticleEffect(awakenBtn);
+                }
+
                 saveGame(gameState);
                 updateUI(gameState);
                 renderRoster(gameState);
