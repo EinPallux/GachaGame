@@ -183,7 +183,7 @@ function useHeroUltimate(hero, battleState, gameState) {
     const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
     const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
     
-    battleState.addLog(`💫 ${hero.name} uses ${hero.ultimate.name}!`, 'ultimate');
+    battleState.addLog(`💫 ${hero.name} (Lv.${hero.level}) uses ${hero.ultimate.name}!`, 'ultimate');
     
     // Update quest progress
     gameState.updateQuest('useUltimates', 1);
@@ -192,35 +192,43 @@ function useHeroUltimate(hero, battleState, gameState) {
     switch (hero.class) {
         case 'Healer':
             // Heal all allies
+            let totalHealing = 0;
             aliveHeroes.forEach(h => {
                 const healAmount = Math.floor(150 + hero.level * 5);
                 const actualHeal = h.heal(healAmount);
-                battleState.addLog(`  ${h.name} healed for ${actualHeal} HP`, 'heal');
+                totalHealing += actualHeal;
+                battleState.addLog(`  💚 ${h.name} healed for ${actualHeal} HP [${h.currentHP}/${h.maxHP}]`, 'heal');
             });
+            battleState.addLog(`  ✨ Total healing: ${totalHealing} HP`, 'heal');
             break;
             
         case 'Tank':
             // Buff team defense
-            battleState.addLog(`  Team DEF increased!`, 'normal');
+            battleState.addLog(`  🛡️ Team DEF increased by 30% for 3 turns!`, 'normal');
             break;
             
         case 'Buffer':
             // Buff team attack
-            battleState.addLog(`  Team ATK increased!`, 'normal');
+            battleState.addLog(`  ⚔️ Team ATK increased by 25% for 3 turns!`, 'normal');
             break;
             
         case 'DPS (AoE)':
             // Attack all enemies
+            let totalDamage = 0;
+            let enemiesKilled = 0;
             aliveEnemies.forEach(enemy => {
                 const damage = calculateDamage(hero, enemy, 1.5);
                 const actualDamage = enemy.takeDamage(damage);
-                battleState.addLog(`  ${enemy.name} takes ${actualDamage} damage`, 'damage');
+                totalDamage += actualDamage;
+                battleState.addLog(`  💥 ${enemy.name} takes ${actualDamage} damage [${enemy.currentHP}/${enemy.maxHP}]`, 'damage');
                 
                 if (!enemy.isAlive) {
-                    battleState.addLog(`  ${enemy.name} defeated!`, 'normal');
+                    battleState.addLog(`  ☠️ ${enemy.name} defeated!`, 'normal');
                     gameState.enemiesDefeated++;
+                    enemiesKilled++;
                 }
             });
+            battleState.addLog(`  ⚡ Total AoE damage: ${totalDamage} | Enemies defeated: ${enemiesKilled}`, 'damage');
             break;
             
         case 'DPS (Single)':
@@ -228,10 +236,10 @@ function useHeroUltimate(hero, battleState, gameState) {
             const target = aliveEnemies[0];
             const damage = calculateDamage(hero, target, 3.0);
             const actualDamage = target.takeDamage(damage);
-            battleState.addLog(`  ${target.name} takes ${actualDamage} critical damage!`, 'critical');
+            battleState.addLog(`  💢 ${target.name} takes ${actualDamage} MASSIVE damage! [${target.currentHP}/${target.maxHP}]`, 'critical');
             
             if (!target.isAlive) {
-                battleState.addLog(`  ${target.name} defeated!`, 'normal');
+                battleState.addLog(`  ☠️ ${target.name} obliterated!`, 'normal');
                 gameState.enemiesDefeated++;
             }
             break;
@@ -264,25 +272,35 @@ function performAttack(attacker, defender, battleState, isHeroAttacking) {
     const isDodge = Math.random() < 0.10; // 10% dodge chance base
     
     if (isDodge) {
-        battleState.addLog(`${defender.name} dodged the attack!`, 'normal');
+        battleState.addLog(`💨 ${defender.name} dodged ${attacker.name}'s attack!`, 'normal');
         return;
     }
     
     const finalDamage = isCrit ? Math.floor(damage * 1.5) : damage;
     const actualDamage = defender.takeDamage(finalDamage);
     
+    // Build detailed log message
+    let logMessage = '';
     if (isCrit) {
-        battleState.addLog(`💥 ${attacker.name} lands a CRITICAL hit on ${defender.name} for ${actualDamage} damage!`, 'critical');
+        logMessage = `💥 ${attacker.name} (ATK: ${attacker.atk}) landed a CRITICAL hit on ${defender.name} (DEF: ${defender.def}) for ${actualDamage} damage! [${defender.currentHP}/${defender.maxHP} HP remaining]`;
+        battleState.addLog(logMessage, 'critical');
     } else {
-        battleState.addLog(`${attacker.name} attacks ${defender.name} for ${actualDamage} damage`, 'damage');
+        logMessage = `⚔️ ${attacker.name} (ATK: ${attacker.atk}) attacks ${defender.name} (DEF: ${defender.def}) for ${actualDamage} damage [${defender.currentHP}/${defender.maxHP} HP remaining]`;
+        battleState.addLog(logMessage, 'damage');
     }
     
     // Gain mana for heroes
     if (isHeroAttacking) {
         attacker.gainMana(15);
+        if (attacker.mana === attacker.maxMana) {
+            battleState.addLog(`✨ ${attacker.name}'s ultimate is ready! [${attacker.mana}/${attacker.maxMana} Mana]`, 'normal');
+        }
     } else {
         // Hero takes damage, gain mana
         defender.gainMana(10);
+        if (defender.mana === defender.maxMana) {
+            battleState.addLog(`✨ ${defender.name}'s ultimate is ready! [${defender.mana}/${defender.maxMana} Mana]`, 'normal');
+        }
     }
     
     // Check if defender died
@@ -292,8 +310,10 @@ function performAttack(attacker, defender, battleState, isHeroAttacking) {
         if (!isHeroAttacking) {
             // Hero died
         } else {
-            // Enemy died
-            // Enemies defeated is tracked elsewhere
+            // Enemy died - track for quests
+            if (defender.constructor.name === 'Enemy') {
+                // This will be tracked in handleBattleVictory
+            }
         }
     }
 }
@@ -373,6 +393,7 @@ function handleBattleVictory(gameState, battleState) {
     
     // Update quest progress
     gameState.updateQuest('completeWaves', 1);
+    gameState.updateQuest('killEnemies', battleState.enemies.length);
     
     // Show victory notification
     let rewardText = `+${gold} Gold`;
@@ -381,14 +402,37 @@ function handleBattleVictory(gameState, battleState) {
     
     showNotification(`🎉 Wave ${gameState.currentWave} Complete! ${rewardText}`, 'success');
     
-    // Auto-continue to next wave after 2 seconds
-    setTimeout(() => {
-        if (gameState.isBattleActive) {
-            startBattle(gameState);
-        }
-    }, 2000);
+    // Show "Next Wave" button
+    showNextWaveButton(gameState);
     
     saveGame(gameState);
+}
+
+// ===========================
+// SHOW NEXT WAVE BUTTON
+// ===========================
+
+function showNextWaveButton(gameState) {
+    const startBattleBtn = document.getElementById('start-battle-btn');
+    
+    if (startBattleBtn) {
+        startBattleBtn.textContent = 'Next Wave';
+        startBattleBtn.className = 'btn btn-primary w-full';
+        startBattleBtn.style.animation = 'pulse 1.5s infinite';
+        
+        // Add pulse animation if not exists
+        if (!document.getElementById('pulse-animation')) {
+            const style = document.createElement('style');
+            style.id = 'pulse-animation';
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
 }
 
 // ===========================
@@ -498,9 +542,39 @@ function createBattleCard(unit, isHero, gameState = null) {
     
     card.appendChild(img);
     
-    // HP and Mana bars
-    const hpContainer = document.createElement('div');
-    hpContainer.className = 'battle-card-hp';
+    // Unit name overlay
+    const nameOverlay = document.createElement('div');
+    nameOverlay.className = 'battle-card-name';
+    nameOverlay.textContent = unit.name;
+    card.appendChild(nameOverlay);
+    
+    // Level badge for heroes
+    if (isHero) {
+        const levelBadge = document.createElement('div');
+        levelBadge.className = 'battle-card-level-badge';
+        levelBadge.textContent = `Lv.${unit.level}`;
+        card.appendChild(levelBadge);
+    }
+    
+    // Stats overlay
+    const statsOverlay = document.createElement('div');
+    statsOverlay.className = 'battle-card-stats';
+    statsOverlay.innerHTML = `
+        <div class="battle-stat">⚔️ ${unit.atk}</div>
+        <div class="battle-stat">🛡️ ${unit.def}</div>
+        <div class="battle-stat">⚡ ${unit.spd}</div>
+    `;
+    card.appendChild(statsOverlay);
+    
+    // HP and Mana bars container
+    const barsContainer = document.createElement('div');
+    barsContainer.className = 'battle-card-bars';
+    
+    // HP text and bar
+    const hpText = document.createElement('div');
+    hpText.className = 'battle-bar-text';
+    hpText.textContent = `HP: ${unit.currentHP}/${unit.maxHP}`;
+    barsContainer.appendChild(hpText);
     
     const hpBar = document.createElement('div');
     hpBar.className = 'hp-bar';
@@ -517,10 +591,15 @@ function createBattleCard(unit, isHero, gameState = null) {
     }
     
     hpBar.appendChild(hpFill);
-    hpContainer.appendChild(hpBar);
+    barsContainer.appendChild(hpBar);
     
     // Mana bar for heroes
     if (isHero) {
+        const manaText = document.createElement('div');
+        manaText.className = 'battle-bar-text';
+        manaText.textContent = `Mana: ${unit.mana}/${unit.maxMana}`;
+        barsContainer.appendChild(manaText);
+        
         const manaBar = document.createElement('div');
         manaBar.className = 'mana-bar';
         
@@ -529,7 +608,7 @@ function createBattleCard(unit, isHero, gameState = null) {
         manaFill.style.width = `${unit.getManaPercent()}%`;
         
         manaBar.appendChild(manaFill);
-        hpContainer.appendChild(manaBar);
+        barsContainer.appendChild(manaBar);
         
         // Click to use ultimate manually
         if (!gameState?.autoCast && unit.canUseUltimate()) {
@@ -543,7 +622,12 @@ function createBattleCard(unit, isHero, gameState = null) {
         }
     }
     
-    card.appendChild(hpContainer);
+    card.appendChild(barsContainer);
+    
+    // Add tooltip on hover
+    card.title = isHero ? 
+        `${unit.name} (Lv.${unit.level})\nHP: ${unit.currentHP}/${unit.maxHP}\nATK: ${unit.atk} | DEF: ${unit.def} | SPD: ${unit.spd}\n${unit.element} | ${unit.class}` :
+        `${unit.name}\nHP: ${unit.currentHP}/${unit.maxHP}\nATK: ${unit.atk} | DEF: ${unit.def} | SPD: ${unit.spd}\n${unit.element}`;
     
     return card;
 }
@@ -558,6 +642,9 @@ function setupBattleListeners(gameState, updateUI) {
     
     if (startBattleBtn) {
         startBattleBtn.onclick = () => {
+            // Remove pulse animation when clicked
+            startBattleBtn.style.animation = '';
+            
             if (!gameState.isBattleActive) {
                 startBattle(gameState);
                 updateUI();
@@ -588,8 +675,14 @@ function updateBattleButtonState(gameState) {
         if (gameState.isBattleActive) {
             startBattleBtn.textContent = 'Stop Battle';
             startBattleBtn.className = 'btn btn-secondary w-full';
+            startBattleBtn.style.animation = '';
         } else {
-            startBattleBtn.textContent = 'Start Battle';
+            // Check if we just completed a wave
+            if (gameState.currentWave > 0) {
+                startBattleBtn.textContent = 'Next Wave';
+            } else {
+                startBattleBtn.textContent = 'Start Battle';
+            }
             startBattleBtn.className = 'btn btn-primary w-full';
         }
     }
