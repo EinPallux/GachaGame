@@ -131,7 +131,7 @@ class Hero {
     
     // Get cost to level up
     getUpgradeCost() {
-        return Math.floor(100 * Math.pow(1.15, this.level - 1));
+        return Math.floor(100 * Math.pow(1.09, this.level - 1));
     }
     
     // Awaken hero with shards
@@ -256,8 +256,8 @@ class Enemy {
         this.element = enemyData.element;
         
         // Reduced scale stats based on wave number for better balance
-        const waveScale = 1 + (waveNumber - 1) * 0.08; // Reduced from 0.15 to 0.08
-        const bossMultiplier = (waveNumber % 10 === 0) ? 1.8 : 1; // Reduced from 2.5 to 1.8
+        const waveScale = 1 + (waveNumber - 1) * 0.035; // Reduced from 0.08 to 0.035
+        const bossMultiplier = (waveNumber % 10 === 0) ? 1.4 : 1; // Reduced from 1.8 to 1.4
         const totalScale = waveScale * bossMultiplier;
         
         this.maxHP = Math.floor(enemyData.baseStats.hp * totalScale);

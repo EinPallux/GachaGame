@@ -376,7 +376,8 @@ function handleBattleVictory(gameState, battleState) {
     const petalBonus = gameState.getSkillTreeBonuses().petalBonus || 0;
     const orbBonus = gameState.getSkillTreeBonuses().orbBonus || 0;
     
-    const baseGold = 50 + gameState.currentWave * 10;
+    // Base gold increased from 50 + wave * 10 to 80 + wave * 20
+    const baseGold = 80 + gameState.currentWave * 20;
     const gold = Math.floor(baseGold * (1 + goldBonus / 100));
     
     let petals = 0;
