@@ -386,6 +386,8 @@ class Garden {
 
 class GameState {
     constructor() {
+        this.username = "Player"; // Default username
+
         // Currencies
         this.gold = 100;
         this.petals = 150; 
@@ -395,20 +397,20 @@ class GameState {
         this.roster = [];
         this.team = [null, null, null, null, null]; 
         
-        // Roguelike Battle state (UPDATED)
+        // Roguelike Battle state
         this.currentWave = 0; // Current run wave
         this.highestWave = 0; // Best record
         this.enemiesDefeated = 0;
         this.isBattleActive = false;
         this.autoCast = false;
         
-        // Inventory (NEW)
+        // Inventory
         this.inventory = {
-            seeds: {}, // { 's001': 5, ... }
-            teas: {}   // { 't001': 2, ... }
+            seeds: {}, 
+            teas: {}   
         };
         
-        // Garden (NEW)
+        // Garden
         this.garden = new Garden();
         
         // Gacha state
@@ -440,11 +442,11 @@ class GameState {
         // Give starter heroes
         this.giveStarterHeroes();
         
-        // Give starter seeds (NEW)
+        // Give starter seeds
         this.addItem('seeds', 's001', 2);
     }
     
-    // Inventory Management (NEW)
+    // Inventory Management
     addItem(type, id, amount = 1) {
         if (!this.inventory[type]) this.inventory[type] = {};
         if (!this.inventory[type][id]) this.inventory[type][id] = 0;
@@ -688,6 +690,7 @@ class GameState {
     // Export for save
     toJSON() {
         return {
+            username: this.username, // NEW: Save username
             gold: this.gold,
             petals: this.petals,
             spiritOrbs: this.spiritOrbs,
@@ -703,8 +706,8 @@ class GameState {
             quests: this.quests,
             lastQuestReset: this.lastQuestReset,
             stats: this.stats,
-            inventory: this.inventory, // NEW
-            garden: this.garden.toJSON() // NEW
+            inventory: this.inventory, 
+            garden: this.garden.toJSON() 
         };
     }
     
@@ -712,6 +715,8 @@ class GameState {
     static fromJSON(savedState) {
         const state = new GameState();
         
+        state.username = savedState.username || "Player"; // NEW: Load username
+
         // Load currencies
         state.gold = savedState.gold || 0;
         state.petals = savedState.petals || 0;
@@ -759,12 +764,12 @@ class GameState {
             state.stats = savedState.stats;
         }
         
-        // Load inventory (NEW)
+        // Load inventory
         if (savedState.inventory) {
             state.inventory = savedState.inventory;
         }
         
-        // Load garden (NEW)
+        // Load garden
         if (savedState.garden) {
             state.garden = Garden.fromJSON(savedState.garden);
         }

@@ -13,6 +13,10 @@ function updateUI(gameState) {
     updatePityDisplay(gameState);
     updateBattleButtonState(gameState); 
     
+    // Update Header Username
+    const usernameDisplay = document.getElementById('header-username');
+    if (usernameDisplay) usernameDisplay.textContent = gameState.username;
+
     const activeTab = document.querySelector('.tab-content.active');
     if (activeTab) {
         const tabId = activeTab.id;
@@ -22,6 +26,7 @@ function updateUI(gameState) {
         if (tabId === 'expedition-tab') updateExpeditionUI(gameState);
         if (tabId === 'quests-tab') renderQuests(gameState);
         if (tabId === 'garden-tab') renderGarden(gameState); 
+        if (tabId === 'profile-tab') renderProfile(gameState); // NEW
     }
 }
 
@@ -53,6 +58,34 @@ function updateBattleStats(gameState) {
     if (waveDisplayHeader) waveDisplayHeader.textContent = gameState.currentWave;
     if (highestWaveDisplay) highestWaveDisplay.textContent = gameState.highestWave;
     if (enemiesDefeatedDisplay) enemiesDefeatedDisplay.textContent = formatNumber(gameState.enemiesDefeated);
+}
+
+// ===========================
+// RENDER PROFILE (NEW)
+// ===========================
+
+function renderProfile(gameState) {
+    // Update Username Input Value if it's empty (first load)
+    const usernameInput = document.getElementById('username-input');
+    if (usernameInput && usernameInput.value === '') {
+        usernameInput.value = gameState.username;
+    }
+
+    // Update Stats
+    const playTimeEl = document.getElementById('profile-playtime');
+    const battlesEl = document.getElementById('profile-battles');
+    const pullsEl = document.getElementById('profile-pulls');
+    const waveEl = document.getElementById('profile-wave');
+
+    if (playTimeEl) {
+        const hours = Math.floor(gameState.stats.playTime / 3600);
+        const minutes = Math.floor((gameState.stats.playTime % 3600) / 60);
+        playTimeEl.textContent = `${hours}h ${minutes}m`;
+    }
+
+    if (battlesEl) battlesEl.textContent = formatNumber(gameState.stats.totalBattles);
+    if (pullsEl) pullsEl.textContent = formatNumber(gameState.stats.totalPulls);
+    if (waveEl) waveEl.textContent = gameState.highestWave;
 }
 
 // ===========================
@@ -604,5 +637,6 @@ function switchTab(tabName, gameState = null) {
         if (tabName === 'expedition') updateExpeditionUI(gameState);
         if (tabName === 'quests') renderQuests(gameState);
         if (tabName === 'garden') renderGarden(gameState); 
+        if (tabName === 'profile') renderProfile(gameState); // NEW
     }
 }

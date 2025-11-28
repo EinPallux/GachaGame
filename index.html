@@ -24,7 +24,10 @@
                 <div class="flex items-center justify-between flex-wrap gap-4">
                     <div class="flex items-center gap-3">
                         <div class="text-4xl">🌸</div>
-                        <h1 class="text-2xl md:text-3xl font-bold gradient-text">Sakura Chronicles</h1>
+                        <div class="flex flex-col">
+                            <h1 class="text-2xl md:text-3xl font-bold gradient-text">Sakura Chronicles</h1>
+                            <span id="header-username" class="text-xs text-slate-500 font-semibold">Player</span>
+                        </div>
                     </div>
                     
                     <div class="flex gap-4 flex-wrap">
@@ -55,7 +58,7 @@
                     <button class="nav-tab" data-tab="skill-tree">🌳 Yggdrasil</button>
                     <button class="nav-tab" data-tab="expedition">🗺️ Expedition</button>
                     <button class="nav-tab" data-tab="quests">📜 Quests</button>
-                </div>
+                    <button class="nav-tab" data-tab="profile">👤 Profile</button> </div>
             </div>
         </nav>
         
@@ -169,8 +172,7 @@
                                     <div id="battle-enemies" class="battle-units-grid"></div>
                                 </div>
                             </div>
-                            
-                            </div>
+                        </div>
                     </div>
                     
                     <div class="battle-sidebar">
@@ -355,6 +357,52 @@
                         </p>
                     </div>
                     <div id="quests-list" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <div id="profile-tab" class="tab-content">
+                <div class="max-w-xl mx-auto glass-panel p-6">
+                    <h2 class="section-title mb-6 text-center">👤 Player Profile</h2>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-white p-4 rounded-xl border border-pink-200 shadow-sm">
+                            <label for="username-input" class="block text-sm font-bold text-slate-700 mb-2">Username</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="username-input" class="flex-1 p-2 border border-slate-300 rounded-lg focus:outline-none focus:border-pink-400" placeholder="Enter username...">
+                                <button id="save-username-btn" class="btn btn-primary text-sm px-4">Save</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h3 class="font-semibold text-slate-700 mb-3">Account Statistics</h3>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <div class="text-slate-500">Play Time</div>
+                                    <div id="profile-playtime" class="font-bold text-slate-800">0h 0m</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-500">Total Battles</div>
+                                    <div id="profile-battles" class="font-bold text-slate-800">0</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-500">Total Pulls</div>
+                                    <div id="profile-pulls" class="font-bold text-slate-800">0</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-500">Highest Wave</div>
+                                    <div id="profile-wave" class="font-bold text-slate-800">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border border-red-200 bg-red-50 p-4 rounded-xl">
+                            <h3 class="font-semibold text-red-700 mb-2">Danger Zone</h3>
+                            <p class="text-xs text-red-600 mb-4">Resetting your game will permanently delete all progress, heroes, items, and stats. This cannot be undone.</p>
+                            <button id="reset-game-btn" class="btn bg-red-500 hover:bg-red-600 text-white w-full">
+                                ⚠️ Reset All Progress
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             

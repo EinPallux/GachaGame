@@ -43,7 +43,7 @@ function initializeGame() {
     startAutoSave(gameState);
     setupAutoSaveBeforeUnload(gameState);
     
-    // Start auto-refresh for UI values (New)
+    // Start auto-refresh for UI values
     startUIUpdateLoop(gameState);
     
     // Quest reset check
@@ -92,6 +92,9 @@ function setupEventListeners() {
     // Skill tree
     setupSkillTreeListeners(gameState);
     
+    // Profile system (NEW)
+    setupProfileListeners(gameState);
+    
     // Keyboard shortcuts
     setupKeyboardShortcuts();
     
@@ -99,6 +102,50 @@ function setupEventListeners() {
     window.addEventListener('resize', debounce(() => {
         updateUI(gameState);
     }, 250));
+}
+
+// ===========================
+// SETUP PROFILE LISTENERS (NEW)
+// ===========================
+
+function setupProfileListeners(gameState) {
+    // Save Username
+    const saveNameBtn = document.getElementById('save-username-btn');
+    if (saveNameBtn) {
+        saveNameBtn.onclick = () => {
+            const input = document.getElementById('username-input');
+            if (input && input.value.trim() !== '') {
+                gameState.username = input.value.trim();
+                showNotification(`Username saved as ${gameState.username}!`, 'success');
+                updateUI(gameState); // Updates header
+                saveGame(gameState);
+            } else {
+                showNotification('Please enter a valid username.', 'error');
+            }
+        };
+    }
+
+    // Reset Game
+    const resetBtn = document.getElementById('reset-game-btn');
+    if (resetBtn) {
+        resetBtn.onclick = () => {
+            const confirmed = confirm(
+                '⚠️ DANGER ZONE ⚠️\n\n' +
+                'Are you sure you want to RESET your game?\n' +
+                'This will delete ALL progress, heroes, and items.\n' +
+                'This action cannot be undone!'
+            );
+            
+            if (confirmed) {
+                // Double confirmation
+                const doubleCheck = confirm('Really? All your progress will be lost forever.');
+                if (doubleCheck) {
+                    deleteSave();
+                    location.reload();
+                }
+            }
+        };
+    }
 }
 
 // ===========================
@@ -115,9 +162,9 @@ function setupKeyboardShortcuts() {
             }
         }
         
-        // Number keys 1-7 for tab navigation
-        if (e.key >= '1' && e.key <= '7' && !e.ctrlKey && !e.altKey) {
-            const tabNames = ['battle', 'garden', 'roster', 'gacha', 'skill-tree', 'expedition', 'quests'];
+        // Number keys 1-8 for tab navigation
+        if (e.key >= '1' && e.key <= '8' && !e.ctrlKey && !e.altKey) {
+            const tabNames = ['battle', 'garden', 'roster', 'gacha', 'skill-tree', 'expedition', 'quests', 'profile'];
             const index = parseInt(e.key) - 1;
             if (index < tabNames.length) {
                 switchTab(tabNames[index], gameState);
@@ -377,8 +424,6 @@ document.addEventListener('visibilitychange', () => {
         if (gameState) {
             gameState.checkQuestReset();
             updateExpeditionUI(gameState);
-            
-            // Ensure visual sync when returning
             updateUI(gameState);
         }
     }
@@ -417,7 +462,7 @@ if (document.readyState === 'loading') {
 // GAME VERSION INFO
 // ===========================
 
-window.GAME_VERSION = '1.1.0'; // Updated version
+window.GAME_VERSION = '1.1.0'; 
 window.GAME_NAME = 'Sakura Chronicles';
 window.GAME_DESCRIPTION = 'An anime-styled Gacha RPG with Roguelike mechanics and Garden system';
 
