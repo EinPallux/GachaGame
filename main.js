@@ -43,22 +43,30 @@ function initializeGame() {
     startAutoSave(gameState);
     setupAutoSaveBeforeUnload(gameState);
     
+    // Start auto-refresh for UI values (New)
+    startUIUpdateLoop(gameState);
+    
     // Quest reset check
     gameState.checkQuestReset();
     
-    // Ensure Garden logic starts if that tab is active (handled by updateUI -> renderGarden)
-    // Also ensures battle state is consistent (e.g. if loaded mid-run)
+    // Ensure Battle state is consistent
     if (gameState.isBattleActive) {
-        // Resume battle if valid, or stop if state is corrupted
-        // For simplicity in this engine, we might reset the run if loaded mid-battle 
-        // to avoid sync issues, or just let the user restart.
-        // Here we let them resume via the UI showing "Fighting" status.
-        // NOTE: The interval is cleared on reload, so we need to restart the wave logic if we wanted true resume.
-        // For this implementation, we will force a "pause" state where they must click "Start Run" or "Next Wave" again
-        // or just let them reset. To be safe/simple:
         gameState.isBattleActive = false; 
         showNotification('Game loaded. Please start your run step again.', 'info');
     }
+}
+
+// ===========================
+// AUTO REFRESH LOOP
+// ===========================
+
+function startUIUpdateLoop(gameState) {
+    setInterval(() => {
+        if (gameState) {
+            updateCurrencyDisplay(gameState);
+            updateBattleStats(gameState);
+        }
+    }, 500); // Update every 0.5s
 }
 
 // ===========================

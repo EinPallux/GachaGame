@@ -1163,9 +1163,38 @@ body {
 }
 
 /* ===========================
-   TEAM SELECTION
+   TEAM SELECTION (COMPACT)
    =========================== */
 
+/* Specific override for the Battle Sidebar Team Selection to make it compact */
+#team-selection .team-slot {
+    padding: 0.4rem;
+    gap: 0.5rem;
+    min-height: 50px;
+}
+
+#team-selection .team-slot-image, 
+#team-selection .team-slot-placeholder {
+    width: 32px;
+    height: 32px;
+    font-size: 1.2rem;
+}
+
+#team-selection .team-slot-name {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+
+#team-selection .team-slot-level {
+    font-size: 0.65rem;
+}
+
+#team-selection button {
+    font-size: 0.8rem;
+    padding: 0 0.25rem;
+}
+
+/* Default Team Slot Styles (for Roster etc) */
 .team-slot {
     display: flex;
     align-items: center;
@@ -1606,27 +1635,40 @@ body {
     margin-top: 0.25rem;
 }
 
-/* Battle Consumables */
+/* Battle Consumables - REVAMPED */
+#battle-inventory {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+
 .consumable-item {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 0.5rem;
+    background: linear-gradient(to bottom right, #ffffff, #f1f5f9);
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.5rem 0.25rem;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
-    opacity: 0.6; /* Empty/Disabled style */
+    opacity: 0.5; /* Empty/Disabled style */
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .consumable-item.active {
     opacity: 1;
     border-color: #3b82f6;
-    background: #eff6ff;
+    background: linear-gradient(to bottom right, #eff6ff, #dbeafe);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .consumable-item.active:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-color: #2563eb;
+}
+
+.consumable-item.active:active {
+    transform: translateY(0);
 }
 
 /* ===========================
