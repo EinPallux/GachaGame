@@ -37,7 +37,7 @@ function updateCurrencyDisplay(gameState) {
 }
 
 // ===========================
-// TEAM SELECTION (UPDATED FOR BIG SCREEN)
+// TEAM SELECTION (UPDATED FOR BIG SCREEN & POWER STATS)
 // ===========================
 
 function showHeroSelectionModal(slotIndex, gameState) {
@@ -126,12 +126,15 @@ function showHeroSelectionModal(slotIndex, gameState) {
 
         card.appendChild(imgContainer);
 
-        // Info
+        // Info - UPDATED with Power Value (PW)
+        const pw = hero.getPower ? hero.getPower() : 0;
+        
         const info = document.createElement('div');
         info.className = 'p-2 text-center border-t border-slate-100';
         info.innerHTML = `
             <div class="text-sm font-bold text-slate-700 truncate">${hero.name}</div>
-            <div class="text-[10px] text-slate-500">Lv.${hero.level} • ${hero.class}</div>
+            <div class="text-[10px] text-slate-500 mb-0.5">Lv.${hero.level} • ${hero.class}</div>
+            <div class="text-[10px] font-bold text-amber-500 bg-amber-50 rounded px-1 inline-block border border-amber-100">PW: ${formatNumber(pw)}</div>
         `;
         card.appendChild(info);
 
@@ -224,7 +227,7 @@ function renderRosterGrid(gameState) {
     const rarityOrder = { 'UR': 5, 'SSR': 4, 'SR': 3, 'R': 2, 'N': 1 };
     heroes.sort((a, b) => {
         if (sortFilter === 'level') return b.level - a.level;
-        if (sortFilter === 'power') return (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp);
+        if (sortFilter === 'power') return b.getPower() - a.getPower();
         // Default Rarity
         if (rarityOrder[b.rarity] !== rarityOrder[a.rarity]) {
             return rarityOrder[b.rarity] - rarityOrder[a.rarity];
@@ -279,6 +282,9 @@ function createHeroCard(hero) {
     imgContainer.appendChild(rarityBadge);
 
     // 5. Info Section
+    // ADDED PW DISPLAY HERE TOO
+    const pw = hero.getPower ? hero.getPower() : 0;
+    
     const infoDiv = document.createElement('div');
     infoDiv.className = 'p-3 bg-white';
     infoDiv.innerHTML = `
@@ -288,9 +294,7 @@ function createHeroCard(hero) {
                 <span>${getElementEmoji(hero.element)}</span>
                 <span>${hero.class}</span>
             </div>
-            <div class="flex gap-0.5 text-[0.6rem] text-yellow-400">
-                ${'⭐'.repeat(hero.stars)}
-            </div>
+            <div class="text-[9px] font-bold text-amber-500 bg-amber-50 px-1.5 rounded border border-amber-100">PW: ${formatNumber(pw)}</div>
         </div>
     `;
 

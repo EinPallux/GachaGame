@@ -535,16 +535,22 @@ function createTeamSlotElement(index, gameState) {
         
         // Rarity Badge
         const rarityBadge = document.createElement('div');
-        rarityBadge.className = `absolute top-2 right-2 badge-${hero.rarity} text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow`;
+        rarityBadge.className = `absolute top-2 right-2 badge-${hero.rarity} text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow z-10`;
         rarityBadge.textContent = hero.rarity;
         slot.appendChild(rarityBadge);
 
-        // Info Overlay
+        // Info Overlay - UPDATED with PW and Role
         const info = document.createElement('div');
-        info.className = "absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent pt-8 pb-2 px-2 text-white text-center";
+        info.className = "absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent pt-10 pb-3 px-2 text-white text-center flex flex-col gap-0.5";
+        
+        // Ensure we calculate power if possible
+        const pw = (typeof hero.getPower === 'function') ? hero.getPower() : '---';
+        const role = hero.class || 'Unknown';
+
         info.innerHTML = `
-            <div class="font-bold text-sm truncate">${hero.name}</div>
-            <div class="text-[10px] opacity-80">Lv.${hero.level}</div>
+            <div class="font-bold text-sm leading-tight truncate">${hero.name}</div>
+            <div class="text-[10px] font-medium text-slate-200">Lv.${hero.level} • ${role}</div>
+            <div class="text-[10px] font-bold text-amber-400">PW: ${formatNumber(pw)}</div>
         `;
         slot.appendChild(info);
         
