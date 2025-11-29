@@ -346,17 +346,17 @@ html {
 /* Battle Arena Layout */
 .battle-dashboard {
     display: grid;
-    grid-template-columns: 280px 1fr 280px;
+    grid-template-columns: 320px 1fr 320px; /* UPDATED: Wider sidebars */
     gap: 1.5rem;
     height: 100%;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1400px) {
     .battle-dashboard {
-        grid-template-columns: 240px 1fr;
+        grid-template-columns: 260px 1fr;
     }
     .battle-dashboard-right {
-        display: none; /* Hide right panel on medium screens, move content elsewhere */
+        display: none; 
     }
 }
 
@@ -371,12 +371,12 @@ html {
 .battle-unit {
     position: relative;
     background: white;
-    border-radius: 1rem;
-    padding: 0.75rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border-radius: 1.25rem; /* Larger border radius */
+    padding: 1rem; /* More padding */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08); /* Stronger shadow */
     transition: all 0.2s;
-    border: 2px solid transparent;
-    width: 13rem; /* UPDATED: Significantly larger */
+    border: 3px solid transparent;
+    width: 16rem; /* UPDATED: Much Larger width */
     display: flex;
     flex-direction: column;
 }
@@ -404,9 +404,9 @@ html {
 
 /* Health Bars */
 .bar-container {
-    height: 8px; /* UPDATED: Thicker bars */
+    height: 10px; /* UPDATED: Even Thicker bars */
     background: #e2e8f0;
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
     margin-top: 6px;
     position: relative;
@@ -427,7 +427,7 @@ html {
     left: 50%;
     transform: translateX(-50%);
     font-weight: 800;
-    font-size: 1.5rem; /* Larger font */
+    font-size: 2rem; /* Much Larger font */
     text-shadow: 0 2px 0 rgba(255,255,255,1), 0 0 10px rgba(255,255,255,0.8);
     pointer-events: none;
     animation: floatUp 1.2s ease-out forwards;
@@ -597,29 +597,42 @@ html {
    NEW BATTLE ANIMATIONS (EPIC UPDATES)
    ========================================= */
 
+/* Golden Glow Pulsate for Ultimates */
+@keyframes pulsate-gold {
+    0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); border-color: rgba(251, 191, 36, 0.5); }
+    50% { box-shadow: 0 0 20px 5px rgba(251, 191, 36, 0.6); border-color: rgba(251, 191, 36, 1); }
+    100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); border-color: rgba(251, 191, 36, 0.5); }
+}
+
+.glow-gold {
+    animation: pulsate-gold 1.5s infinite;
+    z-index: 20;
+    border: 3px solid #f59e0b !important;
+}
+
 /* Attack Lunge (Hero moving right) */
 @keyframes lunge-right {
     0% { transform: translateX(0); }
-    20% { transform: translateX(-10px) scale(0.95); } /* Wind up */
-    40% { transform: translateX(60px) scale(1.1); }   /* Strike */
+    20% { transform: translateX(-20px) scale(0.9); } /* Wind up */
+    40% { transform: translateX(100px) scale(1.1); }   /* Strike (Further!) */
     100% { transform: translateX(0); }
 }
 
 /* Attack Lunge (Enemy moving left) */
 @keyframes lunge-left {
     0% { transform: translateX(0); }
-    20% { transform: translateX(10px) scale(0.95); } /* Wind up */
-    40% { transform: translateX(-60px) scale(1.1); } /* Strike */
+    20% { transform: translateX(20px) scale(0.9); } /* Wind up */
+    40% { transform: translateX(-100px) scale(1.1); } /* Strike (Further!) */
     100% { transform: translateX(0); }
 }
 
 /* Hit Shake (Taking damage) */
 @keyframes shake-damage {
     0% { transform: translate(0, 0); filter: brightness(1); }
-    20% { transform: translate(-8px, 0); filter: brightness(2) sepia(1) saturate(5) hue-rotate(-50deg); /* Flash Red */ }
-    40% { transform: translate(8px, 0); }
-    60% { transform: translate(-8px, 0); }
-    80% { transform: translate(8px, 0); }
+    20% { transform: translate(-10px, 0); filter: brightness(2) sepia(1) saturate(5) hue-rotate(-50deg); /* Flash Red */ }
+    40% { transform: translate(10px, 0); }
+    60% { transform: translate(-10px, 0); }
+    80% { transform: translate(10px, 0); }
     100% { transform: translate(0, 0); filter: brightness(1); }
 }
 
