@@ -554,9 +554,9 @@ function createTeamSlotElement(index, gameState) {
         const role = hero.class || 'Unknown';
 
         info.innerHTML = `
-            <div class="font-bold text-sm leading-tight truncate">${hero.name}</div>
+            <div class="font-bold text-sm leading-tight truncate drop-shadow-sm">${hero.name}</div>
             <div class="text-[10px] font-medium text-slate-200">Lv.${hero.level} • ${role}</div>
-            <div class="text-[10px] font-bold text-amber-400">PW: ${formatNumber(pw)}</div>
+            <div class="text-[10px] font-bold text-amber-400 drop-shadow-md">PW: ${formatNumber(pw)}</div>
         `;
         slot.appendChild(info);
         
@@ -717,11 +717,17 @@ function renderUnits(container, units, isHero) {
             
             const imgSrc = isHero ? `images/${unit.id}.jpg` : `images/enemies/${unit.id}.jpg`;
             
+            // UPDATED: Added Element Indicator to Battle Units
             div.innerHTML = `
                 <div class="battle-unit-image-area">
                     <img src="${imgSrc}" class="battle-unit-img" 
                          onerror="this.style.display='none'; this.nextElementSibling.style.background='#cbd5e1';">
                     
+                    <div class="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10 shadow-sm z-10 flex items-center gap-1">
+                        <span>${getElementEmoji(unit.element)}</span>
+                        <span class="uppercase tracking-wider font-bold">${unit.element}</span>
+                    </div>
+
                     <div class="battle-unit-overlay">
                          <div class="battle-unit-name">${unit.name}</div>
                          <div class="battle-unit-info">${isHero ? `Lv.${unit.level} ${unit.class}` : `Wave ${currentBattleState.waveNumber}`}</div>

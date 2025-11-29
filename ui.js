@@ -76,7 +76,6 @@ function showHeroSelectionModal(slotIndex, gameState) {
     const sortedHeroes = [...gameState.roster].sort((a, b) => b.getPower() - a.getPower());
 
     sortedHeroes.forEach(hero => {
-        // Check if hero is already in another slot
         const assignedSlot = gameState.team.indexOf(hero.id);
         const isAssigned = assignedSlot !== -1 && assignedSlot !== slotIndex;
 
@@ -96,7 +95,6 @@ function showHeroSelectionModal(slotIndex, gameState) {
         img.src = `images/${hero.id}.jpg`;
         img.className = 'w-full h-full object-cover';
         
-        // Error Handler
         img.onerror = () => {
             const div = document.createElement('div');
             const colors = {
@@ -113,7 +111,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
 
         // Star Level (Top Left)
         const starBadge = document.createElement('div');
-        starBadge.className = "absolute top-1 left-1 text-[10px] text-yellow-400 font-bold z-10 drop-shadow-md";
+        starBadge.className = "absolute top-1 left-1 text-[12px] text-yellow-400 font-bold z-10 drop-shadow-md";
         starBadge.textContent = '⭐'.repeat(hero.stars);
         imgContainer.appendChild(starBadge);
 
@@ -132,14 +130,16 @@ function showHeroSelectionModal(slotIndex, gameState) {
 
         card.appendChild(imgContainer);
 
-        // Info
+        // Info - MORE PROMINENT
         const pw = hero.getPower ? hero.getPower() : 0;
         const info = document.createElement('div');
-        info.className = 'p-2 text-center border-t border-slate-100';
+        info.className = 'p-3 text-center border-t border-slate-100 flex flex-col gap-1.5';
         info.innerHTML = `
-            <div class="text-sm font-bold text-slate-700 truncate">${hero.name}</div>
-            <div class="text-[10px] text-slate-500 mb-0.5">Lv.${hero.level} • ${hero.class}</div>
-            <div class="text-[10px] font-bold text-amber-500 bg-amber-50 rounded px-1 inline-block border border-amber-100">PW: ${formatNumber(pw)}</div>
+            <div class="text-base font-extrabold text-slate-800 truncate leading-tight">${hero.name}</div>
+            <div class="text-xs font-semibold text-slate-500 bg-slate-100 py-0.5 px-2 rounded-full mx-auto">Lv.${hero.level} • ${hero.class}</div>
+            <div class="mt-0.5">
+                <span class="text-sm font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-0.5 rounded shadow-sm">PW: ${formatNumber(pw)}</span>
+            </div>
         `;
         card.appendChild(info);
 
@@ -149,13 +149,11 @@ function showHeroSelectionModal(slotIndex, gameState) {
     container.appendChild(grid);
     modalBody.appendChild(container);
     
-    // Show Modal
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden');
     requestAnimationFrame(() => modal.classList.remove('opacity-0', 'pointer-events-none'));
 }
 
-// Global handler for selection
 window.selectHeroForSlot = function(slotIndex, heroId) {
     window.gameState.setTeamMember(slotIndex, heroId);
     saveGame(window.gameState);
@@ -176,7 +174,6 @@ function renderRoster(gameState) {
     const container = document.getElementById('roster-tab');
     if (!container) return;
     
-    // Filters Header
     const headerHtml = `
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 animate-entry">
             <h2 class="text-2xl font-heading font-bold text-slate-800">Hero Roster <span class="text-slate-400 text-lg font-normal">(${gameState.roster.length})</span></h2>
@@ -214,17 +211,14 @@ function renderRosterGrid(gameState) {
     
     let heroes = [...gameState.roster];
     
-    // Filter
     if (rarityFilter !== 'all') {
         heroes = heroes.filter(h => h.rarity === rarityFilter);
     }
     
-    // Sort
     const rarityOrder = { 'UR': 5, 'SSR': 4, 'SR': 3, 'R': 2, 'N': 1 };
     heroes.sort((a, b) => {
         if (sortFilter === 'level') return b.level - a.level;
         if (sortFilter === 'power') return b.getPower() - a.getPower();
-        // Default Rarity
         if (rarityOrder[b.rarity] !== rarityOrder[a.rarity]) {
             return rarityOrder[b.rarity] - rarityOrder[a.rarity];
         }
@@ -244,16 +238,13 @@ function renderRosterGrid(gameState) {
 }
 
 function createHeroCard(hero) {
-    // 1. Create Card Container
     const card = document.createElement('div');
     card.className = 'hero-card cursor-pointer group';
     card.setAttribute('data-rarity', hero.rarity);
 
-    // 2. Create Image Container
     const imgContainer = document.createElement('div');
     imgContainer.className = 'relative overflow-hidden';
 
-    // 3. Image Element
     const img = document.createElement('img');
     img.src = `images/${hero.id}.jpg`;
     img.className = 'hero-card-image transition-transform duration-500 group-hover:scale-110';
@@ -266,22 +257,17 @@ function createHeroCard(hero) {
 
     imgContainer.appendChild(img);
 
-    // 4. Badges (Updated)
-    // STAR LEVEL (Top Left - Replaced old Level Badge)
     const starBadge = document.createElement('div');
     starBadge.className = 'absolute top-2 left-2 text-[12px] text-yellow-400 font-bold z-10 drop-shadow-md';
     starBadge.textContent = '⭐'.repeat(hero.stars);
     imgContainer.appendChild(starBadge);
 
-    // RARITY (Top Right)
     const rarityBadge = document.createElement('div');
     rarityBadge.className = `absolute top-2 right-2 badge-${hero.rarity} text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm`;
     rarityBadge.textContent = hero.rarity;
     imgContainer.appendChild(rarityBadge);
 
-    // 5. Info Section (With Level & PW)
     const pw = hero.getPower ? hero.getPower() : 0;
-    
     const infoDiv = document.createElement('div');
     infoDiv.className = 'p-3 bg-white';
     infoDiv.innerHTML = `
@@ -356,16 +342,14 @@ function showHeroDetails(hero, gameState) {
                     </div>
                     <h2 class="text-4xl font-heading font-bold text-white mb-1 shadow-black drop-shadow-md">${hero.name}</h2>
                     <div class="text-slate-300 text-sm font-medium">${hero.class} Class</div>
-                    <div class="flex gap-1 mt-3 text-yellow-400 text-sm">
+                    <div class="flex gap-1 mt-3 text-yellow-400 text-xl drop-shadow-md">
                         ${'⭐'.repeat(hero.stars)}
-                        ${'<span class="text-slate-600">⭐</span>'.repeat(5 - hero.stars)}
                     </div>
                 </div>
             </div>
 
             <div class="w-full md:w-7/12 bg-white flex flex-col h-full overflow-y-auto">
                 <div class="p-8 space-y-8">
-                    
                     <div>
                         <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Combat Stats</h3>
                         <div class="grid grid-cols-4 gap-4">
@@ -496,31 +480,23 @@ function showHeroDetails(hero, gameState) {
     });
 }
 
-// ===========================
-// QUESTS TAB
-// ===========================
-
+// ... (Quests and Expedition sections remain unchanged)
 function renderQuests(gameState) {
     const container = document.getElementById('quests-tab');
     if (!container) return;
-    
     gameState.checkQuestReset();
-    
     let html = `
         <h2 class="text-2xl font-heading font-bold text-slate-800 mb-6 animate-entry">Daily Quests</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-entry">
     `;
-    
     gameState.quests.forEach(quest => {
         const progress = Math.min(100, (quest.current / quest.target) * 100);
         const isFinished = quest.current >= quest.target;
-        
         let diffColor = 'bg-slate-100 text-slate-500';
         if (quest.difficulty === 'Easy') diffColor = 'bg-green-100 text-green-600';
         if (quest.difficulty === 'Medium') diffColor = 'bg-blue-100 text-blue-600';
         if (quest.difficulty === 'Hard') diffColor = 'bg-orange-100 text-orange-600';
         if (quest.difficulty === 'Insane') diffColor = 'bg-purple-100 text-purple-600';
-
         let rewardsHtml = '';
         if (quest.reward) {
             for (const [key, val] of Object.entries(quest.reward)) {
@@ -530,7 +506,6 @@ function renderQuests(gameState) {
                 if (key === 'petals') { icon = 'fa-spa text-pink-500'; label = 'Petals'; }
                 if (key === 'spiritOrbs') { icon = 'fa-gem text-purple-500'; label = 'Orbs'; }
                 if (key === 'seeds') { icon = 'fa-seedling text-green-500'; label = 'Seeds'; } 
-                
                 if (key === 'seeds' && typeof val === 'object') {
                      rewardsHtml += `<span class="text-xs font-bold bg-slate-50 px-2 py-1 rounded border border-slate-100 flex items-center gap-1"><i class="fa-solid ${icon}"></i> Seeds</span>`;
                 } else {
@@ -538,7 +513,6 @@ function renderQuests(gameState) {
                 }
             }
         }
-
         html += `
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between h-full relative overflow-hidden">
                 <div class="mb-4 relative z-10">
@@ -549,17 +523,14 @@ function renderQuests(gameState) {
                         </div>
                         ${quest.claimed ? '<span class="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded border border-green-100">CLAIMED</span>' : ''}
                     </div>
-                    
                     <div class="flex flex-wrap gap-2 mb-3">
                         ${rewardsHtml}
                     </div>
-
                     <div class="w-full bg-slate-100 rounded-full h-2.5 mb-1">
                         <div class="bg-primary h-2.5 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
                     </div>
                     <div class="text-xs text-slate-500 text-right font-mono">${quest.current} / ${quest.target}</div>
                 </div>
-                
                 ${isFinished && !quest.claimed ? `
                     <button class="btn btn-primary w-full text-sm py-2 relative z-10" onclick="claimQuestReward('${quest.id}')">
                         Claim Rewards
@@ -568,10 +539,8 @@ function renderQuests(gameState) {
             </div>
         `;
     });
-    
     html += `</div>`;
     container.innerHTML = html;
-    
     window.claimQuestReward = (qid) => {
         const reward = gameState.claimQuest(qid);
         if (reward) {
@@ -583,16 +552,10 @@ function renderQuests(gameState) {
     };
 }
 
-// ===========================
-// EXPEDITION & PROFILE TABS
-// ===========================
-
 function updateExpeditionUI(gameState) {
     const container = document.getElementById('expedition-tab');
     if (!container) return;
-    
     const rewards = gameState.calculateExpeditionRewards();
-    
     container.innerHTML = `
         <div class="max-w-2xl mx-auto mt-8 animate-entry">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -603,7 +566,6 @@ function updateExpeditionUI(gameState) {
                 <div class="p-8 text-center">
                     <h2 class="text-2xl font-heading font-bold text-slate-800 mb-2">Resource Expedition</h2>
                     <p class="text-slate-500 mb-8">Your heroes are gathering resources in the background.</p>
-                    
                     <div class="bg-slate-50 rounded-xl p-6 mb-8 border border-slate-100">
                         <div class="text-sm text-slate-400 uppercase font-bold mb-4">Accumulated Rewards</div>
                         <div class="flex justify-center gap-8">
@@ -618,7 +580,6 @@ function updateExpeditionUI(gameState) {
                         </div>
                         <div class="mt-4 text-xs text-slate-400">Duration: ${rewards ? rewards.hours : '0.0'} hours</div>
                     </div>
-                    
                     <button class="btn btn-primary w-full py-3 text-lg" onclick="handleExpeditionClaim()">
                         Claim & Restart
                     </button>
@@ -626,7 +587,6 @@ function updateExpeditionUI(gameState) {
             </div>
         </div>
     `;
-    
     window.handleExpeditionClaim = () => {
         const claimed = gameState.claimExpeditionRewards();
         if (claimed && claimed.gold > 0) {
@@ -643,11 +603,9 @@ function updateExpeditionUI(gameState) {
 function renderProfile(gameState) {
     const container = document.getElementById('settings-tab');
     if (!container) return;
-    
     container.innerHTML = `
         <div class="max-w-lg mx-auto mt-8 animate-entry">
             <h2 class="text-2xl font-heading font-bold text-slate-800 mb-6">Settings & Profile</h2>
-            
             <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
                 <h3 class="font-bold text-slate-700 mb-4">Player Profile</h3>
                 <div class="flex gap-4 mb-4">
@@ -661,7 +619,6 @@ function renderProfile(gameState) {
                     <div>Play Time: <span class="font-bold text-slate-800">${Math.floor(gameState.stats.playTime / 3600)}h</span></div>
                 </div>
             </div>
-            
             <div class="bg-red-50 rounded-xl border border-red-100 p-6">
                 <h3 class="font-bold text-red-700 mb-2">Danger Zone</h3>
                 <p class="text-sm text-red-600/80 mb-4">Resetting your game is irreversible. All progress will be lost.</p>
@@ -671,7 +628,6 @@ function renderProfile(gameState) {
             </div>
         </div>
     `;
-    
     window.saveUsername = () => {
         const input = document.getElementById('settings-username');
         if (input && input.value.trim()) {
