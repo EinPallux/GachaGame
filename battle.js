@@ -533,7 +533,13 @@ function createTeamSlotElement(index, gameState) {
         };
         slot.appendChild(img);
         
-        // Rarity Badge
+        // NEW: Star Level (Top Left)
+        const starBadge = document.createElement('div');
+        starBadge.className = "absolute top-2 left-2 text-[10px] text-yellow-400 font-bold z-10 drop-shadow-md";
+        starBadge.textContent = '⭐'.repeat(hero.stars);
+        slot.appendChild(starBadge);
+
+        // Rarity Badge (Top Right)
         const rarityBadge = document.createElement('div');
         rarityBadge.className = `absolute top-2 right-2 badge-${hero.rarity} text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow z-10`;
         rarityBadge.textContent = hero.rarity;

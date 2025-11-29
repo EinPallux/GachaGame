@@ -37,7 +37,7 @@ function updateCurrencyDisplay(gameState) {
 }
 
 // ===========================
-// TEAM SELECTION (UPDATED FOR BIG SCREEN & POWER STATS)
+// TEAM SELECTION (UPDATED FOR BIG SCREEN, POWER STATS & STARS)
 // ===========================
 
 function showHeroSelectionModal(slotIndex, gameState) {
@@ -111,7 +111,13 @@ function showHeroSelectionModal(slotIndex, gameState) {
         };
         imgContainer.appendChild(img);
 
-        // Badges
+        // NEW: Star Level (Top Left)
+        const starBadge = document.createElement('div');
+        starBadge.className = "absolute top-1 left-1 text-[10px] text-yellow-400 font-bold z-10 drop-shadow-md";
+        starBadge.textContent = '⭐'.repeat(hero.stars);
+        imgContainer.appendChild(starBadge);
+
+        // Rarity Badge (Top Right)
         const badge = document.createElement('div');
         badge.className = `absolute top-1 right-1 badge-${hero.rarity} text-[10px] text-white px-1.5 py-0.5 rounded shadow font-bold`;
         badge.textContent = hero.rarity;
@@ -282,7 +288,6 @@ function createHeroCard(hero) {
     imgContainer.appendChild(rarityBadge);
 
     // 5. Info Section
-    // ADDED PW DISPLAY HERE TOO
     const pw = hero.getPower ? hero.getPower() : 0;
     
     const infoDiv = document.createElement('div');
