@@ -178,8 +178,6 @@ function processBattleTurn(gameState, battleState) {
                 if (target) performAttack(unit, target, battleState, false);
             }
             
-            // Updates primarily handled inside performAttack now
-            
         }, index * turnDuration);
         
         delay = (index + 1) * turnDuration;
@@ -228,7 +226,13 @@ function performAttack(attacker, defender, battleState, isHero) {
         
         showFloatingText(defender, `-${damage}${critText}`, isCrit ? 'crit' : 'damage');
         
-        // CRITICAL FIX: Update UI *BEFORE* checking victory so the empty HP bar is shown
+        // --- QUEST TRACKING FIX ---
+        if (isHero && !defender.isAlive) {
+            window.gameState.updateQuest('killEnemies', 1);
+        }
+        // -------------------------
+
+        // Update UI *BEFORE* checking victory so the empty HP bar is shown
         updateBattleUI(window.gameState, battleState); 
 
         // VICTORY / DEFEAT CHECKS
@@ -275,6 +279,9 @@ function useHeroUltimate(hero, battleState, gameState) {
                 e.takeDamage(dmg);
                 playHitAnimation(e);
                 showFloatingText(e, `-${dmg}`, 'damage');
+                
+                // Quest Check for AoE
+                if (!e.isAlive) gameState.updateQuest('killEnemies', 1);
             });
         } else {
             const target = getRandomTarget(aliveEnemies);
@@ -283,6 +290,9 @@ function useHeroUltimate(hero, battleState, gameState) {
                 target.takeDamage(dmg);
                 playHitAnimation(target);
                 showFloatingText(target, `-${dmg}`, 'crit');
+                
+                // Quest Check for Single Target
+                if (!target.isAlive) gameState.updateQuest('killEnemies', 1);
             }
         }
         
@@ -781,14 +791,45 @@ function handleWaveVictory(gameState, battleState) {
     
     if (battleInterval) clearInterval(battleInterval);
     
+    // --- WAVE LOOT DROPS (NEW) ---
     const gold = 50 + (gameState.currentWave * 10);
     gameState.gold += gold;
+    
+    let lootText = `+${gold} Gold`;
+    
+    // Petals Chance (30%)
+    if (Math.random() < 0.3) {
+        const p = Math.floor(Math.random() * 5) + 1;
+        gameState.petals += p;
+        lootText += `, +${p} 🌸`;
+    }
+    
+    // Orbs Chance (10%)
+    if (Math.random() < 0.1) {
+        const o = Math.floor(Math.random() * 2) + 1;
+        gameState.spiritOrbs += o;
+        lootText += `, +${o} 🔮`;
+    }
+    
+    // Seeds Chance (15%)
+    if (Math.random() < 0.15) {
+        const allSeeds = GARDEN_ITEMS_DATABASE.seeds;
+        const seed = allSeeds[Math.floor(Math.random() * allSeeds.length)];
+        gameState.addItem('seeds', seed.id, 1);
+        lootText += `, +1 ${seed.emoji}`;
+    }
+    
+    // Quest Updates
+    gameState.updateQuest('clearWaves', 1);
+    
+    // ----------------------------
+
     gameState.enemiesDefeated += battleState.enemies.length;
     
     gameState.currentWave++;
     if (gameState.currentWave > gameState.highestWave) gameState.highestWave = gameState.currentWave;
     
-    showToast(`Wave Cleared! +${gold} Gold`, 'success');
+    showToast(`Wave Cleared! ${lootText}`, 'success');
     saveGame(gameState);
     
     const btnContainer = document.getElementById('next-wave-container');

@@ -256,7 +256,7 @@ function createHeroCard(hero) {
 
     // 3. Image Element with Error Handling
     const img = document.createElement('img');
-    img.src = `images/${hero.id}.jpg`;
+    img.src = `images/${hero.id}.jpg`; // FIXED PATH
     img.className = 'hero-card-image transition-transform duration-500 group-hover:scale-110';
     img.alt = hero.name;
     
@@ -476,7 +476,7 @@ function showHeroDetails(hero, gameState) {
 }
 
 // ===========================
-// QUESTS TAB
+// QUESTS TAB (UPDATED)
 // ===========================
 
 function renderQuests(gameState) {
@@ -494,21 +494,55 @@ function renderQuests(gameState) {
         const progress = Math.min(100, (quest.current / quest.target) * 100);
         const isFinished = quest.current >= quest.target;
         
+        // Difficulty Badge Color
+        let diffColor = 'bg-slate-100 text-slate-500';
+        if (quest.difficulty === 'Easy') diffColor = 'bg-green-100 text-green-600';
+        if (quest.difficulty === 'Medium') diffColor = 'bg-blue-100 text-blue-600';
+        if (quest.difficulty === 'Hard') diffColor = 'bg-orange-100 text-orange-600';
+        if (quest.difficulty === 'Insane') diffColor = 'bg-purple-100 text-purple-600';
+
+        // Rewards HTML
+        let rewardsHtml = '';
+        if (quest.reward) {
+            for (const [key, val] of Object.entries(quest.reward)) {
+                let icon = '';
+                let label = key;
+                if (key === 'gold') { icon = 'fa-coins text-yellow-500'; label = 'Gold'; }
+                if (key === 'petals') { icon = 'fa-spa text-pink-500'; label = 'Petals'; }
+                if (key === 'spiritOrbs') { icon = 'fa-gem text-purple-500'; label = 'Orbs'; }
+                if (key === 'seeds') { icon = 'fa-seedling text-green-500'; label = 'Seeds'; } 
+                
+                if (key === 'seeds' && typeof val === 'object') {
+                     rewardsHtml += `<span class="text-xs font-bold bg-slate-50 px-2 py-1 rounded border border-slate-100 flex items-center gap-1"><i class="fa-solid ${icon}"></i> Seeds</span>`;
+                } else {
+                     rewardsHtml += `<span class="text-xs font-bold bg-slate-50 px-2 py-1 rounded border border-slate-100 flex items-center gap-1"><i class="fa-solid ${icon}"></i> ${val} ${label}</span>`;
+                }
+            }
+        }
+
         html += `
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between h-full">
-                <div class="mb-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between h-full relative overflow-hidden">
+                <div class="mb-4 relative z-10">
                     <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-bold text-slate-700">${quest.desc}</h3>
-                        ${quest.claimed ? '<span class="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded">CLAIMED</span>' : ''}
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider ${diffColor} px-2 py-0.5 rounded w-fit">${quest.difficulty || 'Normal'}</span>
+                            <h3 class="font-bold text-slate-700">${quest.desc}</h3>
+                        </div>
+                        ${quest.claimed ? '<span class="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded border border-green-100">CLAIMED</span>' : ''}
                     </div>
+                    
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        ${rewardsHtml}
+                    </div>
+
                     <div class="w-full bg-slate-100 rounded-full h-2.5 mb-1">
                         <div class="bg-primary h-2.5 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
                     </div>
-                    <div class="text-xs text-slate-500 text-right">${quest.current} / ${quest.target}</div>
+                    <div class="text-xs text-slate-500 text-right font-mono">${quest.current} / ${quest.target}</div>
                 </div>
                 
                 ${isFinished && !quest.claimed ? `
-                    <button class="btn btn-primary w-full text-sm py-2" onclick="claimQuestReward('${quest.id}')">
+                    <button class="btn btn-primary w-full text-sm py-2 relative z-10" onclick="claimQuestReward('${quest.id}')">
                         Claim Rewards
                     </button>
                 ` : ''}

@@ -126,9 +126,6 @@ class Hero {
     resetForBattle(skillTreeBonuses = {}) {
         this.calculateStats(skillTreeBonuses);
         
-        // NOTE: We do NOT heal here anymore.
-        // NOTE: We do NOT reset Mana here anymore (it persists between waves).
-        
         this.buffs = [];
         this.debuffs = [];
         
@@ -192,7 +189,6 @@ class Hero {
             awakeningShards: this.awakeningShards,
             bond: this.bond,
             equipment: this.equipment,
-            // We save current HP and Mana now for persistence within a run
             currentHP: this.currentHP,
             mana: this.mana
         };
@@ -212,7 +208,6 @@ class Hero {
         
         hero.calculateStats();
         
-        // Restore HP/Mana if saved
         if (data.currentHP !== undefined) {
             hero.currentHP = data.currentHP;
             hero.isAlive = hero.currentHP > 0;
@@ -447,13 +442,55 @@ class GameState {
     checkQuestReset() {
         const now = Date.now();
         const oneDay = 24 * 60 * 60 * 1000;
+        
+        // Define comprehensive pool of quests
+        const QUEST_POOL = [
+            // EASY
+            { id: 'q_e1', desc: 'Defeat 10 Enemies', target: 10, current: 0, reward: { gold: 200, petals: 5 }, type: 'killEnemies', difficulty: 'Easy' },
+            { id: 'q_e2', desc: 'Summon 1 Hero', target: 1, current: 0, reward: { petals: 10, gold: 100 }, type: 'summon', difficulty: 'Easy' },
+            { id: 'q_e3', desc: 'Use 3 Ultimates', target: 3, current: 0, reward: { spiritOrbs: 1, gold: 150 }, type: 'useUltimates', difficulty: 'Easy' },
+            { id: 'q_e4', desc: 'Level Up a Hero', target: 1, current: 0, reward: { gold: 300 }, type: 'levelUp', difficulty: 'Easy' },
+            { id: 'q_e5', desc: 'Clear 1 Wave', target: 1, current: 0, reward: { gold: 200 }, type: 'clearWaves', difficulty: 'Easy' },
+            
+            // MEDIUM
+            { id: 'q_m1', desc: 'Defeat 30 Enemies', target: 30, current: 0, reward: { gold: 500, petals: 20 }, type: 'killEnemies', difficulty: 'Medium' },
+            { id: 'q_m2', desc: 'Clear 5 Waves', target: 5, current: 0, reward: { gold: 600, spiritOrbs: 2 }, type: 'clearWaves', difficulty: 'Medium' },
+            { id: 'q_m3', desc: 'Use 10 Ultimates', target: 10, current: 0, reward: { petals: 30, gold: 300 }, type: 'useUltimates', difficulty: 'Medium' },
+            { id: 'q_m4', desc: 'Summon 5 Heroes', target: 5, current: 0, reward: { petals: 20, spiritOrbs: 1 }, type: 'summon', difficulty: 'Medium' },
+            { id: 'q_m5', desc: 'Craft 1 Item', target: 1, current: 0, reward: { gold: 1000 }, type: 'craft', difficulty: 'Medium' },
+            
+            // HARD
+            { id: 'q_h1', desc: 'Defeat 100 Enemies', target: 100, current: 0, reward: { gold: 1500, petals: 50, spiritOrbs: 5 }, type: 'killEnemies', difficulty: 'Hard' },
+            { id: 'q_h2', desc: 'Clear 15 Waves', target: 15, current: 0, reward: { gold: 1200, spiritOrbs: 5 }, type: 'clearWaves', difficulty: 'Hard' },
+            { id: 'q_h3', desc: 'Perform 20 Summons', target: 20, current: 0, reward: { petals: 100, gold: 1000 }, type: 'summon', difficulty: 'Hard' },
+            { id: 'q_h4', desc: 'Harvest 5 Plants', target: 5, current: 0, reward: { seeds: { 's003': 1 }, gold: 500 }, type: 'harvest', difficulty: 'Hard' },
+            
+            // INSANE
+            { id: 'q_i1', desc: 'Defeat 300 Enemies', target: 300, current: 0, reward: { gold: 5000, petals: 200, spiritOrbs: 20 }, type: 'killEnemies', difficulty: 'Insane' },
+            { id: 'q_i2', desc: 'Clear 30 Waves', target: 30, current: 0, reward: { gold: 4000, spiritOrbs: 25 }, type: 'clearWaves', difficulty: 'Insane' },
+            { id: 'q_i3', desc: 'Use 50 Ultimates', target: 50, current: 0, reward: { spiritOrbs: 10, petals: 50 }, type: 'useUltimates', difficulty: 'Insane' }
+        ];
+
         if (now - this.lastQuestReset > oneDay || this.quests.length === 0) {
-            this.quests = [
-                { id: 'q1', desc: 'Defeat 20 Enemies', target: 20, current: 0, reward: { gold: 200 }, type: 'killEnemies', completed: false, claimed: false },
-                { id: 'q2', desc: 'Summon 1 Hero', target: 1, current: 0, reward: { petals: 10 }, type: 'summon', completed: false, claimed: false },
-                { id: 'q3', desc: 'Use 5 Ultimates', target: 5, current: 0, reward: { spiritOrbs: 2 }, type: 'useUltimates', completed: false, claimed: false },
-                { id: 'q4', desc: 'Level Up a Hero', target: 1, current: 0, reward: { gold: 500 }, type: 'levelUp', completed: false, claimed: false }
-            ];
+            // Pick 4 random quests from the pool
+            this.quests = [];
+            const shuffled = [...QUEST_POOL].sort(() => 0.5 - Math.random());
+            
+            // Try to ensure at least one easy and one medium for balance
+            const easy = shuffled.find(q => q.difficulty === 'Easy');
+            const medium = shuffled.find(q => q.difficulty === 'Medium');
+            
+            if(easy) this.quests.push({...easy});
+            if(medium) this.quests.push({...medium});
+            
+            // Fill remaining slots
+            for(let q of shuffled) {
+                if(this.quests.length >= 4) break;
+                if(!this.quests.some(existing => existing.id === q.id)) {
+                    this.quests.push({...q});
+                }
+            }
+            
             this.lastQuestReset = now;
         }
     }
@@ -474,6 +511,11 @@ class GameState {
             if (q.reward.gold) this.gold += q.reward.gold;
             if (q.reward.petals) this.petals += q.reward.petals;
             if (q.reward.spiritOrbs) this.spiritOrbs += q.reward.spiritOrbs;
+            if (q.reward.seeds) {
+                for (const [sid, qty] of Object.entries(q.reward.seeds)) {
+                    this.addItem('seeds', sid, qty);
+                }
+            }
             return q.reward;
         }
         return null;
