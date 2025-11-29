@@ -453,30 +453,33 @@ function renderBattleDashboard(gameState) {
 function renderPreBattleScreen(container, gameState) {
     container.innerHTML = '';
     
+    // UPDATED: max-w-6xl for much bigger display
     const wrapper = document.createElement('div');
-    wrapper.className = 'flex flex-col items-center justify-center h-full max-w-2xl mx-auto text-center animate-entry py-12';
+    wrapper.className = 'flex flex-col items-center justify-center h-full max-w-6xl mx-auto text-center animate-entry py-12';
     
     wrapper.innerHTML = `
         <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center text-red-400 text-4xl mb-6 shadow-sm">
             <i class="fa-solid fa-dungeon"></i>
         </div>
-        <h2 class="text-3xl font-heading font-bold text-slate-800 mb-2">Battle Arena</h2>
-        <p class="text-slate-500 mb-8">
+        <h2 class="text-4xl font-heading font-bold text-slate-800 mb-2">Battle Arena</h2>
+        <p class="text-slate-500 mb-10 max-w-2xl text-lg">
             Enter the Roguelike dungeon. Your team will fight through endless waves. 
             Health does not regenerate between waves!
         </p>
     `;
     
+    // UPDATED: Team Box is bigger, cleaner
     const teamBox = document.createElement('div');
-    teamBox.className = 'bg-white p-6 rounded-xl border border-slate-100 w-full mb-8 text-left';
+    teamBox.className = 'bg-white p-10 rounded-2xl border border-slate-200 shadow-sm w-full mb-10 text-left';
     
     const header = document.createElement('h3');
-    header.className = 'font-bold text-slate-700 mb-4 flex justify-between';
-    header.innerHTML = `<span>Current Team</span><button class="text-sm text-primary hover:underline" onclick="switchView('roster')">View Roster</button>`;
+    header.className = 'font-bold text-slate-700 text-xl mb-6 flex justify-between items-center';
+    header.innerHTML = `<span>Current Team Configuration</span><button class="btn btn-secondary text-sm" onclick="switchView('roster')"><i class="fa-solid fa-users"></i> View Full Roster</button>`;
     teamBox.appendChild(header);
     
+    // UPDATED: Flex container with centering
     const slotsContainer = document.createElement('div');
-    slotsContainer.className = 'flex justify-between gap-2';
+    slotsContainer.className = 'flex flex-wrap justify-center gap-6';
     slotsContainer.id = 'pre-battle-team';
     
     for(let i=0; i<5; i++) {
@@ -486,14 +489,14 @@ function renderPreBattleScreen(container, gameState) {
     teamBox.appendChild(slotsContainer);
     
     const hint = document.createElement('div');
-    hint.className = 'mt-4 text-xs text-slate-400 text-center';
-    hint.textContent = 'Click a slot to add or remove a hero.';
+    hint.className = 'mt-6 text-sm text-slate-400 text-center font-medium';
+    hint.innerHTML = '<i class="fa-solid fa-circle-info mr-2"></i> Click any slot above to swap or add a hero.';
     teamBox.appendChild(hint);
     
     wrapper.appendChild(teamBox);
     
     const startBtn = document.createElement('button');
-    startBtn.className = 'btn btn-primary text-lg px-8 py-3 shadow-lg shadow-primary/30';
+    startBtn.className = 'btn btn-primary text-xl px-12 py-4 shadow-xl shadow-primary/30 hover:scale-105 transition-transform';
     startBtn.innerHTML = '<i class="fa-solid fa-swords"></i> Start Run';
     startBtn.onclick = () => startRun(gameState);
     wrapper.appendChild(startBtn);
@@ -506,34 +509,52 @@ function createTeamSlotElement(index, gameState) {
     const hero = heroId ? gameState.roster.find(h => h.id === heroId) : null;
     
     const slot = document.createElement('div');
-    const commonClasses = "w-16 h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-primary transition-colors relative shadow-sm";
+    
+    // UPDATED: Much bigger slot (w-40 aspect-3/4) instead of w-16 h-16
+    const commonClasses = "w-40 aspect-[3/4] rounded-xl overflow-hidden border-2 cursor-pointer transition-all relative shadow-sm group";
     
     if (hero) {
-        slot.className = `${commonClasses} bg-slate-100 border-slate-200`;
+        slot.className = `${commonClasses} border-slate-200 bg-white hover:border-primary hover:shadow-md hover:-translate-y-1`;
         slot.onclick = () => showHeroSelectionModal(index, window.gameState);
         
+        // Image
         const img = document.createElement('img');
         img.src = `images/${hero.id}.jpg`;
-        img.className = "w-full h-full object-cover";
+        img.className = "w-full h-full object-cover transition-transform duration-500 group-hover:scale-110";
+        
+        // Error Placeholder
         img.onerror = () => {
-            const colors = { 'Fire':'from-red-400 to-orange-500', 'Water':'from-blue-400 to-cyan-500', 'Wind':'from-emerald-400 to-teal-500' };
+            const colors = { 'Fire':'from-red-400 to-orange-500', 'Water':'from-blue-400 to-cyan-500', 'Wind':'from-emerald-400 to-teal-500', 'Light': 'from-yellow-300 to-amber-500', 'Dark': 'from-purple-500 to-indigo-600' };
             const grad = colors[hero.element] || 'from-slate-400 to-slate-600';
             const div = document.createElement('div');
-            div.className = `w-full h-full bg-gradient-to-br ${grad} flex items-center justify-center text-white font-bold text-lg`;
+            div.className = `w-full h-full bg-gradient-to-br ${grad} flex items-center justify-center text-white font-bold text-4xl font-heading opacity-90`;
             div.textContent = hero.name.substring(0,2).toUpperCase();
             img.replaceWith(div);
         };
         slot.appendChild(img);
         
-        const lvl = document.createElement('div');
-        lvl.className = "absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] text-center font-bold truncate px-1";
-        lvl.textContent = `Lv.${hero.level}`;
-        slot.appendChild(lvl);
+        // Rarity Badge
+        const rarityBadge = document.createElement('div');
+        rarityBadge.className = `absolute top-2 right-2 badge-${hero.rarity} text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow`;
+        rarityBadge.textContent = hero.rarity;
+        slot.appendChild(rarityBadge);
+
+        // Info Overlay
+        const info = document.createElement('div');
+        info.className = "absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent pt-8 pb-2 px-2 text-white text-center";
+        info.innerHTML = `
+            <div class="font-bold text-sm truncate">${hero.name}</div>
+            <div class="text-[10px] opacity-80">Lv.${hero.level}</div>
+        `;
+        slot.appendChild(info);
         
     } else {
-        slot.className = `${commonClasses} bg-slate-50 border-dashed border-slate-300 flex items-center justify-center text-slate-300 hover:text-primary hover:bg-slate-100`;
+        slot.className = `${commonClasses} bg-slate-50 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-300 hover:text-primary hover:bg-slate-100 hover:border-primary`;
         slot.onclick = () => showHeroSelectionModal(index, window.gameState);
-        slot.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        slot.innerHTML = `
+            <i class="fa-solid fa-plus text-4xl mb-2 transition-transform group-hover:scale-110"></i>
+            <span class="text-xs font-bold uppercase tracking-wider">Add Hero</span>
+        `;
     }
     
     return slot;
