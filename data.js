@@ -87,7 +87,7 @@ const HEROES_DATABASE = [
       baseStats: { hp: 850, atk: 80, def: 70, spd: 115 },
       ultimate: { name: 'Nature\'s Breath', manaReq: 100, desc: 'Fully heals team and adds Regen.' }
     },
-    { id: 'h037', name: 'Isamu', rarity: 'SSR', element: 'Water', class: 'Tank', gender: 'M',
+    { id: 'h037', name: 'Isami', rarity: 'SSR', element: 'Water', class: 'Tank', gender: 'F',
       baseStats: { hp: 1200, atk: 85, def: 105, spd: 98 },
       ultimate: { name: 'Tidal Fortress', manaReq: 100, desc: 'Absorbs all team damage for 2 turns.' }
     },
