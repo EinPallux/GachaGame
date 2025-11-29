@@ -5,6 +5,7 @@
 
 let battleInterval = null;
 let currentBattleState = null;
+let isAnimationPlaying = false; // Flag to prevent turns overlapping animations
 
 // ===========================
 // BATTLE STATE MODEL
@@ -23,6 +24,7 @@ class BattleState {
         this.turnCounter = 0;
         this.skillTreeBonuses = skillTreeBonuses;
         this.combatLog = [];
+        this.waveComplete = false; // New flag for manual progression
         
         this.spawnEnemies();
     }
@@ -47,7 +49,10 @@ class BattleState {
             const pool = ENEMIES_DATABASE.slice(poolRange[0], poolRange[1]);
             const template = pool[Math.floor(Math.random() * pool.length)] || ENEMIES_DATABASE[0];
             
+            // Generate unique ID for battle instance to allow duplicates
+            const instanceId = `${template.id}_${Date.now()}_${i}`;
             const enemy = new Enemy(template, this.waveNumber);
+            enemy.instanceId = instanceId; // Assign unique instance ID
             this.enemies.push(enemy);
         }
     }
@@ -90,12 +95,21 @@ function startWave(gameState) {
     currentBattleState = new BattleState(team, gameState.currentWave, bonuses);
     currentBattleState.addLog(`Wave ${gameState.currentWave} Started!`, 'info');
     
+    // Reset UI state
+    const nextBtn = document.getElementById('next-wave-container');
+    if (nextBtn) nextBtn.classList.add('hidden');
+    
     updateBattleUI(gameState, currentBattleState);
     
+    // Clear old intervals
     if (battleInterval) clearInterval(battleInterval);
+    
+    // Slower Loop (2 seconds per turn cycle)
     battleInterval = setInterval(() => {
-        processBattleTurn(gameState, currentBattleState);
-    }, 1000);
+        if (!isAnimationPlaying && !currentBattleState.waveComplete) {
+            processBattleTurn(gameState, currentBattleState);
+        }
+    }, 2000); 
 }
 
 function stopBattle(gameState) {
@@ -129,15 +143,26 @@ function processBattleTurn(gameState, battleState) {
         return;
     }
     
+    // Sort by Speed
     const allUnits = [
         ...aliveHeroes.map(h => ({ unit: h, isHero: true })),
         ...aliveEnemies.map(e => ({ unit: e, isHero: false }))
     ].sort((a, b) => b.unit.spd - a.unit.spd);
     
+    // Execute turns sequentially with delays for animations
+    let delay = 0;
+    const turnDuration = 1200; // Time per unit action
+    
+    isAnimationPlaying = true; // Lock loop
+    
     allUnits.forEach(({ unit, isHero }, index) => {
         setTimeout(() => {
-            if (!unit.isAlive) return;
+            // Re-check alive status (might have died in previous sub-turn)
+            if (!unit.isAlive || !battleState.isActive) return;
             
+            // Highlight active unit
+            highlightActiveUnit(unit);
+
             if (isHero) {
                 if (gameState.autoCast && unit.canUseUltimate()) {
                     useHeroUltimate(unit, battleState, gameState);
@@ -152,8 +177,16 @@ function processBattleTurn(gameState, battleState) {
             
             updateBattleUI(gameState, battleState);
             
-        }, index * 200);
+        }, index * turnDuration);
+        
+        delay = (index + 1) * turnDuration;
     });
+
+    // Unlock loop after all animations
+    setTimeout(() => {
+        removeActiveHighlights();
+        isAnimationPlaying = false;
+    }, delay);
 }
 
 function getRandomTarget(units) {
@@ -163,6 +196,7 @@ function getRandomTarget(units) {
 }
 
 function performAttack(attacker, defender, battleState, isHero) {
+    // 1. Calculate Damage
     let damage = Math.max(1, attacker.atk - (defender.def * 0.5));
     
     if (attacker.element && defender.element) {
@@ -175,54 +209,114 @@ function performAttack(attacker, defender, battleState, isHero) {
     if (isCrit) damage *= 1.5;
     
     damage = Math.floor(damage);
-    defender.takeDamage(damage);
     
-    if (isHero) attacker.gainMana(15);
-    else defender.gainMana(10);
+    // 2. Play Animations
+    playAttackAnimation(attacker, isHero ? 'right' : 'left');
     
-    const critText = isCrit ? ' CRIT!' : '';
-    battleState.addLog(`${attacker.name} hit ${defender.name} for ${damage}${critText}`, isHero ? 'success' : 'warning');
-    
-    showFloatingText(defender, `-${damage}${critText}`, isCrit ? 'crit' : 'damage');
+    // Delay damage/hit reaction slightly to match lunge impact
+    setTimeout(() => {
+        playHitAnimation(defender);
+        defender.takeDamage(damage);
+        
+        if (isHero) attacker.gainMana(15);
+        else defender.gainMana(10);
+        
+        const critText = isCrit ? ' CRIT!' : '';
+        battleState.addLog(`${attacker.name} hit ${defender.name} for ${damage}${critText}`, isHero ? 'success' : 'warning');
+        
+        showFloatingText(defender, `-${damage}${critText}`, isCrit ? 'crit' : 'damage');
+        updateBattleUI(window.gameState, battleState); // Force refresh bars
+    }, 300);
 }
 
 function useHeroUltimate(hero, battleState, gameState) {
     if (!hero.canUseUltimate()) return;
     
     hero.useUltimate();
+    playCastAnimation(hero); // Trigger cast effect
+    
     battleState.addLog(`${hero.name} cast ${hero.ultimate.name}!`, 'special');
     showFloatingText(hero, 'ULTIMATE!', 'heal');
     
     const aliveHeroes = battleState.heroes.filter(h => h.isAlive);
     const aliveEnemies = battleState.enemies.filter(e => e.isAlive);
     
-    if (hero.class === 'Healer') {
-        aliveHeroes.forEach(h => {
-            const heal = Math.floor(hero.atk * 3);
-            h.heal(heal);
-            showFloatingText(h, `+${heal}`, 'heal');
-        });
-    } else if (hero.class === 'DPS (AoE)') {
-        aliveEnemies.forEach(e => {
-            const dmg = Math.floor(hero.atk * 1.5);
-            e.takeDamage(dmg);
-            showFloatingText(e, `-${dmg}`, 'damage');
-        });
-    } else {
-        const target = getRandomTarget(aliveEnemies);
-        if (target) {
-            const dmg = Math.floor(hero.atk * 3.5);
-            target.takeDamage(dmg);
-            showFloatingText(target, `-${dmg}`, 'crit');
+    setTimeout(() => {
+        if (hero.class === 'Healer') {
+            aliveHeroes.forEach(h => {
+                const heal = Math.floor(hero.atk * 3);
+                h.heal(heal);
+                showFloatingText(h, `+${heal}`, 'heal');
+                playCastAnimation(h); // Visual feedback on healed units
+            });
+        } else if (hero.class === 'DPS (AoE)') {
+            aliveEnemies.forEach(e => {
+                const dmg = Math.floor(hero.atk * 1.5);
+                e.takeDamage(dmg);
+                playHitAnimation(e);
+                showFloatingText(e, `-${dmg}`, 'damage');
+            });
+        } else {
+            const target = getRandomTarget(aliveEnemies);
+            if (target) {
+                const dmg = Math.floor(hero.atk * 3.5);
+                target.takeDamage(dmg);
+                playHitAnimation(target);
+                showFloatingText(target, `-${dmg}`, 'crit');
+            }
         }
-    }
-    
-    gameState.updateQuest('useUltimates', 1);
-    updateBattleUI(gameState, battleState);
+        gameState.updateQuest('useUltimates', 1);
+        updateBattleUI(gameState, battleState);
+    }, 400); // Delay effect slightly
 }
 
 // ===========================
-// RENDERING & UI (FIXED)
+// ANIMATION HELPERS
+// ===========================
+
+function getUnitElement(unit) {
+    // We use the ID or instanceId for enemies
+    const id = unit.instanceId || unit.id;
+    return document.querySelector(`[data-unit-id="${id}"]`);
+}
+
+function highlightActiveUnit(unit) {
+    removeActiveHighlights();
+    const el = getUnitElement(unit);
+    if (el) el.classList.add('active-turn');
+}
+
+function removeActiveHighlights() {
+    document.querySelectorAll('.active-turn').forEach(el => el.classList.remove('active-turn'));
+}
+
+function playAttackAnimation(unit, direction) {
+    const el = getUnitElement(unit);
+    if (!el) return;
+    
+    const animClass = direction === 'right' ? 'anim-lunge-right' : 'anim-lunge-left';
+    el.classList.add(animClass);
+    setTimeout(() => el.classList.remove(animClass), 600);
+}
+
+function playHitAnimation(unit) {
+    const el = getUnitElement(unit);
+    if (!el) return;
+    
+    el.classList.add('anim-hit');
+    setTimeout(() => el.classList.remove('anim-hit'), 500);
+}
+
+function playCastAnimation(unit) {
+    const el = getUnitElement(unit);
+    if (!el) return;
+    
+    el.classList.add('anim-cast');
+    setTimeout(() => el.classList.remove('anim-cast'), 800);
+}
+
+// ===========================
+// RENDERING & UI
 // ===========================
 
 function renderBattleDashboard(gameState) {
@@ -235,11 +329,11 @@ function renderBattleDashboard(gameState) {
         return;
     }
 
-    // SCENE 2: ACTIVE BATTLE
+    // SCENE 2: ACTIVE BATTLE LAYOUT
     if (!document.getElementById('battle-dashboard-grid')) {
         container.innerHTML = `
-            <div id="battle-dashboard-grid" class="battle-dashboard animate-entry h-[calc(100vh-140px)] min-h-[500px]">
-                <div class="flex flex-col gap-4">
+            <div id="battle-dashboard-grid" class="battle-dashboard animate-entry h-[calc(100vh-140px)] min-h-[600px]">
+                <div class="flex flex-col gap-4 h-full">
                     <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
                         <h3 class="font-bold text-slate-700 text-sm mb-3 uppercase tracking-wider">Run Stats</h3>
                         <div class="grid grid-cols-2 gap-2">
@@ -260,31 +354,44 @@ function renderBattleDashboard(gameState) {
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-4 relative">
-                    <div class="flex-1 bg-white/60 rounded-xl border border-red-100 flex items-center justify-center p-4 relative">
+                <div class="flex flex-col gap-4 relative h-full">
+                    <div class="flex-1 bg-white/60 rounded-xl border border-red-100 flex items-center justify-center p-4 relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-red-50/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                         <div class="absolute top-2 left-3 text-xs font-bold text-red-400 uppercase tracking-widest">Enemies</div>
-                        <div id="arena-enemies" class="flex gap-4 justify-center flex-wrap w-full"></div>
+                        <div id="arena-enemies" class="flex gap-4 justify-center flex-wrap w-full items-end min-h-[200px]"></div>
                     </div>
                     
-                    <div class="h-8 flex items-center justify-center">
-                        <span class="bg-slate-200 text-slate-500 text-xs font-bold px-3 py-1 rounded-full">VS</span>
+                    <div class="h-12 flex items-center justify-center relative">
+                        <span class="bg-slate-200 text-slate-500 text-xs font-bold px-3 py-1 rounded-full z-10">VS</span>
+                        
+                        <div id="next-wave-container" class="absolute inset-0 flex items-center justify-center z-20 hidden">
+                             <button class="btn btn-primary animate-bounce shadow-lg px-8" onclick="startWave(window.gameState)">
+                                Next Wave <i class="fa-solid fa-arrow-right ml-2"></i>
+                             </button>
+                        </div>
                     </div>
 
-                    <div class="flex-1 bg-white/80 rounded-xl border border-blue-100 flex items-center justify-center p-4 relative">
+                    <div class="flex-1 bg-white/80 rounded-xl border border-blue-100 flex items-center justify-center p-4 relative overflow-hidden">
+                         <div class="absolute inset-0 bg-blue-50/30 pointer-events-none"></div>
                         <div class="absolute top-2 left-3 text-xs font-bold text-blue-400 uppercase tracking-widest">Heroes</div>
-                        <div id="arena-heroes" class="flex gap-4 justify-center flex-wrap w-full"></div>
+                        <div id="arena-heroes" class="flex gap-4 justify-center flex-wrap w-full items-end min-h-[200px]"></div>
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-4 battle-dashboard-right">
-                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex-1 overflow-y-auto">
+                <div class="flex flex-col gap-4 battle-dashboard-right h-full overflow-y-auto">
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
                         <h3 class="font-bold text-slate-700 text-sm mb-3 uppercase tracking-wider">Ultimates</h3>
                         <div id="ultimates-list" class="space-y-2"></div>
                     </div>
 
-                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex-1">
+                        <h3 class="font-bold text-slate-700 text-sm mb-3 uppercase tracking-wider">Brewed Teas</h3>
+                        <div id="battle-tea-list" class="grid grid-cols-2 gap-2"></div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 mt-auto">
                         <button id="auto-btn" class="btn w-full mb-2 ${gameState.autoCast ? 'btn-primary' : 'btn-secondary'}" onclick="toggleAutoCast()">
-                            <i class="fa-solid fa-robot"></i> ${gameState.autoCast ? 'Auto: ON' : 'Auto: OFF'}
+                            <i class="fa-solid fa-robot"></i> <span id="auto-btn-text">${gameState.autoCast ? 'Auto: ON' : 'Auto: OFF'}</span>
                         </button>
                         <button class="btn btn-secondary w-full text-red-500 border-red-100 hover:bg-red-50" onclick="handleRunDefeat(gameState)">
                             <i class="fa-solid fa-flag"></i> Retreat
@@ -298,7 +405,6 @@ function renderBattleDashboard(gameState) {
     if (currentBattleState) updateBattleUI(gameState, currentBattleState);
 }
 
-// FIXED: No more string interpolation for attributes!
 function renderPreBattleScreen(container, gameState) {
     container.innerHTML = '';
     
@@ -366,10 +472,9 @@ function createTeamSlotElement(index, gameState) {
         
         // Image
         const img = document.createElement('img');
-        img.src = `images/${hero.id}.jpg`; // FIXED PATH
+        img.src = `images/${hero.id}.jpg`;
         img.className = "w-full h-full object-cover";
         img.onerror = () => {
-            // Helper from ui.js logic inline
             const colors = { 'Fire':'from-red-400 to-orange-500', 'Water':'from-blue-400 to-cyan-500', 'Wind':'from-emerald-400 to-teal-500' };
             const grad = colors[hero.element] || 'from-slate-400 to-slate-600';
             const div = document.createElement('div');
@@ -397,9 +502,11 @@ function createTeamSlotElement(index, gameState) {
 function updateBattleUI(gameState, battleState) {
     if (!document.getElementById('battle-dashboard-grid')) return;
 
+    // 1. Update Stats
     document.getElementById('dash-wave').textContent = gameState.currentWave;
     document.getElementById('dash-kills').textContent = gameState.enemiesDefeated;
     
+    // 2. Update Logs
     const logContainer = document.getElementById('combat-log');
     logContainer.innerHTML = battleState.combatLog.map(log => 
         `<div class="${log.type === 'info' ? 'text-blue-500 font-bold' : log.type === 'success' ? 'text-green-600' : log.type === 'warning' ? 'text-orange-500' : 'text-slate-500'}">
@@ -407,9 +514,11 @@ function updateBattleUI(gameState, battleState) {
         </div>`
     ).join('');
 
+    // 3. Render Units (Bigger & Detailed)
     renderUnits(document.getElementById('arena-heroes'), battleState.heroes, true);
     renderUnits(document.getElementById('arena-enemies'), battleState.enemies, false);
     
+    // 4. Update Ultimate Buttons
     document.getElementById('ultimates-list').innerHTML = battleState.heroes.map(hero => {
         if (!hero.isAlive) return '';
         const canCast = hero.canUseUltimate();
@@ -417,10 +526,10 @@ function updateBattleUI(gameState, battleState) {
         
         return `
             <div class="bg-slate-50 border ${canCast ? 'border-primary cursor-pointer ring-2 ring-primary/20' : 'border-slate-200 opacity-70'} p-2 rounded-lg transition-all"
-                 onclick="${canCast ? `useHeroUltimate(gameState.roster.find(h=>h.id=='${hero.id}'), currentBattleState, gameState)` : ''}">
+                 onclick="${canCast ? `useHeroUltimate(window.gameState.roster.find(h=>h.id=='${hero.id}'), currentBattleState, window.gameState)` : ''}">
                 <div class="flex justify-between text-xs font-bold mb-1">
                     <span class="text-slate-700">${hero.name}</span>
-                    <span class="${canCast ? 'text-primary animate-pulse' : 'text-slate-400'}">${canCast ? 'READY' : pct + '%'}</span>
+                    <span class="${canCast ? 'text-primary animate-pulse' : 'text-slate-400'}">${canCast ? 'READY' : Math.floor(pct) + '%'}</span>
                 </div>
                 <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                     <div class="bg-blue-500 h-full transition-all duration-300" style="width: ${pct}%"></div>
@@ -428,55 +537,149 @@ function updateBattleUI(gameState, battleState) {
             </div>
         `;
     }).join('');
+
+    // 5. Update Tea Inventory (Consumables)
+    updateTeaList(gameState);
 }
 
+function updateTeaList(gameState) {
+    const list = document.getElementById('battle-tea-list');
+    if (!list) return;
+    
+    list.innerHTML = '';
+    const teas = gameState.inventory.teas || {};
+    
+    if (Object.keys(teas).length === 0) {
+        list.innerHTML = '<div class="col-span-2 text-xs text-slate-400 text-center py-2">No teas brewed.</div>';
+        return;
+    }
+
+    for(const [id, qty] of Object.entries(teas)) {
+        if (qty > 0) {
+            const data = GARDEN_ITEMS_DATABASE.teas.find(t => t.id === id);
+            if (data) {
+                list.innerHTML += `
+                    <div class="bg-slate-50 p-2 rounded border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-green-50 hover:border-green-200 transition-colors"
+                         onclick="useTea('${id}', window.gameState)">
+                        <div class="text-xl">${data.emoji}</div>
+                        <div class="flex-1 overflow-hidden">
+                            <div class="text-[10px] font-bold text-slate-700 truncate">${data.name}</div>
+                            <div class="text-[9px] text-slate-400">x${qty}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    }
+}
+
+window.useTea = function(id, gameState) {
+    if (gameState.getItemCount('teas', id) <= 0) return;
+    
+    const data = GARDEN_ITEMS_DATABASE.teas.find(t => t.id === id);
+    if (!data) return;
+
+    // Apply Effect
+    const heroes = currentBattleState.heroes.filter(h => h.isAlive);
+    if (heroes.length === 0) return;
+
+    if (data.effectType === 'heal') {
+        heroes.forEach(h => {
+            const amt = Math.floor(h.maxHP * data.effectValue);
+            h.heal(amt);
+            showFloatingText(h, `+${amt}`, 'heal');
+            playCastAnimation(h);
+        });
+        currentBattleState.addLog(`Used ${data.name}: Team Healed!`, 'success');
+    } 
+    else if (data.effectType === 'buff_atk') {
+        heroes.forEach(h => {
+            h.atk = Math.floor(h.atk * (1 + data.effectValue));
+            showFloatingText(h, `ATK UP!`, 'crit');
+            playCastAnimation(h);
+        });
+        currentBattleState.addLog(`Used ${data.name}: Attack Boosted!`, 'success');
+    }
+
+    gameState.removeItem('teas', id, 1);
+    updateBattleUI(gameState, currentBattleState);
+};
+
+
 function renderUnits(container, units, isHero) {
+    // Diffing logic is too complex for this snippet, so we rebuild.
+    // In production frameworks like React/Vue this is handled better.
     container.innerHTML = '';
+    
     units.forEach(unit => {
+        // Unique ID for animations
+        const unitId = unit.instanceId || unit.id;
+        
         const div = document.createElement('div');
-        div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy'} ${!unit.isAlive ? 'dead' : ''} w-24 flex-shrink-0 flex flex-col items-center`;
+        div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy'} ${!unit.isAlive ? 'dead' : ''}`;
+        div.setAttribute('data-unit-id', unitId);
+        
+        // Detailed Stats Row
+        const hpText = `${Math.floor(unit.currentHP)}/${unit.maxHP}`;
+        
         div.innerHTML = `
-            <div class="w-16 h-16 rounded-lg shadow-sm border border-slate-200 relative overflow-hidden bg-white mb-2">
-                <img src="${isHero ? `images/${unit.id}.jpg` : 'images/enemies/e001.jpg'}" class="w-full h-full object-cover" 
-                     onerror="this.style.display='none'; this.parentElement.classList.add('flex','items-center','justify-center','bg-slate-100'); this.parentElement.innerHTML='${isHero ? unit.name[0] : '💀'}'">
-                ${!unit.isAlive ? '<div class="absolute inset-0 bg-slate-500/50 flex items-center justify-center text-white font-bold text-xs">DEAD</div>' : ''}
+            <div class="flex gap-3 mb-2">
+                <div class="w-16 h-16 rounded-lg shadow-sm border border-slate-200 relative overflow-hidden bg-white flex-shrink-0">
+                    <img src="${isHero ? `images/${unit.id}.jpg` : `images/enemies/${unit.id}.jpg`}" class="w-full h-full object-cover" 
+                         onerror="this.style.display='none'; this.parentElement.classList.add('flex','items-center','justify-center','bg-slate-100'); this.parentElement.innerHTML='${isHero ? unit.name[0] : '💀'}'">
+                </div>
+                <div class="flex-1 overflow-hidden flex flex-col justify-center">
+                    <div class="text-xs font-bold text-slate-700 truncate">${unit.name}</div>
+                    <div class="text-[10px] text-slate-400 truncate">${isHero ? `Lv.${unit.level} ${unit.class}` : `Wave ${currentBattleState.waveNumber} Enemy`}</div>
+                    
+                    <div class="flex gap-2 mt-1 text-[9px] text-slate-500">
+                        <span title="Attack"><i class="fa-solid fa-sword text-red-400"></i> ${unit.atk}</span>
+                        <span title="Defense"><i class="fa-solid fa-shield text-blue-400"></i> ${unit.def}</span>
+                        <span title="Speed"><i class="fa-solid fa-wind text-green-400"></i> ${unit.spd}</span>
+                    </div>
+                </div>
             </div>
             
             <div class="w-full space-y-1">
+                <div class="flex justify-between text-[9px] font-bold text-slate-500 px-0.5">
+                    <span>HP</span>
+                    <span>${hpText}</span>
+                </div>
                 <div class="bar-container bg-slate-100">
                     <div class="bar-fill hp ${unit.getHPPercent() < 30 ? 'low' : ''}" style="width: ${unit.getHPPercent()}%"></div>
                 </div>
+                
                 ${isHero ? `
-                <div class="bar-container bg-slate-100">
+                <div class="flex justify-between text-[9px] font-bold text-blue-400 px-0.5 mt-1">
+                    <span>MP</span>
+                    <span>${Math.floor(unit.mana)}/${unit.maxMana}</span>
+                </div>
+                <div class="bar-container bg-slate-100 !h-1.5 !mt-0">
                     <div class="bar-fill mana" style="width: ${unit.getManaPercent()}%"></div>
                 </div>` : ''}
             </div>
-            <div class="text-[10px] font-bold text-slate-600 mt-1 truncate w-full text-center">${unit.name}</div>
         `;
-        div.style.position = 'relative';
         container.appendChild(div);
     });
 }
 
 function showFloatingText(unit, text, type) {
-    const domUnits = document.querySelectorAll('.battle-unit');
-    let targetEl = null;
-    domUnits.forEach(el => {
-        if (el.textContent.includes(unit.name)) targetEl = el;
-    });
+    const unitId = unit.instanceId || unit.id;
+    const targetEl = document.querySelector(`[data-unit-id="${unitId}"]`);
     
     if (!targetEl) return;
     
     const floater = document.createElement('div');
-    floater.className = `damage-number ${type === 'crit' ? 'text-red-600 text-2xl' : type === 'heal' ? 'text-green-500' : 'text-slate-800'}`;
+    floater.className = `damage-number ${type === 'crit' ? 'text-red-600 !text-2xl' : type === 'heal' ? 'text-green-500' : 'text-slate-800'}`;
     floater.textContent = text;
     targetEl.appendChild(floater);
-    setTimeout(() => floater.remove(), 800);
+    setTimeout(() => floater.remove(), 1000);
 }
 
 function handleWaveVictory(gameState, battleState) {
     if (battleInterval) clearInterval(battleInterval);
-    battleState.isActive = false;
+    
+    battleState.waveComplete = true; // Stop loop
     
     const gold = 50 + (gameState.currentWave * 10);
     gameState.gold += gold;
@@ -488,9 +691,11 @@ function handleWaveVictory(gameState, battleState) {
     showToast(`Wave Cleared! +${gold} Gold`, 'success');
     saveGame(gameState);
     
-    setTimeout(() => {
-        startWave(gameState);
-    }, 2000);
+    // Show Next Wave Button
+    const btnContainer = document.getElementById('next-wave-container');
+    if (btnContainer) {
+        btnContainer.classList.remove('hidden');
+    }
 }
 
 function handleRunDefeat(gameState, battleState) {
@@ -501,7 +706,21 @@ function handleRunDefeat(gameState, battleState) {
 }
 
 function toggleAutoCast() {
-    if (!gameState) return;
-    gameState.autoCast = !gameState.autoCast;
-    renderBattleDashboard(gameState);
+    if (!window.gameState) return;
+    window.gameState.autoCast = !window.gameState.autoCast;
+    
+    const btn = document.getElementById('auto-btn');
+    const txt = document.getElementById('auto-btn-text');
+    
+    if (btn && txt) {
+        if (window.gameState.autoCast) {
+            btn.classList.add('btn-primary');
+            btn.classList.remove('btn-secondary');
+            txt.textContent = 'Auto: ON';
+        } else {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+            txt.textContent = 'Auto: OFF';
+        }
+    }
 }

@@ -50,6 +50,7 @@ class Hero {
         this.debuffs = [];
         
         this.calculateStats();
+        this.fullHeal(); // Initial heal on creation
     }
     
     // Core Stat Calculation
@@ -63,7 +64,7 @@ class Hero {
         let totalDEF = Math.floor(this.baseStats.def * levelMultiplier * starMultiplier);
         let totalSPD = Math.floor(this.baseStats.spd * levelMultiplier * starMultiplier);
         
-        // 2. Add Equipment (Future Proofing)
+        // 2. Add Equipment
         if (this.equipment.weapon) totalATK += this.equipment.weapon.stats.atk || 0;
         if (this.equipment.armor) {
             totalDEF += this.equipment.armor.stats.def || 0;
@@ -89,9 +90,11 @@ class Hero {
         this.def = totalDEF;
         this.spd = totalSPD;
         
-        // Ensure HP is valid
-        if (this.currentHP <= 0 && this.isAlive) this.currentHP = this.maxHP;
-        this.currentHP = Math.min(this.currentHP, this.maxHP);
+        // Cap HP if current exceeds max (e.g. removed equipment)
+        if (this.currentHP > this.maxHP) this.currentHP = this.maxHP;
+        
+        // Update alive status based on current HP
+        this.isAlive = this.currentHP > 0;
     }
     
     // Combat Power for Sorting
@@ -110,14 +113,32 @@ class Hero {
         return true;
     }
     
-    // Battle State Management
+    // --- BATTLE METHODS ---
+
+    fullHeal() {
+        this.currentHP = this.maxHP;
+        this.isAlive = true;
+        this.mana = 0;
+    }
+
+    // Called at start of WAVE
     resetForBattle(skillTreeBonuses = {}) {
         this.calculateStats(skillTreeBonuses);
-        this.currentHP = this.maxHP;
+        
+        // NOTE: We do NOT heal here anymore, preserving HP between waves.
+        // We only reset Mana and Status effects.
+        
         this.mana = skillTreeBonuses.startingMana || 0;
-        this.isAlive = true;
         this.buffs = [];
         this.debuffs = [];
+        
+        // Validating life state
+        if (this.currentHP <= 0) {
+            this.currentHP = 0;
+            this.isAlive = false;
+        } else {
+            this.isAlive = true;
+        }
     }
     
     takeDamage(amount) {
@@ -152,8 +173,14 @@ class Hero {
     }
     
     // UI Helpers
-    getHPPercent() { return (this.currentHP / this.maxHP) * 100; }
-    getManaPercent() { return (this.mana / this.maxMana) * 100; }
+    getHPPercent() { 
+        if (this.maxHP === 0) return 0;
+        return Math.max(0, Math.min(100, (this.currentHP / this.maxHP) * 100)); 
+    }
+    
+    getManaPercent() { 
+        return Math.max(0, Math.min(100, (this.mana / this.maxMana) * 100)); 
+    }
     
     // Serialization
     toJSON() {
@@ -164,7 +191,9 @@ class Hero {
             stars: this.stars,
             awakeningShards: this.awakeningShards,
             bond: this.bond,
-            equipment: this.equipment
+            equipment: this.equipment,
+            // We save current HP now too, for persistence!
+            currentHP: this.currentHP 
         };
     }
     
@@ -181,6 +210,13 @@ class Hero {
         if(data.equipment) hero.equipment = data.equipment;
         
         hero.calculateStats();
+        
+        // Restore HP if saved, otherwise default to max
+        if (data.currentHP !== undefined) {
+            hero.currentHP = data.currentHP;
+            hero.isAlive = hero.currentHP > 0;
+        }
+        
         return hero;
     }
 }
@@ -194,9 +230,10 @@ class Enemy {
         this.id = template.id;
         this.name = template.name;
         this.element = template.element;
+        // Emoji fallback logic handled in UI, but we can store it if DB has it
         
-        // Scaling Logic
-        const multiplier = 1 + (waveNumber - 1) * 0.05;
+        // Scaling Logic: +10% stats per wave (Slightly harder)
+        const multiplier = 1 + (waveNumber - 1) * 0.10;
         
         this.maxHP = Math.floor(template.baseStats.hp * multiplier);
         this.currentHP = this.maxHP;
@@ -366,13 +403,17 @@ class GameState {
             .filter(h => h !== undefined);
     }
     
-    // ADDED THIS FUNCTION
     setTeamMember(slotIndex, heroId) {
         if (slotIndex >= 0 && slotIndex < 5) {
             this.team[slotIndex] = heroId;
         }
     }
     
+    recoverTeam() {
+        // Use this when starting a fresh run from Wave 1
+        this.roster.forEach(h => h.fullHeal());
+    }
+
     // Inventory
     addItem(type, id, amt=1) {
         if (!this.inventory[type]) this.inventory[type] = {};

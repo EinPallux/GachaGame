@@ -371,11 +371,14 @@ html {
 .battle-unit {
     position: relative;
     background: white;
-    border-radius: 0.75rem;
-    padding: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-radius: 1rem;
+    padding: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     transition: all 0.2s;
     border: 2px solid transparent;
+    width: 13rem; /* UPDATED: Significantly larger */
+    display: flex;
+    flex-direction: column;
 }
 
 .battle-unit.is-hero {
@@ -395,16 +398,18 @@ html {
 
 .battle-unit.dead {
     filter: grayscale(1);
-    opacity: 0.5;
+    opacity: 0.6;
+    transform: scale(0.95);
 }
 
 /* Health Bars */
 .bar-container {
-    height: 6px;
+    height: 8px; /* UPDATED: Thicker bars */
     background: #e2e8f0;
     border-radius: 4px;
     overflow: hidden;
-    margin-top: 4px;
+    margin-top: 6px;
+    position: relative;
 }
 
 .bar-fill {
@@ -422,17 +427,18 @@ html {
     left: 50%;
     transform: translateX(-50%);
     font-weight: 800;
-    font-size: 1.25rem;
-    text-shadow: 0 2px 0 rgba(255,255,255,0.8);
+    font-size: 1.5rem; /* Larger font */
+    text-shadow: 0 2px 0 rgba(255,255,255,1), 0 0 10px rgba(255,255,255,0.8);
     pointer-events: none;
-    animation: floatUp 0.8s ease-out forwards;
+    animation: floatUp 1.2s ease-out forwards;
     z-index: 50;
+    white-space: nowrap;
 }
 
 @keyframes floatUp {
-    0% { top: 20%; opacity: 0; transform: translateX(-50%) scale(0.5); }
-    20% { opacity: 1; transform: translateX(-50%) scale(1.2); }
-    100% { top: -20%; opacity: 0; transform: translateX(-50%) scale(1); }
+    0% { top: 30%; opacity: 0; transform: translateX(-50%) scale(0.5); }
+    15% { opacity: 1; transform: translateX(-50%) scale(1.4); }
+    100% { top: -40%; opacity: 0; transform: translateX(-50%) scale(1); }
 }
 
 /* --- 5. Garden & Forge Styles --- */
@@ -586,3 +592,52 @@ html {
     background: white;
     box-shadow: 0 0 10px white;
 }
+
+/* =========================================
+   NEW BATTLE ANIMATIONS (EPIC UPDATES)
+   ========================================= */
+
+/* Attack Lunge (Hero moving right) */
+@keyframes lunge-right {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-10px) scale(0.95); } /* Wind up */
+    40% { transform: translateX(60px) scale(1.1); }   /* Strike */
+    100% { transform: translateX(0); }
+}
+
+/* Attack Lunge (Enemy moving left) */
+@keyframes lunge-left {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(10px) scale(0.95); } /* Wind up */
+    40% { transform: translateX(-60px) scale(1.1); } /* Strike */
+    100% { transform: translateX(0); }
+}
+
+/* Hit Shake (Taking damage) */
+@keyframes shake-damage {
+    0% { transform: translate(0, 0); filter: brightness(1); }
+    20% { transform: translate(-8px, 0); filter: brightness(2) sepia(1) saturate(5) hue-rotate(-50deg); /* Flash Red */ }
+    40% { transform: translate(8px, 0); }
+    60% { transform: translate(-8px, 0); }
+    80% { transform: translate(8px, 0); }
+    100% { transform: translate(0, 0); filter: brightness(1); }
+}
+
+/* Magic Cast (Pulse) */
+@keyframes magic-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+    50% { transform: scale(1.1); box-shadow: 0 0 20px 10px rgba(99, 102, 241, 0); }
+    100% { transform: scale(1); }
+}
+
+/* Death Fade */
+@keyframes death-fade {
+    0% { opacity: 1; filter: grayscale(0); }
+    100% { opacity: 0.4; filter: grayscale(1) blur(2px); transform: scale(0.9); }
+}
+
+.anim-lunge-right { animation: lunge-right 0.6s ease-in-out; z-index: 50; }
+.anim-lunge-left { animation: lunge-left 0.6s ease-in-out; z-index: 50; }
+.anim-hit { animation: shake-damage 0.5s ease-in-out; }
+.anim-cast { animation: magic-pulse 0.8s ease-in-out; }
+.anim-die { animation: death-fade 0.5s forwards; }
