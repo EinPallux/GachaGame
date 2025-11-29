@@ -37,7 +37,7 @@ function updateCurrencyDisplay(gameState) {
 }
 
 // ===========================
-// TEAM SELECTION (UPDATED FOR BIG SCREEN, POWER STATS & STARS)
+// TEAM SELECTION
 // ===========================
 
 function showHeroSelectionModal(slotIndex, gameState) {
@@ -56,7 +56,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
     header.textContent = `Select Hero for Slot ${slotIndex + 1}`;
     container.appendChild(header);
 
-    // Grid - Increased columns for wider layout
+    // Grid
     const grid = document.createElement('div');
     grid.className = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4';
 
@@ -111,7 +111,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
         };
         imgContainer.appendChild(img);
 
-        // NEW: Star Level (Top Left)
+        // Star Level (Top Left)
         const starBadge = document.createElement('div');
         starBadge.className = "absolute top-1 left-1 text-[10px] text-yellow-400 font-bold z-10 drop-shadow-md";
         starBadge.textContent = '⭐'.repeat(hero.stars);
@@ -132,9 +132,8 @@ function showHeroSelectionModal(slotIndex, gameState) {
 
         card.appendChild(imgContainer);
 
-        // Info - UPDATED with Power Value (PW)
+        // Info
         const pw = hero.getPower ? hero.getPower() : 0;
-        
         const info = document.createElement('div');
         info.className = 'p-2 text-center border-t border-slate-100';
         info.innerHTML = `
@@ -158,19 +157,13 @@ function showHeroSelectionModal(slotIndex, gameState) {
 
 // Global handler for selection
 window.selectHeroForSlot = function(slotIndex, heroId) {
-    // 1. Update State
     window.gameState.setTeamMember(slotIndex, heroId);
-    
-    // 2. Save
     saveGame(window.gameState);
     
-    // 3. Update UI
-    // We need to refresh the battle dashboard specifically if it's active
     if (typeof renderBattleDashboard === 'function') {
         renderBattleDashboard(window.gameState);
     }
     
-    // 4. Close Modal
     closeModal();
     showNotification(heroId ? 'Hero assigned!' : 'Slot cleared.', 'success');
 };
@@ -207,10 +200,7 @@ function renderRoster(gameState) {
     `;
     
     container.innerHTML = headerHtml;
-    
-    // Store ref for onchange handlers
     window.gameStateRef = gameState;
-    
     renderRosterGrid(gameState);
 }
 
@@ -263,9 +253,9 @@ function createHeroCard(hero) {
     const imgContainer = document.createElement('div');
     imgContainer.className = 'relative overflow-hidden';
 
-    // 3. Image Element with Error Handling
+    // 3. Image Element
     const img = document.createElement('img');
-    img.src = `images/${hero.id}.jpg`; // FIXED PATH
+    img.src = `images/${hero.id}.jpg`;
     img.className = 'hero-card-image transition-transform duration-500 group-hover:scale-110';
     img.alt = hero.name;
     
@@ -276,18 +266,20 @@ function createHeroCard(hero) {
 
     imgContainer.appendChild(img);
 
-    // 4. Badges (Level & Rarity)
-    const levelBadge = document.createElement('div');
-    levelBadge.className = 'absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded';
-    levelBadge.textContent = `Lv.${hero.level}`;
-    imgContainer.appendChild(levelBadge);
+    // 4. Badges (Updated)
+    // STAR LEVEL (Top Left - Replaced old Level Badge)
+    const starBadge = document.createElement('div');
+    starBadge.className = 'absolute top-2 left-2 text-[12px] text-yellow-400 font-bold z-10 drop-shadow-md';
+    starBadge.textContent = '⭐'.repeat(hero.stars);
+    imgContainer.appendChild(starBadge);
 
+    // RARITY (Top Right)
     const rarityBadge = document.createElement('div');
     rarityBadge.className = `absolute top-2 right-2 badge-${hero.rarity} text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm`;
     rarityBadge.textContent = hero.rarity;
     imgContainer.appendChild(rarityBadge);
 
-    // 5. Info Section
+    // 5. Info Section (With Level & PW)
     const pw = hero.getPower ? hero.getPower() : 0;
     
     const infoDiv = document.createElement('div');
@@ -296,7 +288,8 @@ function createHeroCard(hero) {
         <div class="font-bold text-slate-800 text-sm truncate">${hero.name}</div>
         <div class="flex justify-between items-center mt-1">
             <div class="text-xs text-slate-500 flex items-center gap-1">
-                <span>${getElementEmoji(hero.element)}</span>
+                <span>Lv.${hero.level}</span>
+                <span class="text-slate-300">•</span>
                 <span>${hero.class}</span>
             </div>
             <div class="text-[9px] font-bold text-amber-500 bg-amber-50 px-1.5 rounded border border-amber-100">PW: ${formatNumber(pw)}</div>
@@ -325,18 +318,15 @@ function createHeroPlaceholderElement(hero) {
 }
 
 // ===========================
-// HERO DETAILS MODAL (REDESIGNED FOR BIG SCREEN)
+// HERO DETAILS MODAL
 // ===========================
 
 function showHeroDetails(hero, gameState) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
     
-    // Level Up Calculations
     const xpNeeded = hero.getUpgradeCost();
     const canAfford = gameState.gold >= xpNeeded;
-    
-    // Awakening Calculations
     const maxStars = 5; 
     const isMaxStars = hero.stars >= maxStars;
     const shardsRequired = hero.stars * 10;
@@ -349,10 +339,8 @@ function showHeroDetails(hero, gameState) {
         shardProgress = 100;
     }
 
-    // NEW 2-COLUMN LAYOUT
     const html = `
         <div class="flex flex-col md:flex-row h-full min-h-[600px] md:h-[700px]">
-            
             <div class="w-full md:w-5/12 relative bg-slate-900 overflow-hidden group">
                 <img src="images/${hero.id}.jpg" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
                      onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-slate-800 flex items-center justify-center text-white font-bold text-6xl\'>${hero.name.substring(0,2).toUpperCase()}</div>'">
@@ -464,7 +452,6 @@ function showHeroDetails(hero, gameState) {
     
     modalBody.innerHTML = html;
     
-    // Bind Events
     const lvlBtn = document.getElementById('modal-levelup-btn');
     if (lvlBtn && canAfford) {
         lvlBtn.onclick = () => {
@@ -474,13 +461,12 @@ function showHeroDetails(hero, gameState) {
                 gameState.updateQuest('levelUp', 1);
                 saveGame(gameState);
                 updateUI(gameState);
-                renderRoster(gameState); // Refresh grid
-                showHeroDetails(hero, gameState); // Refresh modal
+                renderRoster(gameState);
+                showHeroDetails(hero, gameState);
             }
         };
     }
     
-    // Bind Awaken
     const awakenBtn = document.getElementById('modal-awaken-btn');
     if (awakenBtn && !isMaxStars) {
         awakenBtn.onclick = () => {
@@ -503,7 +489,6 @@ function showHeroDetails(hero, gameState) {
         };
     }
     
-    // Show Modal
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden');
     requestAnimationFrame(() => {
@@ -512,7 +497,7 @@ function showHeroDetails(hero, gameState) {
 }
 
 // ===========================
-// QUESTS TAB (UPDATED)
+// QUESTS TAB
 // ===========================
 
 function renderQuests(gameState) {
@@ -530,14 +515,12 @@ function renderQuests(gameState) {
         const progress = Math.min(100, (quest.current / quest.target) * 100);
         const isFinished = quest.current >= quest.target;
         
-        // Difficulty Badge Color
         let diffColor = 'bg-slate-100 text-slate-500';
         if (quest.difficulty === 'Easy') diffColor = 'bg-green-100 text-green-600';
         if (quest.difficulty === 'Medium') diffColor = 'bg-blue-100 text-blue-600';
         if (quest.difficulty === 'Hard') diffColor = 'bg-orange-100 text-orange-600';
         if (quest.difficulty === 'Insane') diffColor = 'bg-purple-100 text-purple-600';
 
-        // Rewards HTML
         let rewardsHtml = '';
         if (quest.reward) {
             for (const [key, val] of Object.entries(quest.reward)) {
@@ -589,7 +572,6 @@ function renderQuests(gameState) {
     html += `</div>`;
     container.innerHTML = html;
     
-    // Global function for the onclick handler
     window.claimQuestReward = (qid) => {
         const reward = gameState.claimQuest(qid);
         if (reward) {
@@ -602,7 +584,7 @@ function renderQuests(gameState) {
 }
 
 // ===========================
-// EXPEDITION TAB
+// EXPEDITION & PROFILE TABS
 // ===========================
 
 function updateExpeditionUI(gameState) {
@@ -657,10 +639,6 @@ function updateExpeditionUI(gameState) {
         }
     };
 }
-
-// ===========================
-// SETTINGS / PROFILE TAB
-// ===========================
 
 function renderProfile(gameState) {
     const container = document.getElementById('settings-tab');
