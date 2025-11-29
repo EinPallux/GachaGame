@@ -144,7 +144,7 @@ const GARDEN_ITEMS_DATABASE = {
     seeds: [
         { id: 's001', name: 'Sakura Seed', emoji: '🌸', growthTime: 10000, resultId: 't001', desc: 'Fast growing healing herb.' },
         { id: 's002', name: 'Matcha Seed', emoji: '🍵', growthTime: 30000, resultId: 't002', desc: 'Takes time, yields power.' },
-        { id: 's003', name: 'Dragon Seed', emoji: '🐉', growthTime: 60000, resultId: 't003', desc: 'Rare seed with potent magic.' }
+        { id: 's003', name: 'Dragon Seed', emoji: '🐲', growthTime: 60000, resultId: 't003', desc: 'Rare seed with potent magic.' }
     ],
     teas: [
         { id: 't001', name: 'Sakura Tea', emoji: '🌸', desc: 'Heal 30% HP', effectType: 'heal', effectValue: 0.3 },

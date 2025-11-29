@@ -127,7 +127,7 @@ class Hero {
         this.calculateStats(skillTreeBonuses);
         
         // NOTE: We do NOT heal here anymore.
-        // NOTE: We do NOT reset Mana here anymore (it persists).
+        // NOTE: We do NOT reset Mana here anymore (it persists between waves).
         
         this.buffs = [];
         this.debuffs = [];
@@ -261,7 +261,10 @@ class Enemy {
         this.mana = Math.min(this.maxMana, this.mana + amount);
     }
     
-    getHPPercent() { return (this.currentHP / this.maxHP) * 100; }
+    getHPPercent() { 
+        if (this.maxHP === 0) return 0;
+        return Math.max(0, Math.min(100, (this.currentHP / this.maxHP) * 100)); 
+    }
 }
 
 // ===========================

@@ -346,7 +346,7 @@ html {
 /* Battle Arena Layout */
 .battle-dashboard {
     display: grid;
-    grid-template-columns: 320px 1fr 320px; /* UPDATED: Wider sidebars */
+    grid-template-columns: 320px 1fr 320px;
     gap: 1.5rem;
     height: 100%;
 }
@@ -367,78 +367,188 @@ html {
     }
 }
 
-/* Battle Units (Cards in Combat) */
+/* ===========================
+   NEW CARD DESIGN (Redesign)
+   =========================== */
+
+/* The Main Card Container */
 .battle-unit {
     position: relative;
     background: white;
-    border-radius: 1.25rem; /* Larger border radius */
-    padding: 1rem; /* More padding */
-    box-shadow: 0 8px 16px rgba(0,0,0,0.08); /* Stronger shadow */
-    transition: all 0.2s;
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    transition: all 0.2s ease-out;
     border: 3px solid transparent;
-    width: 16rem; /* UPDATED: Much Larger width */
+    width: 16rem; 
+    height: 20rem; /* Fixed height for consistency */
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* Ensures image stays inside corners */
+    user-select: none;
 }
 
-.battle-unit.is-hero {
-    border-color: #e2e8f0;
+/* Border States */
+.battle-unit.is-hero { border-color: transparent; }
+.battle-unit.is-enemy { border-color: transparent; }
+.battle-unit.is-enemy:hover { border-color: #fee2e2; }
+
+/* The Top Image Section */
+.battle-unit-image-area {
+    width: 100%;
+    height: 55%; /* Top half */
+    position: relative;
+    background: #f1f5f9;
 }
 
-.battle-unit.is-enemy {
-    border-color: #fee2e2;
+.battle-unit-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
 }
 
-.battle-unit.active-turn {
-    transform: scale(1.05);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+/* Zoom effect on turn */
+.battle-unit.active-turn .battle-unit-img {
+    transform: scale(1.1);
+}
+
+/* Gradient Overlay for Name Readability */
+.battle-unit-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70%;
+    background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.6) 20%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 1rem 0.5rem 1rem;
     z-index: 10;
 }
 
-.battle-unit.dead {
-    filter: grayscale(1);
-    opacity: 0.6;
-    transform: scale(0.95);
+/* Text in the Overlay */
+.battle-unit-name {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #1e293b;
+    line-height: 1.1;
+    margin-bottom: 2px;
 }
 
-/* Health Bars */
-.bar-container {
-    height: 10px; /* UPDATED: Even Thicker bars */
+.battle-unit-info {
+    font-size: 0.65rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* The Bottom Stats Section */
+.battle-unit-stats-area {
+    flex: 1;
+    padding: 0.5rem 1rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: white;
+    z-index: 10;
+}
+
+/* Stat Grid (ATK, DEF, SPD) */
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stat-val {
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.stat-icon {
+    font-size: 0.7rem;
+}
+
+/* Bar Groups */
+.bar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.bar-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    font-weight: 700;
+}
+
+/* Bars */
+.bar-track {
+    width: 100%;
+    height: 6px; /* Rounded and thin */
     background: #e2e8f0;
-    border-radius: 6px;
+    border-radius: 999px;
     overflow: hidden;
-    margin-top: 6px;
-    position: relative;
 }
 
 .bar-fill {
     height: 100%;
-    transition: width 0.3s ease-out;
+    border-radius: 999px;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bar-fill.hp { background: #10b981; }
 .bar-fill.hp.low { background: #ef4444; }
 .bar-fill.mana { background: #3b82f6; }
 
+/* Active Turn Highlight (Outer Ring) */
+.battle-unit.active-turn {
+    transform: translateY(-5px);
+    box-shadow: 0 0 0 4px rgba(255, 158, 181, 0.6), 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.battle-unit.dead {
+    filter: grayscale(1);
+    opacity: 0.6;
+    transform: scale(0.95);
+    pointer-events: none;
+}
+
 /* Damage Floaters */
 .damage-number {
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
-    font-weight: 800;
-    font-size: 2rem; /* Much Larger font */
-    text-shadow: 0 2px 0 rgba(255,255,255,1), 0 0 10px rgba(255,255,255,0.8);
+    top: 40%;
+    transform: translate(-50%, -50%);
+    font-weight: 900;
+    font-size: 2.5rem; /* Large impact font */
+    text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff; /* White outline */
     pointer-events: none;
-    animation: floatUp 1.2s ease-out forwards;
+    animation: popAndFloat 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     z-index: 50;
     white-space: nowrap;
 }
 
-@keyframes floatUp {
-    0% { top: 30%; opacity: 0; transform: translateX(-50%) scale(0.5); }
-    15% { opacity: 1; transform: translateX(-50%) scale(1.4); }
-    100% { top: -40%; opacity: 0; transform: translateX(-50%) scale(1); }
+@keyframes popAndFloat {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    30% { transform: translate(-50%, -80%) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -150%) scale(1); opacity: 0; }
 }
 
 /* --- 5. Garden & Forge Styles --- */
@@ -520,7 +630,6 @@ html {
    GACHA ANIMATION UPGRADES
    ========================================= */
 
-/* 1. The Shrine Shake (Charging Up) */
 @keyframes violent-shake {
     0% { transform: translate(0, 0) rotate(0deg); }
     25% { transform: translate(-2px, 2px) rotate(-1deg); }
@@ -533,7 +642,6 @@ html {
     animation: violent-shake 0.1s infinite;
 }
 
-/* 2. The Beam Expansion (Shooting to the sky) */
 @keyframes beam-expand-epic {
     0% { height: 0%; opacity: 0; width: 10px; }
     10% { height: 100%; opacity: 1; width: 20px; }
@@ -541,14 +649,12 @@ html {
     100% { height: 100%; opacity: 0; width: 1000px; }
 }
 
-/* 3. The Screen Flash (The Transition) */
 @keyframes screen-flash-white {
     0% { opacity: 0; }
     50% { opacity: 1; background: white; }
     100% { opacity: 0; }
 }
 
-/* 4. Rarity Specific Beam/Flash Colors */
 .gacha-beam {
     position: absolute;
     bottom: 0;
@@ -564,8 +670,6 @@ html {
 .beam-R { background: linear-gradient(to top, #3B82F6, white); box-shadow: 0 0 50px #3B82F6; }
 .beam-SR { background: linear-gradient(to top, #8B5CF6, white); box-shadow: 0 0 50px #8B5CF6; }
 .beam-SSR { background: linear-gradient(to top, #F59E0B, #FEF3C7); box-shadow: 0 0 80px #F59E0B; }
-
-/* UR gets a special animated rainbow beam */
 .beam-UR { 
     background: linear-gradient(to top, #ec4899, #8b5cf6, #3b82f6, #10b981, #f59e0b); 
     box-shadow: 0 0 100px rgba(255, 255, 255, 0.8);
@@ -578,7 +682,6 @@ html {
     to { filter: hue-rotate(360deg); }
 }
 
-/* 5. Particle Effects (Orbs rising) */
 @keyframes float-up-fast {
     0% { transform: translateY(0) scale(1); opacity: 0; }
     20% { opacity: 1; }
@@ -594,10 +697,9 @@ html {
 }
 
 /* =========================================
-   NEW BATTLE ANIMATIONS (EPIC UPDATES)
+   BATTLE ANIMATION FIXES
    ========================================= */
 
-/* Golden Glow Pulsate for Ultimates */
 @keyframes pulsate-gold {
     0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); border-color: rgba(251, 191, 36, 0.5); }
     50% { box-shadow: 0 0 20px 5px rgba(251, 191, 36, 0.6); border-color: rgba(251, 191, 36, 1); }
@@ -610,47 +712,45 @@ html {
     border: 3px solid #f59e0b !important;
 }
 
-/* Attack Lunge (Hero moving right) */
+/* Hero moving RIGHT to attack enemy */
 @keyframes lunge-right {
     0% { transform: translateX(0); }
-    20% { transform: translateX(-20px) scale(0.9); } /* Wind up */
-    40% { transform: translateX(100px) scale(1.1); }   /* Strike (Further!) */
+    30% { transform: translateX(-30px) rotate(-5deg); } /* Wind up */
+    50% { transform: translateX(200px) rotate(5deg); }  /* Strike */
     100% { transform: translateX(0); }
 }
 
-/* Attack Lunge (Enemy moving left) */
+/* Enemy moving LEFT to attack hero */
 @keyframes lunge-left {
     0% { transform: translateX(0); }
-    20% { transform: translateX(20px) scale(0.9); } /* Wind up */
-    40% { transform: translateX(-100px) scale(1.1); } /* Strike (Further!) */
+    30% { transform: translateX(30px) rotate(5deg); }   /* Wind up */
+    50% { transform: translateX(-200px) rotate(-5deg); } /* Strike */
     100% { transform: translateX(0); }
 }
 
-/* Hit Shake (Taking damage) */
 @keyframes shake-damage {
-    0% { transform: translate(0, 0); filter: brightness(1); }
-    20% { transform: translate(-10px, 0); filter: brightness(2) sepia(1) saturate(5) hue-rotate(-50deg); /* Flash Red */ }
-    40% { transform: translate(10px, 0); }
-    60% { transform: translate(-10px, 0); }
-    80% { transform: translate(10px, 0); }
-    100% { transform: translate(0, 0); filter: brightness(1); }
+    0% { transform: translateX(0); filter: brightness(1); }
+    20% { transform: translateX(-15px); filter: brightness(2) saturate(2) sepia(1) hue-rotate(-50deg); /* Red flash */ }
+    40% { transform: translateX(15px); }
+    60% { transform: translateX(-15px); }
+    80% { transform: translateX(15px); }
+    100% { transform: translateX(0); filter: brightness(1); }
 }
 
-/* Magic Cast (Pulse) */
 @keyframes magic-pulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-    50% { transform: scale(1.1); box-shadow: 0 0 20px 10px rgba(99, 102, 241, 0); }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); filter: brightness(1); }
+    50% { transform: scale(1.1); box-shadow: 0 0 30px 10px rgba(99, 102, 241, 0); filter: brightness(1.5); }
     100% { transform: scale(1); }
 }
 
-/* Death Fade */
 @keyframes death-fade {
     0% { opacity: 1; filter: grayscale(0); }
-    100% { opacity: 0.4; filter: grayscale(1) blur(2px); transform: scale(0.9); }
+    100% { opacity: 0.5; filter: grayscale(1) blur(2px); transform: scale(0.9); }
 }
 
-.anim-lunge-right { animation: lunge-right 0.6s ease-in-out; z-index: 50; }
-.anim-lunge-left { animation: lunge-left 0.6s ease-in-out; z-index: 50; }
-.anim-hit { animation: shake-damage 0.5s ease-in-out; }
+/* Important: z-index ensures moving units stay on top */
+.anim-lunge-right { animation: lunge-right 0.6s ease-in-out; z-index: 100; }
+.anim-lunge-left { animation: lunge-left 0.6s ease-in-out; z-index: 100; }
+.anim-hit { animation: shake-damage 0.4s ease-in-out; }
 .anim-cast { animation: magic-pulse 0.8s ease-in-out; }
 .anim-die { animation: death-fade 0.5s forwards; }

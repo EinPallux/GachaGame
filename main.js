@@ -215,6 +215,12 @@ function showToast(message, type = 'info') {
     }
 }
 
+function showWelcomeMessage() {
+    // Basic welcome modal or toast for new players
+    // For now, simpler is better:
+    // showHeroSelectionModal(0, window.gameState); // Optional: Prompt to pick a starter?
+}
+
 function closeModal() {
     const modal = document.getElementById('modal-overlay');
     if (modal) {
@@ -229,6 +235,11 @@ function closeModal() {
 
 // Debug Commands
 window.debug = {
+    help: () => console.table({
+        'addGold(amt)': 'Add Gold',
+        'addPetals(amt)': 'Add Petals', 
+        'reset()': 'Wipe Save'
+    }),
     addGold: (amt) => { gameState.gold += amt; updateUI(gameState); },
     addPetals: (amt) => { gameState.petals += amt; updateUI(gameState); },
     

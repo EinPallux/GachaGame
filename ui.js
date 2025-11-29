@@ -90,11 +90,11 @@ function showHeroSelectionModal(slotIndex, gameState) {
 
         // Image Container
         const imgContainer = document.createElement('div');
-        imgContainer.className = 'aspect-[3/4] rounded-xl overflow-hidden relative';
+        imgContainer.className = 'relative overflow-hidden'; // Consistent with roster
 
         const img = document.createElement('img');
-        img.src = `images/${hero.id}.jpg`; // FIXED PATH
-        img.className = 'w-full h-full object-cover';
+        img.src = `images/${hero.id}.jpg`;
+        img.className = 'hero-card-image'; // Uses global CSS class
         
         // Error Handler
         img.onerror = () => {
@@ -105,7 +105,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
                 'Dark': 'from-purple-500 to-indigo-600'
             };
             const gradient = colors[hero.element] || 'from-slate-400 to-slate-600';
-            div.className = `w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90`;
+            div.className = `w-full aspect-[3/4] bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90`;
             div.textContent = hero.name.substring(0, 2).toUpperCase();
             img.replaceWith(div);
         };
@@ -128,7 +128,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
 
         // Info
         const info = document.createElement('div');
-        info.className = 'text-center mt-1';
+        info.className = 'p-2 text-center bg-white border-t border-slate-100';
         info.innerHTML = `
             <div class="text-xs font-bold text-slate-700 truncate">${hero.name}</div>
             <div class="text-[10px] text-slate-500">Lv.${hero.level}</div>
@@ -156,7 +156,7 @@ window.selectHeroForSlot = function(slotIndex, heroId) {
     saveGame(window.gameState);
     
     // 3. Update UI
-    // We need to refresh the battle dashboard specifically
+    // We need to refresh the battle dashboard specifically if it's active
     if (typeof renderBattleDashboard === 'function') {
         renderBattleDashboard(window.gameState);
     }
@@ -256,7 +256,7 @@ function createHeroCard(hero) {
 
     // 3. Image Element with Error Handling
     const img = document.createElement('img');
-    img.src = `images/${hero.id}.jpg`; // FIXED PATH
+    img.src = `images/${hero.id}.jpg`;
     img.className = 'hero-card-image transition-transform duration-500 group-hover:scale-110';
     img.alt = hero.name;
     
@@ -313,20 +313,6 @@ function createHeroPlaceholderElement(hero) {
     div.className = `w-full aspect-[3/4] bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90 transition-transform duration-500 group-hover:scale-110`;
     div.textContent = hero.name.substring(0, 2).toUpperCase();
     return div;
-}
-
-// Retaining string version for non-DOM contexts if needed
-function createHeroPlaceholder(hero) {
-    const colors = {
-        'Fire': 'from-red-400 to-orange-500',
-        'Water': 'from-blue-400 to-cyan-500',
-        'Wind': 'from-emerald-400 to-teal-500',
-        'Light': 'from-yellow-300 to-amber-500',
-        'Dark': 'from-purple-500 to-indigo-600'
-    };
-    const gradient = colors[hero.element] || 'from-slate-400 to-slate-600';
-    const initials = hero.name.substring(0, 2).toUpperCase();
-    return `<div class="w-full aspect-[3/4] bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-4xl font-heading font-bold opacity-90">${initials}</div>`;
 }
 
 // ===========================
@@ -469,7 +455,6 @@ function showHeroDetails(hero, gameState) {
                 
                 showNotification(`Awakened! ${hero.name} is now ${hero.stars} Stars!`, 'success');
                 
-                // Play particle effect on the star area if possible
                 if(typeof playParticleEffect === 'function') {
                     playParticleEffect(awakenBtn);
                 }
@@ -555,7 +540,6 @@ function updateExpeditionUI(gameState) {
     if (!container) return;
     
     const rewards = gameState.calculateExpeditionRewards();
-    const isRunning = gameState.expedition.isActive;
     
     container.innerHTML = `
         <div class="max-w-2xl mx-auto mt-8 animate-entry">

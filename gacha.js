@@ -291,10 +291,9 @@ function showGachaResults(results) {
         const imgContainer = document.createElement('div');
         imgContainer.className = 'absolute inset-0';
         const img = document.createElement('img');
-        img.src = `images/${r.hero.id}.jpg`; // FIXED PATH
-        img.className = 'w-full h-full object-cover transition-transform duration-500 group-hover:scale-110';
+        img.src = `images/${r.hero.id}.jpg`;
+        img.className = 'hero-card-image transition-transform duration-500 group-hover:scale-110'; // Updated to match styles.css
         img.onerror = () => {
-            // Placeholder logic from ui.js
             const div = document.createElement('div');
             const colors = {
                 'Fire': 'from-red-400 to-orange-500', 'Water': 'from-blue-400 to-cyan-500',
