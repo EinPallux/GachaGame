@@ -178,7 +178,7 @@ function processBattleTurn(gameState, battleState) {
                 if (target) performAttack(unit, target, battleState, false);
             }
             
-            updateBattleUI(gameState, battleState);
+            // Updates primarily handled inside performAttack now
             
         }, index * turnDuration);
         
@@ -212,10 +212,10 @@ function performAttack(attacker, defender, battleState, isHero) {
     
     damage = Math.floor(damage);
     
-    // Trigger Animation (Lunge)
+    // Trigger Animation (Lunge) - Immediate
     playAttackAnimation(attacker, isHero ? 'right' : 'left');
     
-    // Impact Event (300ms matches the 50% mark of the 600ms lunge animation)
+    // Impact Event (Delayed to sync with animation)
     setTimeout(() => {
         playHitAnimation(defender);
         defender.takeDamage(damage);
@@ -228,25 +228,25 @@ function performAttack(attacker, defender, battleState, isHero) {
         
         showFloatingText(defender, `-${damage}${critText}`, isCrit ? 'crit' : 'damage');
         
-        // INSTANT VICTORY CHECK
-        // If the attacker was a hero, we check if all enemies are dead immediately
+        // CRITICAL FIX: Update UI *BEFORE* checking victory so the empty HP bar is shown
+        updateBattleUI(window.gameState, battleState); 
+
+        // VICTORY / DEFEAT CHECKS
         if (isHero) {
             const livingEnemies = battleState.enemies.filter(e => e.isAlive);
             if (livingEnemies.length === 0) {
-                handleWaveVictory(window.gameState, battleState);
-                return; // Stop further updates
+                setTimeout(() => handleWaveVictory(window.gameState, battleState), 200);
+                return;
             }
         } else {
-            // Check defeat
             const livingHeroes = battleState.heroes.filter(h => h.isAlive);
             if (livingHeroes.length === 0) {
-                handleRunDefeat(window.gameState, battleState);
+                setTimeout(() => handleRunDefeat(window.gameState, battleState), 200);
                 return;
             }
         }
 
-        updateBattleUI(window.gameState, battleState); 
-    }, 300);
+    }, 300); // 300ms delay for hit impact
 }
 
 function useHeroUltimate(hero, battleState, gameState) {
@@ -287,14 +287,15 @@ function useHeroUltimate(hero, battleState, gameState) {
         }
         
         // Check victory after ultimate
+        updateBattleUI(gameState, battleState);
+        
         const livingEnemies = battleState.enemies.filter(e => e.isAlive);
         if (livingEnemies.length === 0) {
-            handleWaveVictory(gameState, battleState);
+            setTimeout(() => handleWaveVictory(gameState, battleState), 200);
             return;
         }
 
         gameState.updateQuest('useUltimates', 1);
-        updateBattleUI(gameState, battleState);
     }, 400); 
 }
 
@@ -321,10 +322,9 @@ function playAttackAnimation(unit, direction) {
     const el = getUnitElement(unit);
     if (!el) return;
     
-    // Classes defined in styles.css: anim-lunge-right, anim-lunge-left
     const animClass = direction === 'right' ? 'anim-lunge-right' : 'anim-lunge-left';
     el.classList.remove(animClass); // Reset
-    void el.offsetWidth; // Trigger reflow
+    void el.offsetWidth; // Trigger reflow to restart animation
     el.classList.add(animClass);
     
     setTimeout(() => el.classList.remove(animClass), 600);
@@ -637,22 +637,28 @@ window.useTea = function(id, gameState) {
 };
 
 // ===========================================
-// NEW RENDER UNITS (CARD STYLE DESIGN)
+// NEW RENDER UNITS (SMART UPDATE)
 // ===========================================
 
 function renderUnits(container, units, isHero) {
-    container.innerHTML = '';
-    
+    // 1. Identify existing nodes to PRESERVE animations
+    const existingNodes = new Map();
+    Array.from(container.children).forEach(el => {
+        const id = el.getAttribute('data-unit-id');
+        if(id) existingNodes.set(id, el);
+    });
+
+    const activeIds = new Set();
+
     units.forEach(unit => {
         const unitId = unit.instanceId || unit.id;
+        activeIds.add(unitId);
+
+        let div = existingNodes.get(unitId);
         
-        const div = document.createElement('div');
-        div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy'} ${!unit.isAlive ? 'dead' : ''}`;
-        div.setAttribute('data-unit-id', unitId);
-        
+        // Calculation Data
         const hpPct = unit.getHPPercent();
         const hpText = `${Math.floor(unit.currentHP)}/${unit.maxHP}`;
-        
         let mpPct = 0;
         let mpText = '';
         if (isHero) {
@@ -660,62 +666,99 @@ function renderUnits(container, units, isHero) {
             mpText = `${Math.floor(unit.mana)}/${unit.maxMana}`;
         }
 
-        const imgSrc = isHero ? `images/${unit.id}.jpg` : `images/enemies/${unit.id}.jpg`;
-        const initial = unit.name ? unit.name[0].toUpperCase() : '?';
-
-        // NEW CARD HTML STRUCTURE
-        div.innerHTML = `
-            <div class="battle-unit-image-area">
-                <img src="${imgSrc}" class="battle-unit-img" 
-                     onerror="this.style.display='none'; this.nextElementSibling.style.background='#cbd5e1';">
-                
-                <div class="battle-unit-overlay">
-                     <div class="battle-unit-name">${unit.name}</div>
-                     <div class="battle-unit-info">${isHero ? `Lv.${unit.level} ${unit.class}` : `Wave ${currentBattleState.waveNumber}`}</div>
-                </div>
-            </div>
+        // CREATE (if doesn't exist)
+        if (!div) {
+            div = document.createElement('div');
+            div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy'}`;
+            div.setAttribute('data-unit-id', unitId);
             
-            <div class="battle-unit-stats-area">
-                <div class="stat-row">
-                     <div class="stat-item">
-                        <span class="stat-val">${unit.atk}</span>
-                        <span class="stat-icon text-red-400"><i class="fa-solid fa-sword"></i></span>
-                     </div>
-                     <div class="stat-item">
-                        <span class="stat-val">${unit.def}</span>
-                        <span class="stat-icon text-blue-400"><i class="fa-solid fa-shield"></i></span>
-                     </div>
-                     <div class="stat-item">
-                        <span class="stat-val">${unit.spd}</span>
-                        <span class="stat-icon text-green-400"><i class="fa-solid fa-wind"></i></span>
-                     </div>
+            const imgSrc = isHero ? `images/${unit.id}.jpg` : `images/enemies/${unit.id}.jpg`;
+            
+            div.innerHTML = `
+                <div class="battle-unit-image-area">
+                    <img src="${imgSrc}" class="battle-unit-img" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.background='#cbd5e1';">
+                    
+                    <div class="battle-unit-overlay">
+                         <div class="battle-unit-name">${unit.name}</div>
+                         <div class="battle-unit-info">${isHero ? `Lv.${unit.level} ${unit.class}` : `Wave ${currentBattleState.waveNumber}`}</div>
+                    </div>
                 </div>
+                
+                <div class="battle-unit-stats-area">
+                    <div class="stat-row">
+                         <div class="stat-item">
+                            <span class="stat-val stat-val-atk">${unit.atk}</span>
+                            <span class="stat-icon text-red-400"><i class="fa-solid fa-sword"></i></span>
+                         </div>
+                         <div class="stat-item">
+                            <span class="stat-val stat-val-def">${unit.def}</span>
+                            <span class="stat-icon text-blue-400"><i class="fa-solid fa-shield"></i></span>
+                         </div>
+                         <div class="stat-item">
+                            <span class="stat-val stat-val-spd">${unit.spd}</span>
+                            <span class="stat-icon text-green-400"><i class="fa-solid fa-wind"></i></span>
+                         </div>
+                    </div>
 
-                <div class="bar-groups">
-                     <div class="bar-group">
-                         <div class="bar-label-row text-slate-600">
-                             <span>HP</span>
-                             <span>${hpText}</span>
+                    <div class="bar-groups">
+                         <div class="bar-group">
+                             <div class="bar-label-row text-slate-600">
+                                 <span>HP</span>
+                                 <span class="hp-text">${hpText}</span>
+                             </div>
+                             <div class="bar-track">
+                                 <div class="bar-fill hp" style="width: ${hpPct}%"></div>
+                             </div>
                          </div>
-                         <div class="bar-track">
-                             <div class="bar-fill hp ${hpPct < 30 ? 'low' : ''}" style="width: ${hpPct}%"></div>
-                         </div>
-                     </div>
-                     
-                     ${isHero ? `
-                     <div class="bar-group">
-                         <div class="bar-label-row text-blue-500">
-                             <span>MP</span>
-                             <span>${mpText}</span>
-                         </div>
-                         <div class="bar-track">
-                             <div class="bar-fill mana" style="width: ${mpPct}%"></div>
-                         </div>
-                     </div>` : ''}
+                         
+                         ${isHero ? `
+                         <div class="bar-group">
+                             <div class="bar-label-row text-blue-500">
+                                 <span>MP</span>
+                                 <span class="mp-text">${mpText}</span>
+                             </div>
+                             <div class="bar-track">
+                                 <div class="bar-fill mana" style="width: ${mpPct}%"></div>
+                             </div>
+                         </div>` : ''}
+                    </div>
                 </div>
-            </div>
-        `;
-        container.appendChild(div);
+            `;
+            container.appendChild(div);
+        } else {
+            // UPDATE (Target specific elements to preserve animations on root)
+            
+            // 1. Stats
+            div.querySelector('.stat-val-atk').textContent = unit.atk;
+            div.querySelector('.stat-val-def').textContent = unit.def;
+            div.querySelector('.stat-val-spd').textContent = unit.spd;
+
+            // 2. HP Bar
+            const hpBar = div.querySelector('.bar-fill.hp');
+            hpBar.style.width = `${hpPct}%`;
+            if (hpPct < 30) hpBar.classList.add('low'); else hpBar.classList.remove('low');
+            
+            div.querySelector('.hp-text').textContent = hpText;
+
+            // 3. MP Bar
+            if (isHero) {
+                div.querySelector('.bar-fill.mana').style.width = `${mpPct}%`;
+                div.querySelector('.mp-text').textContent = mpText;
+            }
+        }
+
+        // Global Class Updates (Dead status)
+        if (!unit.isAlive) {
+            div.classList.add('dead');
+        } else {
+            div.classList.remove('dead');
+        }
+    });
+
+    // Remove nodes that are gone
+    existingNodes.forEach((node, id) => {
+        if(!activeIds.has(id)) node.remove();
     });
 }
 
@@ -733,7 +776,6 @@ function showFloatingText(unit, text, type) {
 }
 
 function handleWaveVictory(gameState, battleState) {
-    // Only run once
     if (battleState.waveComplete) return;
     battleState.waveComplete = true; 
     
@@ -749,7 +791,6 @@ function handleWaveVictory(gameState, battleState) {
     showToast(`Wave Cleared! +${gold} Gold`, 'success');
     saveGame(gameState);
     
-    // Show Next Wave Button INSTANTLY
     const btnContainer = document.getElementById('next-wave-container');
     if (btnContainer) {
         btnContainer.classList.remove('hidden');
@@ -757,8 +798,8 @@ function handleWaveVictory(gameState, battleState) {
 }
 
 function handleRunDefeat(gameState, battleState) {
-    if (battleState.waveComplete) return; 
-    battleState.waveComplete = true; // Stop processing
+    if (battleState.waveComplete) return;
+    battleState.waveComplete = true;
     
     stopBattle(gameState);
     showToast(`Run Ended at Wave ${gameState.currentWave}`, 'error');
