@@ -153,17 +153,71 @@ const GARDEN_ITEMS_DATABASE = {
     ]
 };
 
-// NEW: FORGE DATA (For Future Implementation)
+// ===========================
+// FORGE SYSTEM DATA
+// ===========================
+
 const FORGE_DATABASE = {
+    // Raw Materials (No Rarity)
     materials: [
-        { id: 'm001', name: 'Iron Ore', rarity: 'N', desc: 'Common crafting metal.' },
-        { id: 'm002', name: 'Spirit Dust', rarity: 'R', desc: 'Glowing magical powder.' },
-        { id: 'm003', name: 'Mithril', rarity: 'SR', desc: 'Incredibly light and strong.' },
-        { id: 'm004', name: 'Star Fragment', rarity: 'SSR', desc: 'Fallen from the cosmos.' }
+        { id: 'm001', name: 'Iron Ore', icon: 'fa-cubes-stacked', desc: 'Basic metal for forging weapons.' },
+        { id: 'm002', name: 'Leather Scraps', icon: 'fa-scroll', desc: 'Used for binding and armor.' },
+        { id: 'm003', name: 'Magic Dust', icon: 'fa-wand-magic-sparkles', desc: 'A shimmering powder.' },
+        { id: 'm004', name: 'Spirit Gem', icon: 'fa-gem', desc: 'Solidified spiritual energy.' },
+        { id: 'm005', name: 'Obsidian', icon: 'fa-mountain', desc: 'Extremely hard volcanic glass.' },
+        { id: 'm006', name: 'Dragon Scale', icon: 'fa-shield-dragon', desc: 'Rare plating from dragons.' },
+        { id: 'm007', name: 'Celestial Essence', icon: 'fa-star', desc: 'Pure light energy.' }
     ],
+    
+    // Equipment Recipes
     recipes: [
-        { id: 'r001', resultId: 'w002', name: 'Flame Blade', cost: 1000, materials: { 'm001': 10, 'm002': 2 } },
-        { id: 'r002', resultId: 'a003', name: 'Dragon Scale', cost: 5000, materials: { 'm001': 50, 'm003': 5 } }
+        // === WEAPONS (Main Stat: ATK) ===
+        // Common
+        { id: 'w001', name: 'Wooden Sword', type: 'weapon', rarity: 'Common', stats: { atk: 10 }, cost: 500, materials: { 'm001': 5, 'm002': 2 } },
+        // Rare
+        { id: 'w002', name: 'Iron Katana', type: 'weapon', rarity: 'Rare', stats: { atk: 25, spd: 2 }, cost: 1500, materials: { 'm001': 15, 'm002': 5 } },
+        // Epic
+        { id: 'w003', name: 'Steel Blade', type: 'weapon', rarity: 'Epic', stats: { atk: 60, spd: 5 }, cost: 5000, materials: { 'm001': 30, 'm003': 10 } },
+        // Legendary
+        { id: 'w004', name: 'Dragon Slayer', type: 'weapon', rarity: 'Legendary', stats: { atk: 120, spd: 10, crit: 5 }, cost: 15000, materials: { 'm001': 50, 'm006': 5, 'm005': 5 } },
+        // Mythic
+        { id: 'w005', name: 'Divine Edge', type: 'weapon', rarity: 'Mythic', stats: { atk: 250, spd: 20, crit: 10 }, cost: 50000, materials: { 'm006': 20, 'm007': 5, 'm004': 20 } },
+
+        // === ARTIFACTS (Main Stat: ATK + HP) ===
+        // Common
+        { id: 'a001', name: 'Old Scroll', type: 'artifact', rarity: 'Common', stats: { atk: 5, hp: 50 }, cost: 500, materials: { 'm002': 5, 'm003': 2 } },
+        // Rare
+        { id: 'a002', name: 'Rune Stone', type: 'artifact', rarity: 'Rare', stats: { atk: 15, hp: 150 }, cost: 1500, materials: { 'm002': 10, 'm003': 10 } },
+        // Epic
+        { id: 'a003', name: 'Magic Orb', type: 'artifact', rarity: 'Epic', stats: { atk: 35, hp: 400 }, cost: 5000, materials: { 'm003': 25, 'm004': 5 } },
+        // Legendary
+        { id: 'a004', name: 'Cursed Idol', type: 'artifact', rarity: 'Legendary', stats: { atk: 80, hp: 1000, def: 20 }, cost: 15000, materials: { 'm005': 15, 'm004': 15, 'm003': 40 } },
+        // Mythic
+        { id: 'a005', name: 'Holy Chalice', type: 'artifact', rarity: 'Mythic', stats: { atk: 150, hp: 2500, def: 50 }, cost: 50000, materials: { 'm007': 10, 'm004': 30, 'm003': 100 } },
+
+        // === RINGS (Main Stat: DEF + SPD) ===
+        // Common
+        { id: 'r001', name: 'Copper Ring', type: 'ring', rarity: 'Common', stats: { def: 5, spd: 1 }, cost: 500, materials: { 'm001': 5, 'm003': 1 } },
+        // Rare
+        { id: 'r002', name: 'Silver Band', type: 'ring', rarity: 'Rare', stats: { def: 15, spd: 3 }, cost: 1500, materials: { 'm001': 10, 'm004': 2 } },
+        // Epic
+        { id: 'r003', name: 'Gold Signet', type: 'ring', rarity: 'Epic', stats: { def: 35, spd: 8 }, cost: 5000, materials: { 'm001': 20, 'm004': 10 } },
+        // Legendary
+        { id: 'r004', name: 'Ruby Ring', type: 'ring', rarity: 'Legendary', stats: { def: 70, spd: 15, hp: 200 }, cost: 15000, materials: { 'm004': 25, 'm005': 10, 'm006': 2 } },
+        // Mythic
+        { id: 'r005', name: 'Void Band', type: 'ring', rarity: 'Mythic', stats: { def: 150, spd: 30, hp: 500 }, cost: 50000, materials: { 'm007': 5, 'm005': 25, 'm006': 10 } },
+
+        // === CLOAKS (Main Stat: HP + DEF) ===
+        // Common
+        { id: 'c001', name: 'Tattered Cape', type: 'cloak', rarity: 'Common', stats: { hp: 100, def: 5 }, cost: 500, materials: { 'm002': 8 } },
+        // Rare
+        { id: 'c002', name: 'Wool Cloak', type: 'cloak', rarity: 'Rare', stats: { hp: 300, def: 15 }, cost: 1500, materials: { 'm002': 20, 'm003': 5 } },
+        // Epic
+        { id: 'c003', name: 'Silk Mantle', type: 'cloak', rarity: 'Epic', stats: { hp: 800, def: 40 }, cost: 5000, materials: { 'm002': 50, 'm004': 8 } },
+        // Legendary
+        { id: 'c004', name: 'Dragon Scale Cape', type: 'cloak', rarity: 'Legendary', stats: { hp: 2000, def: 100, spd: 5 }, cost: 15000, materials: { 'm006': 15, 'm002': 100 } },
+        // Mythic
+        { id: 'c005', name: 'Celestial Shroud', type: 'cloak', rarity: 'Mythic', stats: { hp: 5000, def: 250, spd: 15 }, cost: 50000, materials: { 'm007': 15, 'm004': 50, 'm003': 100 } }
     ]
 };
 

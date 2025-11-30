@@ -28,11 +28,12 @@ class Hero {
         // Base stats from DB
         this.baseStats = { ...heroData.baseStats };
         
-        // Equipment (Placeholder for Forge)
+        // Equipment Slots (Updated for Forge Update)
         this.equipment = {
             weapon: null,
-            armor: null,
-            accessory: null
+            artifact: null,
+            ring: null,
+            cloak: null
         };
         
         // Dynamic Battle Stats
@@ -41,6 +42,7 @@ class Hero {
         this.atk = 0;
         this.def = 0;
         this.spd = 0;
+        this.crit = 0; // New Stat
         this.mana = 0;
         this.maxMana = 100;
         
@@ -63,15 +65,22 @@ class Hero {
         let totalATK = Math.floor(this.baseStats.atk * levelMultiplier * starMultiplier);
         let totalDEF = Math.floor(this.baseStats.def * levelMultiplier * starMultiplier);
         let totalSPD = Math.floor(this.baseStats.spd * levelMultiplier * starMultiplier);
+        let totalCrit = 5; // Base 5% crit chance
         
-        // 2. Add Equipment
-        if (this.equipment.weapon) totalATK += this.equipment.weapon.stats.atk || 0;
-        if (this.equipment.armor) {
-            totalDEF += this.equipment.armor.stats.def || 0;
-            totalHP += this.equipment.armor.stats.hp || 0;
+        // 2. Add Equipment Stats
+        for (const slot in this.equipment) {
+            const item = this.equipment[slot];
+            if (item && item.stats) {
+                if (item.stats.hp) totalHP += item.stats.hp;
+                if (item.stats.atk) totalATK += item.stats.atk;
+                if (item.stats.def) totalDEF += item.stats.def;
+                if (item.stats.spd) totalSPD += item.stats.spd;
+                if (item.stats.crit) totalCrit += item.stats.crit;
+            }
         }
         
         // 3. Apply Skill Tree Bonuses (Percentages)
+        // Global % Boost
         if (skillTreeBonuses.allStatsPercent) {
             const factor = 1 + (skillTreeBonuses.allStatsPercent / 100);
             totalHP = Math.floor(totalHP * factor);
@@ -79,9 +88,15 @@ class Hero {
             totalDEF = Math.floor(totalDEF * factor);
         }
         
+        // Element Specific Boost
         const elKey = `${this.element.toLowerCase()}Bonus`;
         if (skillTreeBonuses[elKey]) {
             totalATK = Math.floor(totalATK * (1 + skillTreeBonuses[elKey] / 100));
+        }
+
+        // Crit Chance Bonus from Tree
+        if (skillTreeBonuses.critChance) {
+            totalCrit += skillTreeBonuses.critChance;
         }
 
         // Final Assignment
@@ -89,6 +104,7 @@ class Hero {
         this.atk = totalATK;
         this.def = totalDEF;
         this.spd = totalSPD;
+        this.crit = totalCrit;
         
         // Cap HP if current exceeds max (e.g. removed equipment)
         if (this.currentHP > this.maxHP) this.currentHP = this.maxHP;
@@ -97,9 +113,25 @@ class Hero {
         this.isAlive = this.currentHP > 0;
     }
     
+    // Equipment Management
+    equipItem(slot, item) {
+        // Returns the old item if there was one, or null
+        const oldItem = this.equipment[slot];
+        this.equipment[slot] = item;
+        this.calculateStats(window.gameState ? window.gameState.getSkillTreeBonuses() : {});
+        return oldItem;
+    }
+
+    unequipItem(slot) {
+        const item = this.equipment[slot];
+        this.equipment[slot] = null;
+        this.calculateStats(window.gameState ? window.gameState.getSkillTreeBonuses() : {});
+        return item;
+    }
+
     // Combat Power for Sorting
     getPower() {
-        return Math.floor(this.maxHP / 10 + this.atk + this.def + this.spd);
+        return Math.floor((this.maxHP / 10) + this.atk + this.def + (this.spd * 2) + (this.crit * 10));
     }
     
     // Leveling Logic
@@ -109,7 +141,7 @@ class Hero {
     
     levelUp(goldSpent) {
         this.level++;
-        this.calculateStats();
+        this.calculateStats(window.gameState ? window.gameState.getSkillTreeBonuses() : {});
         return true;
     }
     
@@ -204,7 +236,16 @@ class Hero {
         hero.stars = data.stars || 1;
         hero.awakeningShards = data.awakeningShards || 0;
         hero.bond = data.bond || 0;
-        if(data.equipment) hero.equipment = data.equipment;
+        
+        // Load Equipment safely
+        if(data.equipment) {
+            hero.equipment = {
+                weapon: data.equipment.weapon || null,
+                artifact: data.equipment.artifact || null,
+                ring: data.equipment.ring || null,
+                cloak: data.equipment.cloak || null
+            };
+        }
         
         hero.calculateStats();
         
@@ -229,9 +270,10 @@ class Enemy {
         this.id = template.id;
         this.name = template.name;
         this.element = template.element;
+        this.instanceId = `${template.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Scaling Logic: +10% stats per wave
-        const multiplier = 1 + (waveNumber - 1) * 0.10;
+        // Scaling Logic: +12% stats per wave (Slightly harder now that we have gear)
+        const multiplier = 1 + (waveNumber - 1) * 0.12;
         
         this.maxHP = Math.floor(template.baseStats.hp * multiplier);
         this.currentHP = this.maxHP;
@@ -340,11 +382,19 @@ class GameState {
     constructor() {
         this.username = "Traveler";
         this.gold = 500;
-        this.petals = 100;
+        this.petals = 150;
         this.spiritOrbs = 0;
         this.roster = [];
         this.team = [null, null, null, null, null];
-        this.inventory = { seeds: { 's001': 2 }, teas: {}, materials: {} };
+        
+        // Inventory System
+        this.inventory = { 
+            seeds: { 's001': 2 }, 
+            teas: {}, 
+            materials: {}, // Forge Materials
+            equipment: []  // Crafted/Unequipped Gear List
+        };
+        
         this.garden = new Garden();
         this.skillTree = this.initSkillTree();
         this.currentWave = 1;
@@ -407,12 +457,32 @@ class GameState {
         return (this.inventory[type] && this.inventory[type][id]) || 0;
     }
     
+    // Equipment Specific Inventory Helpers
+    addEquipment(item) {
+        // Assign a unique ID to every gear piece instance so we can track it
+        item.instanceId = 'eq_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        if (!this.inventory.equipment) this.inventory.equipment = [];
+        this.inventory.equipment.push(item);
+        return item;
+    }
+
+    removeEquipment(instanceId) {
+        if (!this.inventory.equipment) return false;
+        const idx = this.inventory.equipment.findIndex(i => i.instanceId === instanceId);
+        if (idx !== -1) {
+            this.inventory.equipment.splice(idx, 1);
+            return true;
+        }
+        return false;
+    }
+
     initSkillTree() {
         return [
             { id: 'st01', name: 'ATK Boost I', icon: '⚔️', desc: '+5% ATK', cost: 10, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 5 },
             { id: 'st02', name: 'HP Boost I', icon: '❤️', desc: '+5% HP', cost: 10, maxLevel: 5, level: 0, bonus: 'allStatsPercent', value: 5 },
             { id: 'st03', name: 'Starting Mana', icon: '⚡', desc: '+20 Start Mana', cost: 25, maxLevel: 3, level: 0, bonus: 'startingMana', value: 20 },
             { id: 'st04', name: 'Gold Rush', icon: '💰', desc: '+10% Gold', cost: 15, maxLevel: 5, level: 0, bonus: 'goldBonus', value: 10 },
+            { id: 'st08', name: 'Crit Chance', icon: '🎯', desc: '+2% Crit Rate', cost: 30, maxLevel: 5, level: 0, bonus: 'critChance', value: 2 },
             { id: 'st05', name: 'Fire Mastery', icon: '🔥', desc: '+10% Fire ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'fireBonus', value: 10 },
             { id: 'st06', name: 'Water Mastery', icon: '💧', desc: '+10% Water ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'waterBonus', value: 10 },
             { id: 'st07', name: 'Wind Mastery', icon: '🌪️', desc: '+10% Wind ATK', cost: 20, maxLevel: 3, level: 0, bonus: 'windBonus', value: 10 },
@@ -443,7 +513,6 @@ class GameState {
         const now = Date.now();
         const oneDay = 24 * 60 * 60 * 1000;
         
-        // Define comprehensive pool of quests
         const QUEST_POOL = [
             // EASY
             { id: 'q_e1', desc: 'Defeat 10 Enemies', target: 10, current: 0, reward: { gold: 200, petals: 5 }, type: 'killEnemies', difficulty: 'Easy' },
@@ -524,8 +593,28 @@ class GameState {
     calculateExpeditionRewards() {
         const now = Date.now();
         const hours = (now - this.expedition.lastClaimTime) / (1000 * 60 * 60);
-        if (hours < 0.1) return { gold: 0, petals: 0, hours: hours.toFixed(2) };
-        return { gold: Math.floor(hours * 100), petals: Math.floor(hours * 5), hours: hours.toFixed(2) };
+        
+        // Minimal threshold to claim
+        if (hours < 0.1) return { gold: 0, petals: 0, materials: [], hours: hours.toFixed(2) };
+        
+        // Base Rewards
+        const gold = Math.floor(hours * 100);
+        const petals = Math.floor(hours * 5);
+        
+        // Forge Material Roll (chance per hour)
+        const materials = [];
+        const rollCount = Math.floor(hours); // 1 roll per hour
+        const allMats = FORGE_DATABASE.materials;
+        
+        for(let i=0; i<rollCount; i++) {
+            // 30% chance per hour to find a material
+            if(Math.random() < 0.3) {
+                const mat = allMats[Math.floor(Math.random() * allMats.length)];
+                materials.push({ id: mat.id, name: mat.name, qty: 1 });
+            }
+        }
+
+        return { gold, petals, materials, hours: hours.toFixed(2) };
     }
     
     claimExpeditionRewards() {
@@ -533,6 +622,12 @@ class GameState {
         if (r.gold > 0) {
             this.gold += r.gold;
             this.petals += r.petals;
+            
+            // Add Materials
+            r.materials.forEach(m => {
+                this.addItem('materials', m.id, m.qty);
+            });
+            
             this.expedition.lastClaimTime = Date.now();
             return r;
         }
@@ -567,7 +662,14 @@ class GameState {
         s.spiritOrbs = data.spiritOrbs || 0;
         if (data.roster) s.roster = data.roster.map(h => Hero.fromJSON(h)).filter(h => h);
         if (data.team) s.team = data.team;
-        if (data.inventory) s.inventory = data.inventory;
+        
+        if (data.inventory) {
+            s.inventory = data.inventory;
+            // Ensure new categories exist if loading old save
+            if (!s.inventory.materials) s.inventory.materials = {};
+            if (!s.inventory.equipment) s.inventory.equipment = [];
+        }
+        
         if (data.garden) s.garden = Garden.fromJSON(data.garden);
         if (data.skillTree) data.skillTree.forEach(savedNode => { const node = s.skillTree.find(n => n.id === savedNode.id); if (node) node.level = savedNode.level; });
         if (data.stats) s.stats = data.stats;

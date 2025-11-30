@@ -46,7 +46,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
     
     modalBody.innerHTML = ''; // Clear content
 
-    // Container - padded for big screen
+    // Container
     const container = document.createElement('div');
     container.className = 'bg-slate-50 p-8 min-h-[600px]';
 
@@ -109,13 +109,13 @@ function showHeroSelectionModal(slotIndex, gameState) {
         };
         imgContainer.appendChild(img);
 
-        // Star Level (Top Left)
+        // Star Level
         const starBadge = document.createElement('div');
         starBadge.className = "absolute top-1 left-1 text-[12px] text-yellow-400 font-bold z-10 drop-shadow-md";
         starBadge.textContent = '⭐'.repeat(hero.stars);
         imgContainer.appendChild(starBadge);
 
-        // Rarity Badge (Top Right)
+        // Rarity Badge
         const badge = document.createElement('div');
         badge.className = `absolute top-1 right-1 badge-${hero.rarity} text-[10px] text-white px-1.5 py-0.5 rounded shadow font-bold`;
         badge.textContent = hero.rarity;
@@ -130,7 +130,7 @@ function showHeroSelectionModal(slotIndex, gameState) {
 
         card.appendChild(imgContainer);
 
-        // Info - MORE PROMINENT
+        // Info
         const pw = hero.getPower ? hero.getPower() : 0;
         const info = document.createElement('div');
         info.className = 'p-3 text-center border-t border-slate-100 flex flex-col gap-1.5';
@@ -311,6 +311,7 @@ function showHeroDetails(hero, gameState) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
     
+    // Stats calculation variables
     const xpNeeded = hero.getUpgradeCost();
     const canAfford = gameState.gold >= xpNeeded;
     const maxStars = 5; 
@@ -324,6 +325,31 @@ function showHeroDetails(hero, gameState) {
     } else {
         shardProgress = 100;
     }
+
+    // Equipment Slot HTML Generator
+    const generateEquipSlot = (type, iconClass) => {
+        const item = hero.equipment[type];
+        const isEmpty = !item;
+        
+        let rarityClass = "border-slate-200 bg-slate-50";
+        if (item) {
+            const rMap = { 'Common': 'border-slate-300 bg-white', 'Rare': 'border-blue-300 bg-blue-50', 'Epic': 'border-purple-300 bg-purple-50', 'Legendary': 'border-amber-300 bg-amber-50', 'Mythic': 'border-pink-300 bg-pink-50' };
+            rarityClass = rMap[item.rarity] || rarityClass;
+        }
+
+        return `
+            <div class="flex flex-col items-center gap-1 cursor-pointer group" onclick="showEquipmentSelectionModal('${hero.id}', '${type}')">
+                <div class="w-16 h-16 rounded-xl border-2 ${rarityClass} flex items-center justify-center text-2xl relative shadow-sm transition-transform group-hover:scale-105">
+                    ${item 
+                        ? getItemIcon(type) 
+                        : `<i class="${iconClass} text-slate-300"></i>`
+                    }
+                    ${item ? `<div class="absolute -bottom-1 -right-1 bg-slate-800 text-white text-[9px] px-1 rounded">${item.rarity.charAt(0)}</div>` : ''}
+                </div>
+                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">${type}</div>
+            </div>
+        `;
+    };
 
     const html = `
         <div class="flex flex-col md:flex-row h-full min-h-[600px] md:h-[700px]">
@@ -350,82 +376,93 @@ function showHeroDetails(hero, gameState) {
 
             <div class="w-full md:w-7/12 bg-white flex flex-col h-full overflow-y-auto">
                 <div class="p-8 space-y-8">
+                    
                     <div>
                         <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Combat Stats</h3>
-                        <div class="grid grid-cols-4 gap-4">
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                                <div class="text-xs text-slate-400 font-bold mb-1">HP</div>
-                                <div class="text-xl font-bold text-slate-700">${formatNumber(hero.maxHP)}</div>
+                        <div class="grid grid-cols-5 gap-2">
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                                <div class="text-[10px] text-slate-400 font-bold mb-1">HP</div>
+                                <div class="text-lg font-bold text-slate-700">${formatNumber(hero.maxHP)}</div>
                             </div>
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                                <div class="text-xs text-slate-400 font-bold mb-1">ATK</div>
-                                <div class="text-xl font-bold text-slate-700">${formatNumber(hero.atk)}</div>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                                <div class="text-[10px] text-slate-400 font-bold mb-1">ATK</div>
+                                <div class="text-lg font-bold text-slate-700">${formatNumber(hero.atk)}</div>
                             </div>
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                                <div class="text-xs text-slate-400 font-bold mb-1">DEF</div>
-                                <div class="text-xl font-bold text-slate-700">${formatNumber(hero.def)}</div>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                                <div class="text-[10px] text-slate-400 font-bold mb-1">DEF</div>
+                                <div class="text-lg font-bold text-slate-700">${formatNumber(hero.def)}</div>
                             </div>
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                                <div class="text-xs text-slate-400 font-bold mb-1">SPD</div>
-                                <div class="text-xl font-bold text-slate-700">${hero.spd}</div>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                                <div class="text-[10px] text-slate-400 font-bold mb-1">SPD</div>
+                                <div class="text-lg font-bold text-slate-700">${hero.spd}</div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <h4 class="font-bold text-slate-700 text-lg">Level ${hero.level}</h4>
-                                <div class="text-xs text-slate-400">Max Level: 100</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-sm font-bold ${canAfford ? 'text-slate-700' : 'text-red-500'}">
-                                    ${formatNumber(xpNeeded)} <span class="text-xs font-normal text-slate-400">Gold</span>
-                                </div>
-                                <div class="text-[10px] text-slate-400">Cost to Upgrade</div>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                                <div class="text-[10px] text-slate-400 font-bold mb-1">CRIT</div>
+                                <div class="text-lg font-bold text-slate-700">${hero.crit}%</div>
                             </div>
                         </div>
-                        <button id="modal-levelup-btn" class="w-full btn py-3 ${canAfford ? 'btn-primary shadow-lg shadow-pink-200' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}" ${!canAfford ? 'disabled' : ''}>
-                            Level Up Hero
-                        </button>
-                    </div>
-
-                    <div class="bg-amber-50 p-6 rounded-xl border border-amber-100">
-                        <div class="flex justify-between items-end mb-3">
-                            <h4 class="font-bold text-amber-800 flex items-center gap-2">
-                                <i class="fa-solid fa-star text-amber-500"></i> Ascension
-                            </h4>
-                            ${isMaxStars 
-                                ? '<span class="text-xs font-bold text-amber-600 bg-amber-100 px-3 py-1 rounded-full">MAXED</span>' 
-                                : `<span class="text-xs font-bold text-amber-700">${hero.awakeningShards} / ${shardsRequired} Shards</span>`
-                            }
-                        </div>
-                        
-                        ${!isMaxStars ? `
-                        <div class="w-full bg-white/50 rounded-full h-2 mb-4 overflow-hidden border border-amber-100">
-                            <div class="bg-amber-400 h-full transition-all duration-500" style="width: ${shardProgress}%"></div>
-                        </div>` : ''}
-                        
-                        <button id="modal-awaken-btn" 
-                                class="w-full btn ${canAwaken ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-200' : 'bg-amber-200/50 text-amber-400 cursor-not-allowed'}" 
-                                ${!canAwaken ? 'disabled' : ''}>
-                            ${isMaxStars ? 'Max Ascension Reached' : canAwaken ? 'Awaken Hero' : 'Need More Shards'}
-                        </button>
                     </div>
 
                     <div>
-                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Ultimate Skill</h3>
-                        <div class="flex items-start gap-4 p-4 rounded-xl border border-purple-100 bg-purple-50/50">
-                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-500 text-xl border border-purple-200 shrink-0">
-                                <i class="fa-solid fa-bolt"></i>
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <h4 class="font-bold text-slate-700">${hero.ultimate.name}</h4>
-                                    <span class="text-[10px] font-bold text-purple-500 bg-purple-100 px-2 py-0.5 rounded">100 MP</span>
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Equipment</h3>
+                        <div class="flex justify-around bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            ${generateEquipSlot('weapon', 'fa-solid fa-khanda')}
+                            ${generateEquipSlot('artifact', 'fa-solid fa-scroll')}
+                            ${generateEquipSlot('ring', 'fa-solid fa-ring')}
+                            ${generateEquipSlot('cloak', 'fa-solid fa-user-shield')}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h4 class="font-bold text-slate-700">Level ${hero.level}</h4>
+                                    <div class="text-xs text-slate-400">Max: 100</div>
                                 </div>
-                                <p class="text-sm text-slate-600 leading-relaxed">${hero.ultimate.desc}</p>
+                                <div class="text-right">
+                                    <div class="text-sm font-bold ${canAfford ? 'text-slate-700' : 'text-red-500'}">
+                                        ${formatNumber(xpNeeded)} <span class="text-xs font-normal text-slate-400">G</span>
+                                    </div>
+                                </div>
                             </div>
+                            <button id="modal-levelup-btn" class="w-full btn py-2 text-sm ${canAfford ? 'btn-primary' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}" ${!canAfford ? 'disabled' : ''}>
+                                Level Up
+                            </button>
+                        </div>
+
+                        <div class="bg-amber-50 p-6 rounded-xl border border-amber-100">
+                            <div class="flex justify-between items-end mb-3">
+                                <h4 class="font-bold text-amber-800">Ascension</h4>
+                                ${isMaxStars 
+                                    ? '<span class="text-xs font-bold text-amber-600">MAXED</span>' 
+                                    : `<span class="text-xs font-bold text-amber-700">${hero.awakeningShards}/${shardsRequired}</span>`
+                                }
+                            </div>
+                            
+                            ${!isMaxStars ? `
+                            <div class="w-full bg-white/50 rounded-full h-2 mb-4 overflow-hidden border border-amber-100">
+                                <div class="bg-amber-400 h-full transition-all duration-500" style="width: ${shardProgress}%"></div>
+                            </div>` : ''}
+                            
+                            <button id="modal-awaken-btn" 
+                                    class="w-full btn py-2 text-sm ${canAwaken ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-amber-200/50 text-amber-400 cursor-not-allowed'}" 
+                                    ${!canAwaken ? 'disabled' : ''}>
+                                ${isMaxStars ? 'Maxed' : 'Awaken'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4 p-4 rounded-xl border border-purple-100 bg-purple-50/50">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-500 text-lg border border-purple-200 shrink-0">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <h4 class="font-bold text-slate-700 text-sm">${hero.ultimate.name}</h4>
+                                <span class="text-[10px] font-bold text-purple-500 bg-purple-100 px-2 py-0.5 rounded">100 MP</span>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed">${hero.ultimate.desc}</p>
                         </div>
                     </div>
 
@@ -436,17 +473,15 @@ function showHeroDetails(hero, gameState) {
     
     modalBody.innerHTML = html;
     
+    // Bind Buttons
     const lvlBtn = document.getElementById('modal-levelup-btn');
     if (lvlBtn && canAfford) {
         lvlBtn.onclick = () => {
             if (hero.levelUp(xpNeeded)) {
                 gameState.gold -= xpNeeded;
-                showNotification(`Level Up! ${hero.name} is now Lv.${hero.level}`, 'success');
                 gameState.updateQuest('levelUp', 1);
-                saveGame(gameState);
-                updateUI(gameState);
-                renderRoster(gameState);
-                showHeroDetails(hero, gameState);
+                showNotification('Level Up!', 'success');
+                refreshHeroModal(hero, gameState);
             }
         };
     }
@@ -458,26 +493,165 @@ function showHeroDetails(hero, gameState) {
                 hero.awakeningShards -= shardsRequired;
                 hero.stars++;
                 hero.calculateStats(gameState.getSkillTreeBonuses());
-                
-                showNotification(`Awakened! ${hero.name} is now ${hero.stars} Stars!`, 'success');
-                
-                if(typeof playParticleEffect === 'function') {
-                    playParticleEffect(awakenBtn);
-                }
-
-                saveGame(gameState);
-                updateUI(gameState);
-                renderRoster(gameState);
-                showHeroDetails(hero, gameState);
+                showNotification('Hero Awakened!', 'success');
+                refreshHeroModal(hero, gameState);
             }
         };
     }
     
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        modal.classList.remove('opacity-0', 'pointer-events-none');
-    });
+    requestAnimationFrame(() => modal.classList.remove('opacity-0', 'pointer-events-none'));
+}
+
+function refreshHeroModal(hero, gameState) {
+    saveGame(gameState);
+    updateUI(gameState);
+    if(document.getElementById('roster-tab').classList.contains('active')) {
+        renderRoster(gameState);
+    }
+    showHeroDetails(hero, gameState);
+}
+
+// ===========================
+// EQUIPMENT SELECTION MODAL
+// ===========================
+
+window.showEquipmentSelectionModal = function(heroId, slotType) {
+    const modalBody = document.getElementById('modal-body');
+    const hero = window.gameState.roster.find(h => h.id === heroId);
+    if (!hero) return;
+
+    // Filter available items: Must match type AND not be currently equipped by anyone
+    const availableItems = (window.gameState.inventory.equipment || []).filter(item => item.type === slotType);
+    
+    // NOTE: In a more complex system, we'd filter out items equipped by *other* heroes.
+    // For now, we assume inventory list contains ALL items, and we just move them around.
+    // To do this right: Items in `inventory.equipment` are "unequipped". 
+    // Items on heroes are removed from inventory array or marked.
+    // CURRENT LOGIC: `gameState.inventory.equipment` holds ONLY unequipped items.
+    // When equipped, it moves to `hero.equipment`. When unequipped, moves back.
+
+    modalBody.innerHTML = '';
+
+    const container = document.createElement('div');
+    container.className = 'bg-slate-50 p-6 min-h-[500px] flex flex-col';
+
+    const header = document.createElement('div');
+    header.className = 'flex justify-between items-center mb-6';
+    header.innerHTML = `
+        <h3 class="text-xl font-heading font-bold text-slate-800">Equip ${slotType.charAt(0).toUpperCase() + slotType.slice(1)}</h3>
+        <button class="text-slate-400 hover:text-slate-600" onclick="showHeroDetails(window.gameState.roster.find(h=>h.id=='${heroId}'), window.gameState)">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Back
+        </button>
+    `;
+    container.appendChild(header);
+
+    // Unequip Option (if currently equipped)
+    if (hero.equipment[slotType]) {
+        const currentItem = hero.equipment[slotType];
+        const unequipDiv = document.createElement('div');
+        unequipDiv.className = 'bg-red-50 border border-red-200 p-4 rounded-xl mb-6 flex justify-between items-center';
+        unequipDiv.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white rounded border border-red-100 flex items-center justify-center text-red-400">
+                    <i class="fa-solid fa-slash"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-bold text-red-700">Unequip Current Item</div>
+                    <div class="text-xs text-red-500">${currentItem.name}</div>
+                </div>
+            </div>
+            <button class="btn bg-white border border-red-200 text-red-600 text-xs hover:bg-red-100" onclick="handleUnequip('${heroId}', '${slotType}')">Unequip</button>
+        `;
+        container.appendChild(unequipDiv);
+    }
+
+    // List Container
+    const list = document.createElement('div');
+    list.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2 custom-scrollbar flex-1';
+
+    if (availableItems.length === 0) {
+        list.innerHTML = `<div class="col-span-full text-center text-slate-400 py-10">No available ${slotType}s in inventory.</div>`;
+    } else {
+        availableItems.forEach(item => {
+            const el = document.createElement('div');
+            
+            // Rarity Colors
+            const rMap = { 'Common': 'border-slate-200', 'Rare': 'border-blue-200', 'Epic': 'border-purple-200', 'Legendary': 'border-amber-200', 'Mythic': 'border-pink-200' };
+            const borderColor = rMap[item.rarity] || 'border-slate-200';
+
+            // Stats String
+            let statsStr = '';
+            for(const [k,v] of Object.entries(item.stats)) {
+                statsStr += `<span class="mr-2 text-slate-600"><span class="font-bold uppercase text-[9px]">${k}</span> +${v}</span>`;
+            }
+
+            el.className = `bg-white p-3 rounded-xl border ${borderColor} shadow-sm cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all`;
+            el.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="font-bold text-slate-700 text-sm">${item.name}</div>
+                    <div class="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 font-bold text-slate-500">${item.rarity}</div>
+                </div>
+                <div class="text-xs mb-2 border-b border-slate-50 pb-2">${statsStr}</div>
+                <button class="btn btn-primary w-full text-xs py-1.5" onclick="handleEquip('${heroId}', '${item.instanceId}', '${slotType}')">Equip</button>
+            `;
+            list.appendChild(el);
+        });
+    }
+
+    container.appendChild(list);
+    modalBody.appendChild(container);
+}
+
+window.handleEquip = function(heroId, itemInstanceId, slotType) {
+    const gameState = window.gameState;
+    const hero = gameState.roster.find(h => h.id === heroId);
+    
+    // Find item in inventory
+    const inventoryIdx = gameState.inventory.equipment.findIndex(i => i.instanceId === itemInstanceId);
+    if (inventoryIdx === -1 || !hero) return;
+    
+    const newItem = gameState.inventory.equipment[inventoryIdx];
+    
+    // 1. Remove new item from inventory
+    gameState.inventory.equipment.splice(inventoryIdx, 1);
+    
+    // 2. Equip item (and get old one back if exists)
+    const oldItem = hero.equipItem(slotType, newItem);
+    
+    // 3. Put old item back in inventory
+    if (oldItem) {
+        gameState.inventory.equipment.push(oldItem);
+    }
+    
+    showNotification(`Equipped ${newItem.name}`, 'success');
+    refreshHeroModal(hero, gameState);
+};
+
+window.handleUnequip = function(heroId, slotType) {
+    const gameState = window.gameState;
+    const hero = gameState.roster.find(h => h.id === heroId);
+    
+    if (!hero) return;
+    
+    const oldItem = hero.unequipItem(slotType);
+    if (oldItem) {
+        gameState.inventory.equipment.push(oldItem);
+        showNotification('Item unequipped', 'info');
+    }
+    
+    refreshHeroModal(hero, gameState);
+};
+
+function getItemIcon(type) {
+    const icons = {
+        'weapon': '<i class="fa-solid fa-khanda"></i>',
+        'artifact': '<i class="fa-solid fa-scroll"></i>',
+        'ring': '<i class="fa-solid fa-ring"></i>',
+        'cloak': '<i class="fa-solid fa-user-shield"></i>'
+    };
+    return icons[type] || '<i class="fa-solid fa-cube"></i>';
 }
 
 // ... (Quests and Expedition sections remain unchanged)
@@ -556,6 +730,15 @@ function updateExpeditionUI(gameState) {
     const container = document.getElementById('expedition-tab');
     if (!container) return;
     const rewards = gameState.calculateExpeditionRewards();
+    
+    // Helper to render materials nicely
+    let matsHtml = '';
+    if (rewards.materials && rewards.materials.length > 0) {
+        matsHtml = `<div class="mt-2 text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded border border-indigo-100 inline-block">
+            +${rewards.materials.length} Materials Found!
+        </div>`;
+    }
+
     container.innerHTML = `
         <div class="max-w-2xl mx-auto mt-8 animate-entry">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -568,7 +751,7 @@ function updateExpeditionUI(gameState) {
                     <p class="text-slate-500 mb-8">Your heroes are gathering resources in the background.</p>
                     <div class="bg-slate-50 rounded-xl p-6 mb-8 border border-slate-100">
                         <div class="text-sm text-slate-400 uppercase font-bold mb-4">Accumulated Rewards</div>
-                        <div class="flex justify-center gap-8">
+                        <div class="flex justify-center gap-8 mb-2">
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-slate-700">${rewards ? rewards.gold : 0}</div>
                                 <div class="text-xs text-slate-400">Gold</div>
@@ -578,6 +761,7 @@ function updateExpeditionUI(gameState) {
                                 <div class="text-xs text-slate-400">Petals</div>
                             </div>
                         </div>
+                        ${matsHtml}
                         <div class="mt-4 text-xs text-slate-400">Duration: ${rewards ? rewards.hours : '0.0'} hours</div>
                     </div>
                     <button class="btn btn-primary w-full py-3 text-lg" onclick="handleExpeditionClaim()">
@@ -590,7 +774,11 @@ function updateExpeditionUI(gameState) {
     window.handleExpeditionClaim = () => {
         const claimed = gameState.claimExpeditionRewards();
         if (claimed && claimed.gold > 0) {
-            showNotification(`Claimed ${claimed.gold} Gold & ${claimed.petals} Petals!`, 'success');
+            let msg = `Claimed ${claimed.gold} Gold & ${claimed.petals} Petals!`;
+            if (claimed.materials && claimed.materials.length > 0) {
+                msg += ` +${claimed.materials.length} Materials!`;
+            }
+            showNotification(msg, 'success');
             updateUI(gameState);
             updateExpeditionUI(gameState);
             saveGame(gameState);

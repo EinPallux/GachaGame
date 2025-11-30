@@ -58,9 +58,8 @@ class BattleState {
             const pool = ENEMIES_DATABASE.slice(poolRange[0], poolRange[1]);
             const template = pool[Math.floor(Math.random() * pool.length)] || ENEMIES_DATABASE[0];
             
-            const instanceId = `${template.id}_${Date.now()}_${i}`;
+            // Create enemy instance
             const enemy = new Enemy(template, this.waveNumber);
-            enemy.instanceId = instanceId; 
             this.enemies.push(enemy);
         }
     }
@@ -258,7 +257,10 @@ function performAttack(attacker, defender, battleState, isHero) {
         if (adv && adv.weak === defender.element) damage *= 0.75;
     }
     
-    const isCrit = Math.random() < 0.15;
+    // Critical Hit Calculation
+    // Base crit from unit stats (default ~5-15%)
+    const critChance = (attacker.crit || 5) / 100;
+    const isCrit = Math.random() < critChance;
     if (isCrit) damage *= 1.5;
     
     damage = Math.floor(damage);
@@ -506,7 +508,6 @@ function renderBattleDashboard(gameState) {
     if (currentBattleState) updateBattleUI(gameState, currentBattleState);
 }
 
-// RESTORED FUNCTION: Pre-Battle Screen
 function renderPreBattleScreen(container, gameState) {
     container.innerHTML = '';
     
@@ -558,7 +559,6 @@ function renderPreBattleScreen(container, gameState) {
     container.appendChild(wrapper);
 }
 
-// RESTORED FUNCTION: Team Slot Element with PROMINENT STYLE
 function createTeamSlotElement(index, gameState) {
     const heroId = gameState.team[index];
     const hero = heroId ? gameState.roster.find(h => h.id === heroId) : null;
@@ -595,7 +595,7 @@ function createTeamSlotElement(index, gameState) {
         rarityBadge.textContent = hero.rarity;
         slot.appendChild(rarityBadge);
 
-        // Info Overlay - MORE PROMINENT
+        // Info Overlay
         const info = document.createElement('div');
         info.className = "absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent pt-12 pb-3 px-2 text-white text-center flex flex-col gap-0.5";
         
@@ -733,7 +733,6 @@ window.useTea = function(id, gameState) {
 // ===========================================
 
 function renderUnits(container, units, isHero) {
-    // 1. Identify existing nodes to PRESERVE animations
     const existingNodes = new Map();
     Array.from(container.children).forEach(el => {
         const id = el.getAttribute('data-unit-id');
@@ -758,13 +757,12 @@ function renderUnits(container, units, isHero) {
             mpText = `${Math.floor(unit.mana)}/${unit.maxMana}`;
         }
 
-        // CREATE (if doesn't exist)
+        // CREATE
         if (!div) {
             div = document.createElement('div');
             div.className = `battle-unit ${isHero ? 'is-hero' : 'is-enemy cursor-pointer hover:scale-105'}`;
             div.setAttribute('data-unit-id', unitId);
             
-            // Focus click handler for enemies
             if (!isHero) {
                 div.onclick = () => window.setBattleFocus(unitId);
             }
@@ -895,7 +893,7 @@ function handleWaveVictory(gameState, battleState) {
     
     if (battleInterval) clearInterval(battleInterval);
     
-    // --- WAVE LOOT DROPS (NEW) ---
+    // --- WAVE LOOT DROPS ---
     const gold = 50 + (gameState.currentWave * 10);
     gameState.gold += gold;
     
@@ -918,6 +916,18 @@ function handleWaveVictory(gameState, battleState) {
         const seed = allSeeds[Math.floor(Math.random() * allSeeds.length)];
         gameState.addItem('seeds', seed.id, 1);
         lootText += `, +1 ${seed.emoji}`;
+    }
+
+    // --- NEW FORGE MATERIAL DROP LOGIC ---
+    // 25% chance per wave to drop a material
+    // Higher waves have a slightly better chance
+    const dropChance = 0.25 + (gameState.currentWave * 0.005);
+    
+    if (Math.random() < dropChance && window.FORGE_DATABASE) {
+        const allMats = window.FORGE_DATABASE.materials;
+        const mat = allMats[Math.floor(Math.random() * allMats.length)];
+        gameState.addItem('materials', mat.id, 1);
+        lootText += `, +1 ${mat.name}`;
     }
     
     gameState.updateQuest('clearWaves', 1);
